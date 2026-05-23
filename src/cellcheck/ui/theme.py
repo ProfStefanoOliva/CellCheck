@@ -78,6 +78,15 @@ def get_main_stylesheet() -> str:
         background: {PRIMARY_BLUE};
         color: {TEXT_PRIMARY};
     }}
+    #reportSummaryWidget, #reportFilterBar, #reportDetailsPanel {{
+        background: {PANEL_BACKGROUND};
+        border: 1px solid {BORDER_COLOR};
+        border-radius: 8px;
+        padding: 10px;
+    }}
+    #reportTable {{
+        background: {INPUT_BACKGROUND};
+    }}
     #pageTitle {{
         color: {TEXT_PRIMARY};
         font-size: 16pt;
@@ -86,6 +95,16 @@ def get_main_stylesheet() -> str:
     #pageSubtitle {{
         color: {TEXT_SECONDARY};
         font-size: 11pt;
+    }}
+    #summaryLabel {{
+        color: {TEXT_SECONDARY};
+        font-size: 10pt;
+        font-weight: 600;
+    }}
+    #summaryValue {{
+        color: {TEXT_PRIMARY};
+        font-size: 10pt;
+        font-weight: 700;
     }}
     #warningText {{
         color: {WARNING_ORANGE};
@@ -140,8 +159,18 @@ def get_main_stylesheet() -> str:
         gridline-color: {BORDER_COLOR};
         alternate-background-color: {PANEL_SECONDARY};
     }}
+    QComboBox {{
+        background: {INPUT_BACKGROUND};
+        color: {TEXT_PRIMARY};
+        border: 1px solid {BORDER_COLOR};
+        border-radius: 6px;
+        padding: 6px;
+    }}
     QLabel {{
         background: transparent;
+    }}
+    QTextEdit#detailsCommentEdit {{
+        min-height: 90px;
     }}
     QMessageBox QWidget {{
         background: {PANEL_BACKGROUND};

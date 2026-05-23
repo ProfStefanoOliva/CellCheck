@@ -12,7 +12,7 @@ Questa roadmap e prudente e orientata a una crescita incrementale del progetto.
 - `v0.6`: profile importer
 - `v0.7`: correction engine
 - `v0.8`: GUI shell
-- `v0.9`: report viewer refinement and batch correction
+- `v0.9`: advanced report viewer
 - `v1.0`: first usable release
 
 ## Notes
@@ -20,3 +20,4 @@ Questa roadmap e prudente e orientata a una crescita incrementale del progetto.
 - Da `v0.2` il progetto definisce modelli dati Pydantic serializzabili in JSON per profili e report.
 - Da `v0.3` il progetto salva e carica documenti `.ccal` per profili e report.
 - Il supporto a `.xlsm` restera prudente in tutte le fasi: riconoscimento del formato e dei metadati, senza esecuzione di macro VBA.
+- Dopo `v1.0`, una fase successiva naturale resta l'introduzione di file sintetici per test manuali e batch correction guidata.

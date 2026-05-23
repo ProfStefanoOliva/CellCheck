@@ -11,7 +11,7 @@ from .ui import MainWindow
 
 def main() -> None:
     """Run the minimal CLI entry point."""
-    print(f"CellCheck {__version__} - gui shell initialized")
+    print(f"CellCheck {__version__} - advanced report viewer initialized")
 
 
 def run_gui() -> int:

@@ -112,6 +112,7 @@ class MainWindow(QMainWindow):
                 self.state.max_grade = self.state.current_profile.max_grade
             elif document_type == CcalDocumentType.CORRECTION_REPORT:
                 self.state.current_report = load_report(path)
+                self.state.student_workbook_path = self.state.current_report.student_file
                 self.state.max_grade = self.state.current_report.max_grade
             else:
                 raise ValueError("Tipo documento .ccal non ancora gestito dalla GUI.")
