@@ -6,7 +6,7 @@ CellCheck e un software Python pensato per la correzione guidata e personalizzab
 
 L'obiettivo generale e costruire una base solida per un'applicazione in grado di confrontare modelli di esercizio, valutare celle e formule, applicare criteri configurabili e produrre report dettagliati.
 
-I file `.xlsm` sono trattati in modo prudente: CellCheck puo leggerli come workbook analizzabili, registrare il metadato macro-enabled e ispezionare celle, fogli e colori di riempimento, ma non esegue macro VBA e non introduce automazione COM di Excel.
+I file `.xlsm` sono trattati in modo prudente: CellCheck puo leggerli come workbook analizzabili, registrare il metadato macro-enabled e usarli per importare profili, ma non esegue macro VBA e non introduce automazione COM di Excel.
 
 ## Funzionalita previste
 
@@ -24,13 +24,13 @@ In fasi successive CellCheck dovra:
 
 ## Stato attuale
 
-Stato corrente: `color scanner v0.5.0`.
+Stato corrente: `profile importer v0.6.0`.
 
-La Fase 5 aggiunge uno scanner dei colori di riempimento per workbook `.xlsx` e `.xlsm`, utile a individuare le celle candidate alla correzione futura anche quando sono vuote.
+La Fase 6 aggiunge l'importatore automatico del profilo: modello vuoto + modello risolto + colore scelto = `CorrectionProfile`.
 
-L'utente puo specificare il colore da cercare in forma `#RRGGBB`, `RRGGBB` oppure `AARRGGBB`. In questa fase sono supportati in modo affidabile i colori RGB espliciti letti da `openpyxl`; colori `theme`, `indexed` o simili non vengono ancora convertiti.
+Il flusso usa il colore target per trovare le celle nel modello vuoto, legge le celle corrispondenti nel modello risolto e genera regole raggruppate per foglio. CellCheck non corregge ancora file studente in questa fase.
 
-Le formule non vengono ricalcolate da CellCheck. Lo scanner restituisce solo snapshot di valore e formula gia presenti nel workbook.
+I workbook `.xlsx` e `.xlsm` restano supportati solo in lettura prudente. Le formule non vengono ricalcolate e nessuna macro viene eseguita.
 
 ## Formato `.ccal`
 

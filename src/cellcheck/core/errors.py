@@ -27,3 +27,11 @@ class InvalidColorInputError(CellCheckCoreError):
 
 class ColorScanError(CellCheckCoreError):
     """Raised when a workbook color scan cannot be completed."""
+
+
+class ProfileImportError(CellCheckCoreError):
+    """Raised when automatic profile import cannot be completed."""
+
+
+class WorkbookStructureMismatchError(ProfileImportError):
+    """Raised when workbook structures are incompatible for profile import."""

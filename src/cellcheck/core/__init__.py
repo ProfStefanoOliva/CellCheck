@@ -5,12 +5,15 @@ from .errors import (
     CellReadError,
     ColorScanError,
     InvalidColorInputError,
+    ProfileImportError,
     UnsupportedWorkbookFormatError,
+    WorkbookStructureMismatchError,
     WorkbookReadError,
     WorksheetNotFoundError,
 )
 from .color_scanner import ColorScanner
 from .color_utils import normalize_color_input, parse_color_input
+from .profile_importer import ProfileImporter
 from .workbook_reader import WorkbookReader
 
 __all__ = [
@@ -19,7 +22,10 @@ __all__ = [
     "ColorScanError",
     "ColorScanner",
     "InvalidColorInputError",
+    "ProfileImportError",
+    "ProfileImporter",
     "UnsupportedWorkbookFormatError",
+    "WorkbookStructureMismatchError",
     "WorkbookReadError",
     "WorkbookReader",
     "WorksheetNotFoundError",
