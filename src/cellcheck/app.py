@@ -5,4 +5,4 @@ from . import __version__
 
 def main() -> None:
     """Run the minimal CLI entry point."""
-    print(f"CellCheck {__version__} - profile importer initialized")
+    print(f"CellCheck {__version__} - correction engine initialized")

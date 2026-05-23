@@ -6,7 +6,7 @@ CellCheck e un software Python pensato per la correzione guidata e personalizzab
 
 L'obiettivo generale e costruire una base solida per un'applicazione in grado di confrontare modelli di esercizio, valutare celle e formule, applicare criteri configurabili e produrre report dettagliati.
 
-I file `.xlsm` sono trattati in modo prudente: CellCheck puo leggerli come workbook analizzabili, registrare il metadato macro-enabled e usarli per importare profili, ma non esegue macro VBA e non introduce automazione COM di Excel.
+I file `.xlsm` sono trattati in modo prudente: CellCheck puo leggerli come workbook analizzabili, usarli per importare profili e correggere file studente, ma non esegue macro VBA e non introduce automazione COM di Excel.
 
 ## Funzionalita previste
 
@@ -24,13 +24,13 @@ In fasi successive CellCheck dovra:
 
 ## Stato attuale
 
-Stato corrente: `profile importer v0.6.0`.
+Stato corrente: `correction engine v0.7.0`.
 
-La Fase 6 aggiunge l'importatore automatico del profilo: modello vuoto + modello risolto + colore scelto = `CorrectionProfile`.
+La Fase 7 introduce `CorrectionEngine`: un `CorrectionProfile` puo ora essere applicato a un file studente per produrre un `CorrectionReport`.
 
-Il flusso usa il colore target per trovare le celle nel modello vuoto, legge le celle corrispondenti nel modello risolto e genera regole raggruppate per foglio. CellCheck non corregge ancora file studente in questa fase.
+Il report e un oggetto dati strutturato, non ancora una GUI. In questa fase CellCheck supporta le regole principali, calcola punteggio e voto finale, ma non offre ancora un report viewer visuale.
 
-I workbook `.xlsx` e `.xlsm` restano supportati solo in lettura prudente. Le formule non vengono ricalcolate e nessuna macro viene eseguita.
+I workbook `.xlsx` e `.xlsm` restano supportati solo in lettura prudente. Le formule non vengono ricalcolate, si usa solo l'eventuale valore cache disponibile, e nessuna macro viene eseguita.
 
 ## Formato `.ccal`
 

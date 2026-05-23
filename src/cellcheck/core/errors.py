@@ -35,3 +35,15 @@ class ProfileImportError(CellCheckCoreError):
 
 class WorkbookStructureMismatchError(ProfileImportError):
     """Raised when workbook structures are incompatible for profile import."""
+
+
+class CorrectionEngineError(CellCheckCoreError):
+    """Raised when the correction engine cannot complete its work."""
+
+
+class CorrectionRuleError(CorrectionEngineError):
+    """Raised when an individual correction rule is invalid or inconsistent."""
+
+
+class UnsupportedRuleTypeError(CorrectionEngineError):
+    """Raised when a correction rule type is not yet supported."""

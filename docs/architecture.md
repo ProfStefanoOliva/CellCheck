@@ -5,7 +5,7 @@ CellCheck adotta un'architettura a livelli per mantenere separati il dominio app
 ## Layers
 
 ### `core`
-Contiene la logica applicativa non grafica. In questa fase include `WorkbookReader`, `ColorScanner` e `ProfileImporter`. `ProfileImporter` usa i due componenti precedenti per generare un `CorrectionProfile` a partire da modello vuoto, modello risolto e colore target.
+Contiene la logica applicativa non grafica. In questa fase include `WorkbookReader`, `ColorScanner`, `ProfileImporter`, `CorrectionEngine` e `scoring.py`. `CorrectionEngine` applica le regole di un `CorrectionProfile` a un workbook studente e produce un `CorrectionReport`.
 
 ### `models`
 Rappresenta il livello dei contratti dati dell'applicazione. Contiene modelli Pydantic tipizzati, validati e serializzabili per profili di correzione, report, impostazioni e strutture intermedie usate tra i vari layer.
@@ -33,3 +33,5 @@ Contiene i test automatici del progetto. In questa fase copre l'import del packa
 - `core/color_scanner` serve a individuare celle candidate alla correzione in base al colore di riempimento, ma non genera ancora un `CorrectionProfile`.
 - Per leggere gli stili in modo affidabile, `ColorScanner` apre il workbook in modalita non `read_only`; il file resta comunque solo letto, mai salvato e mai modificato.
 - `core/profile_importer` genera `CorrectionProfile` e relative `CorrectionRule`, ma non corregge ancora file studente e non produce `CorrectionReport`.
+- `core/correction_engine` applica le regole supportate, produce `CellCorrectionResult` e costruisce `CorrectionReport`.
+- `core/scoring.py` calcola `ScoreSummary` e il voto finale senza introdurre dipendenze dalla UI.
