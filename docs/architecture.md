@@ -5,7 +5,7 @@ CellCheck adotta un'architettura a livelli per mantenere separati il dominio app
 ## Layers
 
 ### `core`
-Contiene la logica applicativa non grafica. In questa fase include `WorkbookReader`, responsabile della lettura prudente di workbook `.xlsx` e `.xlsm`, dell'estrazione di metadati e della lettura di snapshot di celle senza modificare i file.
+Contiene la logica applicativa non grafica. In questa fase include `WorkbookReader`, responsabile della lettura prudente di workbook `.xlsx` e `.xlsm`, e `ColorScanner`, che individua celle con uno specifico colore di riempimento senza modificare i file.
 
 ### `models`
 Rappresenta il livello dei contratti dati dell'applicazione. Contiene modelli Pydantic tipizzati, validati e serializzabili per profili di correzione, report, impostazioni e strutture intermedie usate tra i vari layer.
@@ -30,3 +30,5 @@ Contiene i test automatici del progetto. In questa fase copre l'import del packa
 - Il supporto ai workbook `.xlsm` e gestito come metadato e politica prudente: CellCheck riconosce il formato macro-enabled, ma non esegue macro VBA e non usa automazione Excel.
 - Il livello `storage` si occupa solo della persistenza `.ccal`, mentre la lettura di `.xlsx` e `.xlsm` e affidata a `core/workbook_reader`.
 - `core/workbook_reader` legge metadati e snapshot puntuali di celle, ma non corregge esercizi, non ricalcola formule Excel e non salva workbook.
+- `core/color_scanner` serve a individuare celle candidate alla correzione in base al colore di riempimento, ma non genera ancora un `CorrectionProfile`.
+- Per leggere gli stili in modo affidabile, `ColorScanner` apre il workbook in modalita non `read_only`; il file resta comunque solo letto, mai salvato e mai modificato.
