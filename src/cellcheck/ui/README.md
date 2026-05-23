@@ -8,4 +8,5 @@ In questa fase include:
 - pannello sinistro di navigazione progetto;
 - pagine Dashboard, Importazione profilo, Correzione, Report e Impostazioni;
 - stato applicativo in memoria;
+- tema scuro centralizzato in `theme.py`;
 - collegamento iniziale ai servizi core per importazione profilo e correzione.

@@ -67,7 +67,6 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central_widget)
 
         self._connect_signals()
-        self._apply_stylesheet()
         self._refresh_state_views()
 
     def _connect_signals(self) -> None:
@@ -155,69 +154,3 @@ class MainWindow(QMainWindow):
             return
 
         QMessageBox.information(self, "Salva .ccal", "Documento salvato con successo.")
-
-    def _apply_stylesheet(self) -> None:
-        """Apply a lightweight, professional visual style."""
-        self.setStyleSheet(
-            """
-            QMainWindow, QWidget {
-                background: #F5F7FA;
-                color: #2B2B2B;
-                font-size: 13px;
-            }
-            #ribbonBar {
-                background: #FFFFFF;
-                border-bottom: 1px solid #D9E2EC;
-            }
-            #ribbonTitle {
-                color: #1F5E7A;
-                font-size: 18px;
-                font-weight: 600;
-            }
-            QToolButton {
-                background: #EAF1F5;
-                border: 1px solid #D2DDE6;
-                border-radius: 8px;
-                padding: 8px 12px;
-                font-weight: 600;
-            }
-            QToolButton:hover {
-                background: #DDEAF1;
-            }
-            #projectNavigator {
-                background: #FFFFFF;
-                border-right: 1px solid #D9E2EC;
-                padding: 8px;
-            }
-            #pageTitle {
-                color: #1F5E7A;
-                font-size: 22px;
-                font-weight: 700;
-            }
-            #pageSubtitle {
-                color: #4A6272;
-                font-size: 14px;
-            }
-            #warningText {
-                color: #F0A202;
-                font-weight: 600;
-            }
-            QLineEdit, QDoubleSpinBox, QTextEdit, QTableWidget {
-                background: #FFFFFF;
-                border: 1px solid #D2DDE6;
-                border-radius: 6px;
-                padding: 6px;
-            }
-            QPushButton {
-                background: #1F5E7A;
-                color: white;
-                border: none;
-                border-radius: 6px;
-                padding: 8px 14px;
-                font-weight: 600;
-            }
-            QPushButton:hover {
-                background: #18485E;
-            }
-            """
-        )

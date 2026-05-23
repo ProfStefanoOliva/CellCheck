@@ -30,6 +30,8 @@ La Fase 8 introduce una prima GUI PySide6 reale con struttura applicativa chiara
 
 La GUI espone pagine per Dashboard, Importazione profilo, Correzione, Report e Impostazioni. L'importazione profilo e la correzione si collegano ai servizi core gia esistenti senza mescolare la logica applicativa alla UI.
 
+La GUI usa ora un tema scuro proprietario CellCheck, centralizzato e pensato come base riutilizzabile per gli altri software desktop dell'autore.
+
 Il viewer Excel completo non e ancora implementato. I workbook `.xlsx` e `.xlsm` restano supportati solo in lettura prudente, le formule non vengono ricalcolate e nessuna macro viene eseguita.
 
 ## Formato `.ccal`

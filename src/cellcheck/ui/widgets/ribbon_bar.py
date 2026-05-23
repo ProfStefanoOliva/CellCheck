@@ -29,17 +29,23 @@ class RibbonBar(QFrame):
         super().__init__(parent)
         self.setObjectName("ribbonBar")
         self.setFrameShape(QFrame.StyledPanel)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.setMaximumHeight(132)
+        self.setMinimumHeight(112)
 
         outer_layout = QVBoxLayout(self)
-        outer_layout.setContentsMargins(18, 12, 18, 12)
-        outer_layout.setSpacing(8)
+        outer_layout.setContentsMargins(14, 8, 14, 8)
+        outer_layout.setSpacing(5)
 
         title = QLabel("CellCheck Workspace")
         title.setObjectName("ribbonTitle")
-        outer_layout.addWidget(title)
+        title.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        title.setMaximumHeight(22)
+        outer_layout.addWidget(title, 0, Qt.AlignLeft)
 
         button_row = QHBoxLayout()
-        button_row.setSpacing(10)
+        button_row.setSpacing(8)
+        button_row.setContentsMargins(0, 0, 0, 0)
         outer_layout.addLayout(button_row)
 
         buttons = [
@@ -56,7 +62,8 @@ class RibbonBar(QFrame):
             button = QToolButton()
             button.setText(label)
             button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
-            button.setMinimumSize(120, 56)
+            button.setMinimumSize(118, 48)
+            button.setMaximumHeight(52)
             button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
             button.clicked.connect(signal.emit)
             button_row.addWidget(button)
