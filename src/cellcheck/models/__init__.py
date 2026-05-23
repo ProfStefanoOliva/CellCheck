@@ -7,6 +7,7 @@ from .enums import (
     ToleranceMode,
     WorkbookFormat,
 )
+from .color_scan import CellColorMatch, ColorScanResult, ColorScanSummary, ColorTarget
 from .profile import CorrectionProfile, WorksheetProfile
 from .report import CellCorrectionResult, CorrectionReport, ScoreSummary
 from .rule import CorrectionRule
@@ -15,8 +16,12 @@ from .workbook import CellSnapshot, WorkbookInfo, WorksheetInfo
 
 __all__ = [
     "CcalDocumentType",
+    "CellColorMatch",
     "CellSnapshot",
     "CellCorrectionResult",
+    "ColorScanResult",
+    "ColorScanSummary",
+    "ColorTarget",
     "CorrectionProfile",
     "CorrectionReport",
     "CorrectionRule",

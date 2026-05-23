@@ -6,7 +6,7 @@ CellCheck e un software Python pensato per la correzione guidata e personalizzab
 
 L'obiettivo generale e costruire una base solida per un'applicazione in grado di confrontare modelli di esercizio, valutare celle e formule, applicare criteri configurabili e produrre report dettagliati.
 
-I file `.xlsm` sono trattati in modo prudente: CellCheck puo leggerli in sola lettura come workbook analizzabili, registrare il metadato macro-enabled e ispezionare celle e fogli, ma non esegue macro VBA e non introduce automazione COM di Excel.
+I file `.xlsm` sono trattati in modo prudente: CellCheck puo leggerli come workbook analizzabili, registrare il metadato macro-enabled e ispezionare celle, fogli e colori di riempimento, ma non esegue macro VBA e non introduce automazione COM di Excel.
 
 ## Funzionalita previste
 
@@ -24,11 +24,13 @@ In fasi successive CellCheck dovra:
 
 ## Stato attuale
 
-Stato corrente: `workbook reader v0.4.0`.
+Stato corrente: `color scanner v0.5.0`.
 
-La Fase 4 aggiunge una lettura prudente dei workbook `.xlsx` e `.xlsm` tramite `openpyxl`, limitata a metadati, fogli, dimensioni base e snapshot di singole celle.
+La Fase 5 aggiunge uno scanner dei colori di riempimento per workbook `.xlsx` e `.xlsm`, utile a individuare le celle candidate alla correzione futura anche quando sono vuote.
 
-Le formule non vengono ricalcolate da CellCheck. Quando si leggono workbook Excel, eventuali valori formula in modalita `data_only=True` dipendono dal valore cache gia salvato nel file da Excel.
+L'utente puo specificare il colore da cercare in forma `#RRGGBB`, `RRGGBB` oppure `AARRGGBB`. In questa fase sono supportati in modo affidabile i colori RGB espliciti letti da `openpyxl`; colori `theme`, `indexed` o simili non vengono ancora convertiti.
+
+Le formule non vengono ricalcolate da CellCheck. Lo scanner restituisce solo snapshot di valore e formula gia presenti nel workbook.
 
 ## Formato `.ccal`
 

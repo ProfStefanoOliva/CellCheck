@@ -19,3 +19,11 @@ class WorksheetNotFoundError(CellCheckCoreError):
 
 class CellReadError(CellCheckCoreError):
     """Raised when a cell reference cannot be read safely."""
+
+
+class InvalidColorInputError(CellCheckCoreError):
+    """Raised when a user-provided color string is invalid."""
+
+
+class ColorScanError(CellCheckCoreError):
+    """Raised when a workbook color scan cannot be completed."""

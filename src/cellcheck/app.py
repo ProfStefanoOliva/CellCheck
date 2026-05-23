@@ -5,4 +5,4 @@ from . import __version__
 
 def main() -> None:
     """Run the minimal CLI entry point."""
-    print(f"CellCheck {__version__} - workbook reader initialized")
+    print(f"CellCheck {__version__} - color scanner initialized")
