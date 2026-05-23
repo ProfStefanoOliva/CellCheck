@@ -24,13 +24,13 @@ In fasi successive CellCheck dovra:
 
 ## Stato attuale
 
-Stato corrente: `correction engine v0.7.0`.
+Stato corrente: `gui shell v0.8.0`.
 
-La Fase 7 introduce `CorrectionEngine`: un `CorrectionProfile` puo ora essere applicato a un file studente per produrre un `CorrectionReport`.
+La Fase 8 introduce una prima GUI PySide6 reale con struttura applicativa chiara: ribbon semplificata in alto, pannello sinistro di navigazione e area destra dinamica a pagine.
 
-Il report e un oggetto dati strutturato, non ancora una GUI. In questa fase CellCheck supporta le regole principali, calcola punteggio e voto finale, ma non offre ancora un report viewer visuale.
+La GUI espone pagine per Dashboard, Importazione profilo, Correzione, Report e Impostazioni. L'importazione profilo e la correzione si collegano ai servizi core gia esistenti senza mescolare la logica applicativa alla UI.
 
-I workbook `.xlsx` e `.xlsm` restano supportati solo in lettura prudente. Le formule non vengono ricalcolate, si usa solo l'eventuale valore cache disponibile, e nessuna macro viene eseguita.
+Il viewer Excel completo non e ancora implementato. I workbook `.xlsx` e `.xlsm` restano supportati solo in lettura prudente, le formule non vengono ricalcolate e nessuna macro viene eseguita.
 
 ## Formato `.ccal`
 

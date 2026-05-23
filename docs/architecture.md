@@ -14,7 +14,7 @@ Rappresenta il livello dei contratti dati dell'applicazione. Contiene modelli Py
 Gestisce la persistenza dei dati applicativi `.ccal`. In questa fase salva e carica `correction_profile` e `correction_report`, valida estensione e `document_type`, ma non corregge, non calcola punteggi avanzati e non legge file Excel.
 
 ### `ui`
-Ospiterà la futura interfaccia grafica desktop, prevista con PySide6. Il livello UI dovrà dipendere dagli strati inferiori senza inglobare logiche di dominio.
+Ospita la shell desktop PySide6. In questa fase include `MainWindow`, `RibbonBar`, `ProjectNavigator`, `AppState` e le pagine principali (`DashboardPage`, `ProfileImportPage`, `CorrectionPage`, `ReportPage`, `SettingsPage`).
 
 ### `utils`
 Raccoglierà utilità trasversali e helper riusabili, evitando che logiche comuni vengano duplicate nei vari moduli.
@@ -35,3 +35,5 @@ Contiene i test automatici del progetto. In questa fase copre l'import del packa
 - `core/profile_importer` genera `CorrectionProfile` e relative `CorrectionRule`, ma non corregge ancora file studente e non produce `CorrectionReport`.
 - `core/correction_engine` applica le regole supportate, produce `CellCorrectionResult` e costruisce `CorrectionReport`.
 - `core/scoring.py` calcola `ScoreSummary` e il voto finale senza introdurre dipendenze dalla UI.
+- `ui/main_window.py` orchestra la shell GUI con ribbon superiore, pannello sinistro e area centrale a pagine.
+- `ui` dipende dal `core` per importazione profilo e correzione, ma non contiene logiche di dominio proprie.

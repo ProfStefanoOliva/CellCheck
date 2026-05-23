@@ -11,8 +11,8 @@ Questa roadmap e prudente e orientata a una crescita incrementale del progetto.
 - `v0.5`: color scanner
 - `v0.6`: profile importer
 - `v0.7`: correction engine
-- `v0.8`: report viewer
-- `v0.9`: minimal GUI
+- `v0.8`: GUI shell
+- `v0.9`: report viewer refinement and batch correction
 - `v1.0`: first usable release
 
 ## Notes
