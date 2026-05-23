@@ -14,3 +14,8 @@ Questa roadmap e prudente e orientata a una crescita incrementale del progetto.
 - `v0.8`: minimal GUI
 - `v0.9`: report viewer
 - `v1.0`: first usable release
+
+## Notes
+
+- Da `v0.2` il progetto definisce modelli dati Pydantic serializzabili in JSON per profili e report.
+- Il supporto a `.xlsm` restera prudente in tutte le fasi: riconoscimento del formato e dei metadati, senza esecuzione di macro VBA.

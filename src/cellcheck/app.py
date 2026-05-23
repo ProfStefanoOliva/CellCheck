@@ -1,8 +1,8 @@
-"""Application entry point for the CellCheck project skeleton."""
+"""Application entry point for CellCheck."""
 
 from . import __version__
 
 
 def main() -> None:
     """Run the minimal CLI entry point."""
-    print(f"CellCheck {__version__} - project skeleton initialized")
+    print(f"CellCheck {__version__} - data models initialized")
