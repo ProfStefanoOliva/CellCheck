@@ -24,14 +24,14 @@ In fasi successive CellCheck dovra:
 
 ## Stato attuale
 
-Stato corrente: `data models v0.2.0`.
+Stato corrente: `ccal storage v0.3.0`.
 
-Questa fase predispone la struttura del progetto, il package Python, la documentazione di base e i modelli dati Pydantic principali per profili, regole e report.
+La Fase 3 aggiunge il livello storage per salvare e caricare documenti `.ccal` relativi a profili di correzione e report, mantenendo il contenuto come JSON leggibile.
 
 ## Formato `.ccal`
 
 L'estensione `.ccal` significa `CellCheck Assessment Language`.
 
-I file `.ccal` saranno file JSON leggibili e modificabili internamente, ma con un'estensione personalizzata per dare identita al formato nativo del software.
+I file `.ccal` sono file JSON leggibili e modificabili internamente, ma con un'estensione personalizzata obbligatoria per dare identita al formato nativo del software.
 
-I modelli dati sono gia predisposti per essere serializzabili in JSON, mentre il salvataggio e caricamento completo su file `.ccal` verra introdotto in una fase successiva.
+CellCheck puo ora salvare e caricare documenti `.ccal` per `correction_profile` e `correction_report`.

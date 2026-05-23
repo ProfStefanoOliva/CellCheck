@@ -20,7 +20,7 @@ class CorrectionProfile(BaseModel):
     format_version: str = "1.0"
     document_type: CcalDocumentType = CcalDocumentType.CORRECTION_PROFILE
     software_name: str = "CellCheck"
-    minimum_cellcheck_version: str = "0.2.0"
+    minimum_cellcheck_version: str = "0.3.0"
     exercise_name: str
     max_grade: float = Field(gt=0)
     source_empty_workbook: str | None = None
