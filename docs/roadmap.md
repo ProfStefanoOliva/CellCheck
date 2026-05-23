@@ -18,4 +18,5 @@ Questa roadmap e prudente e orientata a una crescita incrementale del progetto.
 ## Notes
 
 - Da `v0.2` il progetto definisce modelli dati Pydantic serializzabili in JSON per profili e report.
+- Da `v0.3` il progetto salva e carica documenti `.ccal` per profili e report.
 - Il supporto a `.xlsm` restera prudente in tutte le fasi: riconoscimento del formato e dei metadati, senza esecuzione di macro VBA.

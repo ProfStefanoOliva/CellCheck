@@ -2,7 +2,7 @@
 
 L'estensione `.ccal` e il formato interno di CellCheck.
 
-In questa fase il progetto non implementa ancora il parser completo, ma la direzione architetturale e gia definita: un file `.ccal` e un contenitore JSON leggibile, modificabile e ispezionabile anche esternamente.
+In questa fase il progetto implementa la persistenza di `correction_profile` e `correction_report`: un file `.ccal` e un contenitore JSON leggibile, modificabile e ispezionabile anche esternamente.
 
 ## Goals
 
@@ -13,7 +13,7 @@ In questa fase il progetto non implementa ancora il parser completo, ma la direz
 
 ## Planned Structure
 
-Ogni file `.ccal` dovra includere un campo futuro `document_type` per distinguere il contenuto. Esempi previsti:
+Ogni file `.ccal` deve usare l'estensione `.ccal` e includere un campo `document_type` per distinguere il contenuto. Esempi previsti:
 
 - `correction_profile`
 - `correction_report`
@@ -42,7 +42,7 @@ Per i file `.xlsm`:
   "document_type": "correction_profile",
   "format_version": "1.0",
   "software_name": "CellCheck",
-  "minimum_cellcheck_version": "0.2.0",
+  "minimum_cellcheck_version": "0.3.0",
   "exercise_name": "Budget Exercise",
   "max_grade": 30.0,
   "source_empty_workbook": "exercise.xlsx",
@@ -61,7 +61,7 @@ Per i file `.xlsm`:
   "document_type": "correction_report",
   "format_version": "1.0",
   "software_name": "CellCheck",
-  "minimum_cellcheck_version": "0.2.0",
+  "minimum_cellcheck_version": "0.3.0",
   "profile_name": "Budget Exercise",
   "student_file": "student.xlsx",
   "student_workbook_format": "xlsx",
@@ -87,4 +87,5 @@ Per i file `.xlsm`:
 
 - L'estensione personalizzata serve come identita applicativa.
 - Il contenuto JSON resta leggibile internamente.
-- La validazione formale del contenuto verra introdotta in fasi successive.
+- Il campo `document_type` distingue in modo esplicito `correction_profile` e `correction_report`.
+- La persistenza attuale copre solo `correction_profile` e `correction_report`.
