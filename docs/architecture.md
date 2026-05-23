@@ -5,7 +5,7 @@ CellCheck adotta un'architettura a livelli per mantenere separati il dominio app
 ## Layers
 
 ### `core`
-Contiene in futuro il motore applicativo principale: orchestrazione della correzione, regole di valutazione, gestione dei pesi, calcolo del punteggio e coordinamento dei flussi principali.
+Contiene la logica applicativa non grafica. In questa fase include `WorkbookReader`, responsabile della lettura prudente di workbook `.xlsx` e `.xlsm`, dell'estrazione di metadati e della lettura di snapshot di celle senza modificare i file.
 
 ### `models`
 Rappresenta il livello dei contratti dati dell'applicazione. Contiene modelli Pydantic tipizzati, validati e serializzabili per profili di correzione, report, impostazioni e strutture intermedie usate tra i vari layer.
@@ -28,4 +28,5 @@ Contiene i test automatici del progetto. In questa fase copre l'import del packa
 - Il package Python si chiama `cellcheck`, mentre il nome applicativo umano resta `CellCheck`.
 - L'estensione `.ccal` identifica il formato interno del progetto, mantenendo pero contenuto JSON leggibile e modificabile.
 - Il supporto ai workbook `.xlsm` e gestito come metadato e politica prudente: CellCheck riconosce il formato macro-enabled, ma non esegue macro VBA e non usa automazione Excel.
-- Il livello `storage` si occupa solo della persistenza `.ccal`; la lettura di `.xlsx` e `.xlsm` resta fuori da questa fase.
+- Il livello `storage` si occupa solo della persistenza `.ccal`, mentre la lettura di `.xlsx` e `.xlsm` e affidata a `core/workbook_reader`.
+- `core/workbook_reader` legge metadati e snapshot puntuali di celle, ma non corregge esercizi, non ricalcola formule Excel e non salva workbook.

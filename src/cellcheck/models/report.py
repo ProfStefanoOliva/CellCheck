@@ -66,7 +66,7 @@ class CorrectionReport(BaseModel):
     format_version: str = "1.0"
     document_type: CcalDocumentType = CcalDocumentType.CORRECTION_REPORT
     software_name: str = "CellCheck"
-    minimum_cellcheck_version: str = "0.3.0"
+    minimum_cellcheck_version: str = "0.4.0"
     profile_name: str | None = None
     student_file: str
     student_workbook_format: WorkbookFormat | None = None
