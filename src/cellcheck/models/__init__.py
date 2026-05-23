@@ -8,6 +8,7 @@ from .enums import (
     WorkbookFormat,
 )
 from .color_scan import CellColorMatch, ColorScanResult, ColorScanSummary, ColorTarget
+from .importer import ProfileImportOptions, ProfileImportResult, ProfileImportSummary
 from .profile import CorrectionProfile, WorksheetProfile
 from .report import CellCorrectionResult, CorrectionReport, ScoreSummary
 from .rule import CorrectionRule
@@ -25,6 +26,9 @@ __all__ = [
     "CorrectionProfile",
     "CorrectionReport",
     "CorrectionRule",
+    "ProfileImportOptions",
+    "ProfileImportResult",
+    "ProfileImportSummary",
     "ResultStatus",
     "RuleType",
     "ScoreSummary",

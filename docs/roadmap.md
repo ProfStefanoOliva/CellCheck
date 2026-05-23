@@ -9,7 +9,7 @@ Questa roadmap e prudente e orientata a una crescita incrementale del progetto.
 - `v0.3`: `.ccal` serialization
 - `v0.4`: workbook reader
 - `v0.5`: color scanner
-- `v0.6`: profile importer from empty template and solved template
+- `v0.6`: profile importer
 - `v0.7`: correction engine
 - `v0.8`: scoring
 - `v0.9`: minimal GUI
