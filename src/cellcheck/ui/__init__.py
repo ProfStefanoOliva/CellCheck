@@ -1,1 +1,6 @@
-"""User interface layer for CellCheck."""
+"""Public UI exports for CellCheck."""
+
+from .app_state import AppState
+from .main_window import MainWindow
+
+__all__ = ["AppState", "MainWindow"]
