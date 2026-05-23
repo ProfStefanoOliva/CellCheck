@@ -24,15 +24,17 @@ In fasi successive CellCheck dovra:
 
 ## Stato attuale
 
-Stato corrente: `advanced report viewer v0.9.0`.
+Stato corrente: `manual test workbook generator v0.10.0`.
 
-La Fase 9 introduce un viewer report piu evoluto dentro la GUI PySide6: riepilogo completo del voto, tabella filtrabile, pannello dettagli e commenti docente modificabili.
+La Fase 10 introduce uno script per generare workbook Excel sintetici destinati ai test manuali di CellCheck, senza usare file reali di studenti.
 
-Il report resta un `CorrectionReport` salvabile come `.ccal`. La vista Report permette filtri per stato, ricerca testuale, ispezione cella per cella e aggiornamento del commento docente nello stato applicativo, senza ricalcolare il voto e senza toccare i workbook Excel.
+Lo script crea dataset locali ripetibili per provare importazione profili, correzione e viewer report con casi misti su formule, numeri, testi, celle vuote e revisione manuale.
+
+I workbook generati vengono scritti in `manual_tests/generated/`, che non deve essere committata. La documentazione operativa e disponibile in `manual_tests/README.md`.
 
 La GUI usa ora un tema scuro proprietario CellCheck, centralizzato e pensato come base riutilizzabile per gli altri software desktop dell'autore.
 
-Il viewer Excel completo non e ancora implementato. I workbook `.xlsx` e `.xlsm` restano supportati solo in lettura prudente, le formule non vengono ricalcolate, i file Excel non vengono modificati e nessuna macro viene eseguita.
+Il viewer Excel completo non e ancora implementato. I workbook `.xlsx` e `.xlsm` restano supportati solo in lettura prudente, le formule non vengono ricalcolate, i file Excel non vengono modificati e nessuna macro viene eseguita. I file `.xlsm` sintetici generati in questa fase sono contenitori strutturali utili per testare il formato macro-enabled, ma non contengono macro VBA reali.
 
 ## Formato `.ccal`
 
