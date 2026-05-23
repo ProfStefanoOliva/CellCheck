@@ -31,6 +31,7 @@ Per i file `.xlsm`:
 - le macro VBA non vengono eseguite;
 - le macro non vengono modificate;
 - non viene introdotta automazione COM di Excel.
+- i campi `workbook_format` e `macro_enabled` restano parte dei metadati persistiti nei profili e nei report.
 
 ## Minimal Examples
 
@@ -42,7 +43,7 @@ Per i file `.xlsm`:
   "document_type": "correction_profile",
   "format_version": "1.0",
   "software_name": "CellCheck",
-  "minimum_cellcheck_version": "0.3.0",
+  "minimum_cellcheck_version": "0.4.0",
   "exercise_name": "Budget Exercise",
   "max_grade": 30.0,
   "source_empty_workbook": "exercise.xlsx",
@@ -61,7 +62,7 @@ Per i file `.xlsm`:
   "document_type": "correction_report",
   "format_version": "1.0",
   "software_name": "CellCheck",
-  "minimum_cellcheck_version": "0.3.0",
+  "minimum_cellcheck_version": "0.4.0",
   "profile_name": "Budget Exercise",
   "student_file": "student.xlsx",
   "student_workbook_format": "xlsx",

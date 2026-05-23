@@ -7,12 +7,12 @@ Questa roadmap e prudente e orientata a una crescita incrementale del progetto.
 - `v0.1`: project skeleton
 - `v0.2`: data models
 - `v0.3`: `.ccal` serialization
-- `v0.4`: Excel color scanner
-- `v0.5`: profile importer
-- `v0.6`: correction engine
-- `v0.7`: scoring
-- `v0.8`: minimal GUI
-- `v0.9`: report viewer
+- `v0.4`: workbook reader
+- `v0.5`: Excel color scanner
+- `v0.6`: profile importer
+- `v0.7`: correction engine
+- `v0.8`: scoring
+- `v0.9`: minimal GUI
 - `v1.0`: first usable release
 
 ## Notes

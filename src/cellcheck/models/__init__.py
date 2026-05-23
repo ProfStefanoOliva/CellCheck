@@ -11,9 +11,11 @@ from .profile import CorrectionProfile, WorksheetProfile
 from .report import CellCorrectionResult, CorrectionReport, ScoreSummary
 from .rule import CorrectionRule
 from .tolerance import ToleranceConfig
+from .workbook import CellSnapshot, WorkbookInfo, WorksheetInfo
 
 __all__ = [
     "CcalDocumentType",
+    "CellSnapshot",
     "CellCorrectionResult",
     "CorrectionProfile",
     "CorrectionReport",
@@ -23,6 +25,8 @@ __all__ = [
     "ScoreSummary",
     "ToleranceConfig",
     "ToleranceMode",
+    "WorkbookInfo",
     "WorkbookFormat",
+    "WorksheetInfo",
     "WorksheetProfile",
 ]
