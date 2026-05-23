@@ -24,15 +24,15 @@ In fasi successive CellCheck dovra:
 
 ## Stato attuale
 
-Stato corrente: `gui shell v0.8.0`.
+Stato corrente: `advanced report viewer v0.9.0`.
 
-La Fase 8 introduce una prima GUI PySide6 reale con struttura applicativa chiara: ribbon semplificata in alto, pannello sinistro di navigazione e area destra dinamica a pagine.
+La Fase 9 introduce un viewer report piu evoluto dentro la GUI PySide6: riepilogo completo del voto, tabella filtrabile, pannello dettagli e commenti docente modificabili.
 
-La GUI espone pagine per Dashboard, Importazione profilo, Correzione, Report e Impostazioni. L'importazione profilo e la correzione si collegano ai servizi core gia esistenti senza mescolare la logica applicativa alla UI.
+Il report resta un `CorrectionReport` salvabile come `.ccal`. La vista Report permette filtri per stato, ricerca testuale, ispezione cella per cella e aggiornamento del commento docente nello stato applicativo, senza ricalcolare il voto e senza toccare i workbook Excel.
 
 La GUI usa ora un tema scuro proprietario CellCheck, centralizzato e pensato come base riutilizzabile per gli altri software desktop dell'autore.
 
-Il viewer Excel completo non e ancora implementato. I workbook `.xlsx` e `.xlsm` restano supportati solo in lettura prudente, le formule non vengono ricalcolate e nessuna macro viene eseguita.
+Il viewer Excel completo non e ancora implementato. I workbook `.xlsx` e `.xlsm` restano supportati solo in lettura prudente, le formule non vengono ricalcolate, i file Excel non vengono modificati e nessuna macro viene eseguita.
 
 ## Formato `.ccal`
 

@@ -37,4 +37,7 @@ Contiene i test automatici del progetto. In questa fase copre l'import del packa
 - `core/scoring.py` calcola `ScoreSummary` e il voto finale senza introdurre dipendenze dalla UI.
 - `ui/main_window.py` orchestra la shell GUI con ribbon superiore, pannello sinistro e area centrale a pagine.
 - `ui/theme.py` centralizza palette, font e stylesheet del tema scuro proprietario CellCheck.
+- `ui/pages/report_page.py` orchestra il viewer avanzato del report usando widget dedicati per summary, filtri, tabella e dettagli.
+- `ui/widgets/report_summary_widget.py`, `report_filter_bar.py`, `report_table.py` e `report_details_panel.py` separano chiaramente presentazione, filtri, selezione e annotazioni del report.
+- Il viewer usa `CorrectionReport` e `AppState`, aggiorna solo il `teacher_comment` dei risultati selezionati, non ricalcola il voto e non modifica i workbook Excel.
 - `ui` dipende dal `core` per importazione profilo e correzione, ma non contiene logiche di dominio proprie.
