@@ -1,5 +1,6 @@
 __pycache__/
 *.pyc
+.Python
 .venv/
 venv/
 .env
@@ -9,6 +10,8 @@ venv/
 dist/
 build/
 *.egg-info/
+.coverage
+htmlcov/
 .vscode/
 .idea/
 
