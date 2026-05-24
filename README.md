@@ -24,9 +24,11 @@ In fasi successive CellCheck dovra:
 
 ## Stato attuale
 
-Stato corrente: `profile editor foundation v0.18.0`.
+Stato corrente: `profile editor validation and advanced rule fields v0.19.0`.
 
-La Fase 18 introduce la base dell'editor profili: pagina `Profilo`, generazione dai workbook, importazione e salvataggio `.ccal`, tabella delle regole, piu aggiunta, modifica ed eliminazione manuale delle regole del profilo corrente.
+La Fase 19 rende piu robusto l'editor profili: validazione delle regole, dialog scrollabile, conferma su nuovo profilo, distinzione piu chiara tra tolleranza numerica, formula esatta, formula normalizzata e `manual_review`, con maggiore coerenza tra profilo, importer e motore di correzione.
+
+Nella pagina `Profilo`, il campo `Peso` indica il valore relativo della regola, non necessariamente un voto diretto. La colonna `Quota voto` mostra invece quanto vale ogni regola sulla scala finale del profilo, calcolata come `(peso regola / somma pesi) × punteggio massimo`.
 
 Il flusso guidato della GUI segue ora questo ordine: modello vuoto -> modello risolto -> profilo di correzione -> elaborato studente -> correzione -> report.
 

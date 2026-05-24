@@ -190,13 +190,66 @@ def test_manual_review_status(tmp_path: Path) -> None:
     assert get_result(report, "r1").status == ResultStatus.MANUAL_REVIEW
 
 
-def test_formula_normalized_not_implemented(tmp_path: Path) -> None:
+def test_formula_normalized_passed_with_absolute_reference_difference(tmp_path: Path) -> None:
     student_path = create_student_workbook(tmp_path / "student")
+    workbook = load_workbook(student_path)
+    try:
+        workbook["Sheet1"]["A1"] = "=A1+B1"
+        workbook.save(student_path)
+    finally:
+        workbook.close()
+
     profile = build_profile(
-        [build_rule(rule_id="r1", cell="A1", rule_type=RuleType.FORMULA_NORMALIZED, expected_formula="=SUM(1,2)")]
+        [
+            build_rule(
+                rule_id="r1",
+                cell="A1",
+                rule_type=RuleType.FORMULA_NORMALIZED,
+                expected_formula="=$A$1+$B$1",
+            )
+        ]
     )
     report = CorrectionEngine().correct_workbook(profile, student_path)
-    assert get_result(report, "r1").status == ResultStatus.WARNING
+    assert get_result(report, "r1").status == ResultStatus.PASSED
+
+
+def test_formula_exact_failed_with_absolute_reference_difference(tmp_path: Path) -> None:
+    student_path = create_student_workbook(tmp_path / "student")
+    workbook = load_workbook(student_path)
+    try:
+        workbook["Sheet1"]["A1"] = "=A1+B1"
+        workbook.save(student_path)
+    finally:
+        workbook.close()
+
+    profile = build_profile(
+        [
+            build_rule(
+                rule_id="r1",
+                cell="A1",
+                rule_type=RuleType.FORMULA_EXACT,
+                expected_formula="=$A$1+$B$1",
+            )
+        ]
+    )
+    report = CorrectionEngine().correct_workbook(profile, student_path)
+    assert get_result(report, "r1").status == ResultStatus.FAILED
+
+
+def test_manual_review_formula_rule_stays_manual_review(tmp_path: Path) -> None:
+    student_path = create_student_workbook(tmp_path / "student")
+    profile = build_profile(
+        [
+            build_rule(
+                rule_id="r1",
+                cell="A1",
+                rule_type=RuleType.MANUAL_REVIEW,
+                expected_formula="=$A$1+$B$1",
+            )
+        ]
+    )
+    report = CorrectionEngine().correct_workbook(profile, student_path)
+    assert get_result(report, "r1").status == ResultStatus.MANUAL_REVIEW
 
 
 def test_missing_sheet_produces_error_result(tmp_path: Path) -> None:
