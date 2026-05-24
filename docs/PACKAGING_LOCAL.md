@@ -46,6 +46,8 @@ Suggested local command:
 pyinstaller cellcheck.spec --noconfirm
 ```
 
+After a successful local smoke build, follow the full validation flow in [docs/RELEASE_CANDIDATE_CHECKLIST.md](C:/Users/oliva/Documents/LavoriAI/CellCheck/docs/RELEASE_CANDIDATE_CHECKLIST.md) before considering any broader distribution.
+
 ## Pre-release Checks Still Required
 
 Before any public distribution, verify at least:

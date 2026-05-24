@@ -25,11 +25,11 @@ In fasi successive CellCheck dovra:
 
 ## Stato attuale
 
-Stato corrente: `Plain text correction report export v0.23.0`.
+Stato corrente: `Release candidate checklist and clean distribution validation v0.24.0`.
 
-La Fase 23 aggiunge un export testuale leggibile del report di correzione: il file `.ccreport` resta il formato strutturato JSON, mentre l'export `.txt` produce un riepilogo didattico UTF-8 con intestazione, punteggio totale, celle verificate, criterio di valutazione e dettaglio cella per cella basato solo sui dati realmente presenti nel report.
+La Fase 24 consolida la readiness pre-release: checklist documentata per validare una futura distribuzione binaria, riferimento esplicito ai controlli su bundle, governance, macchina pulita, checksum SHA256 e verifiche manuali della GUI. Il packaging resta comunque sperimentale e non ancora una release pubblica ufficiale.
 
-Le note operative per il packaging locale sono raccolte in [docs/PACKAGING_LOCAL.md](C:/Users/oliva/Documents/LavoriAI/CellCheck/docs/PACKAGING_LOCAL.md).
+Le note operative per il packaging locale sono raccolte in [docs/PACKAGING_LOCAL.md](C:/Users/oliva/Documents/LavoriAI/CellCheck/docs/PACKAGING_LOCAL.md), mentre la checklist completa di validazione e distribuzione prudente e disponibile in [docs/RELEASE_CANDIDATE_CHECKLIST.md](C:/Users/oliva/Documents/LavoriAI/CellCheck/docs/RELEASE_CANDIDATE_CHECKLIST.md).
 
 Nella pagina `Profilo`, il campo `Peso` indica il valore relativo della regola, non necessariamente un voto diretto. La colonna `Quota voto` mostra invece quanto vale ogni regola sulla scala finale del profilo, calcolata come `(peso regola / somma pesi) × punteggio massimo`.
 
