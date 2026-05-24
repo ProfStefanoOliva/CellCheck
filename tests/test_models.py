@@ -166,3 +166,38 @@ def test_correction_report_json_roundtrip() -> None:
     payload = report.to_json_string()
     restored = CorrectionReport.from_json_string(payload)
     assert restored == report
+
+
+def test_correction_report_json_roundtrip_preserves_teacher_comment_and_malus() -> None:
+    report = build_report().model_copy(
+        update={
+            "summary": ScoreSummary(
+                total_rules=1,
+                passed=0,
+                failed=0,
+                warnings=1,
+                manual_review=0,
+                skipped=0,
+                errors=0,
+                total_weight=2.0,
+                awarded_weight=-0.5,
+                final_grade=-7.5,
+            ),
+            "results": [
+                build_report().results[0].model_copy(
+                    update={
+                        "score_awarded": -0.5,
+                        "status": ResultStatus.WARNING,
+                        "message": "Revisione manuale docente: applicato malus, punteggio finale -0.5.",
+                        "teacher_comment": "Verificato manualmente: applicato malus.",
+                    }
+                )
+            ],
+        }
+    )
+    payload = report.to_json_string()
+    restored = CorrectionReport.from_json_string(payload)
+    assert restored.results[0].score_awarded == -0.5
+    assert restored.results[0].teacher_comment == "Verificato manualmente: applicato malus."
+    assert restored.summary.awarded_weight == -0.5
+    assert restored.summary.final_grade == -7.5

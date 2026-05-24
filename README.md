@@ -20,13 +20,15 @@ In fasi successive CellCheck dovra:
 - assegnare pesi a celle o quesiti;
 - calcolare un voto massimo configurabile;
 - generare report dettagliati cella per cella;
-- salvare profili e report in file con estensione `.ccal`.
+- salvare i profili in file `.ccal` e i report in file `.ccreport`.
 
 ## Stato attuale
 
-Stato corrente: `guided workflow validation and report handoff v0.15.0`.
+Stato corrente: `report persistence and export workflow v0.16.0`.
 
-La Fase 15 rende piu robusto il flusso guidato di correzione: validazione degli input, stati testuali dei passaggi, handoff piu chiaro del report alla ReportPage e accesso prudente al salvataggio del report `.ccal`.
+La Fase 16 consolida il ciclo di vita del report: salvataggio e caricamento del `correction_report` in formato `.ccreport`, persistenza delle revisioni manuali del docente e primo export CSV semplice per consultazione.
+
+Il flusso guidato della GUI segue ora questo ordine: modello vuoto -> modello risolto -> profilo di correzione -> elaborato studente -> correzione -> report.
 
 La GUI continua a usare il tema scuro centralizzato e ora puo caricare in modo prudente l'icona `.ico` del software se il file e presente nella cartella branding.
 
@@ -38,11 +40,18 @@ Il viewer Excel completo non e ancora implementato. I workbook `.xlsx` e `.xlsm`
 
 ## Formato `.ccal`
 
-L'estensione `.ccal` significa `CellCheck Assessment Language`.
+L'estensione `.ccal` significa `CellCheck Assessment Language` ed e riservata ai profili di correzione.
 
-I file `.ccal` sono file JSON leggibili e modificabili internamente, ma con un'estensione personalizzata obbligatoria per dare identita al formato nativo del software.
+L'estensione `.ccreport` identifica invece i report di correzione CellCheck.
 
-CellCheck puo ora salvare e caricare documenti `.ccal` per `correction_profile` e `correction_report`.
+I file `.ccal` e `.ccreport` restano file JSON leggibili e modificabili internamente, ma con estensioni distinte per aiutare il docente a riconoscere subito se sta lavorando con un profilo o con un report.
+
+CellCheck salva e carica:
+
+- profili di correzione come `.ccal`
+- report di correzione come `.ccreport`
+
+Per compatibilita prudente, i vecchi report `.ccal` possono ancora essere caricati se il `document_type` interno e davvero `correction_report`. Il software controlla comunque il contenuto del file per evitare caricamenti errati.
 
 ## Branding Assets
 

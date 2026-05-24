@@ -16,6 +16,8 @@ class AppState:
     student_workbook_path: str | None = None
     current_profile: CorrectionProfile | None = None
     current_report: CorrectionReport | None = None
+    current_report_path: str | None = None
+    report_dirty: bool = False
     target_color: str = "#D9D9D9"
     exercise_name: str = ""
     max_grade: float = 100.0

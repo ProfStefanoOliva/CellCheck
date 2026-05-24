@@ -7,6 +7,7 @@ from .ccal_store import (
     save_profile,
     save_report,
     validate_ccal_path,
+    validate_report_path,
 )
 from .errors import (
     CcalDocumentTypeError,
@@ -28,4 +29,5 @@ __all__ = [
     "save_profile",
     "save_report",
     "validate_ccal_path",
+    "validate_report_path",
 ]

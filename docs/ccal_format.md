@@ -1,8 +1,9 @@
-# `.ccal` Format
+# `.ccal` and `.ccreport` Formats
 
-L'estensione `.ccal` e il formato interno di CellCheck.
+L'estensione `.ccal` e riservata ai profili di correzione CellCheck.
+L'estensione `.ccreport` e riservata ai report di correzione CellCheck.
 
-In questa fase il progetto implementa la persistenza di `correction_profile` e `correction_report`: un file `.ccal` e un contenitore JSON leggibile, modificabile e ispezionabile anche esternamente.
+In questa fase il progetto implementa la persistenza di `correction_profile` e `correction_report`: entrambi restano contenitori JSON leggibili, modificabili e ispezionabili anche esternamente.
 
 ## Goals
 
@@ -13,10 +14,10 @@ In questa fase il progetto implementa la persistenza di `correction_profile` e `
 
 ## Planned Structure
 
-Ogni file `.ccal` deve usare l'estensione `.ccal` e includere un campo `document_type` per distinguere il contenuto. Esempi previsti:
+Ogni file CellCheck deve usare un'estensione coerente e includere un campo `document_type` per distinguere il contenuto. Esempi previsti:
 
-- `correction_profile`
-- `correction_report`
+- `correction_profile` -> `.ccal`
+- `correction_report` -> `.ccreport`
 - `batch_report`
 - `application_settings`
 
@@ -54,6 +55,8 @@ Per i file `.xlsm`:
 }
 ```
 
+Estensione consigliata: `.ccal`
+
 ### `correction_report`
 
 ```json
@@ -84,9 +87,13 @@ Per i file `.xlsm`:
 }
 ```
 
+Estensione consigliata: `.ccreport`
+
 ## Notes
 
-- L'estensione personalizzata serve come identita applicativa.
+- Le estensioni personalizzate aiutano a distinguere subito profili e report.
 - Il contenuto JSON resta leggibile internamente.
 - Il campo `document_type` distingue in modo esplicito `correction_profile` e `correction_report`.
+- Il software continua a controllare anche il `document_type` interno: l'estensione da sola non e considerata sufficiente.
+- Per compatibilita legacy, un vecchio report `.ccal` puo ancora essere letto se il contenuto dichiara `document_type = correction_report`.
 - La persistenza attuale copre solo `correction_profile` e `correction_report`.

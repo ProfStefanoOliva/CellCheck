@@ -171,6 +171,8 @@ class ProfileImportPage(QWidget):
         self.state.max_grade = self.max_grade_spin.value()
         self.state.current_profile = result.profile
         self.state.current_report = None
+        self.state.current_report_path = None
+        self.state.report_dirty = False
         self.summary_text.setPlainText(
             f"Profilo generato con successo.\n"
             f"Regole generate: {result.summary.generated_rules_count}\n"
