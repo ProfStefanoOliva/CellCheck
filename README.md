@@ -24,13 +24,13 @@ In fasi successive CellCheck dovra:
 
 ## Stato attuale
 
-Stato corrente: `manual test workbook generator v0.10.0`.
+Stato corrente: `branding assets integration v0.11.0`.
 
-La Fase 10 introduce uno script per generare workbook Excel sintetici destinati ai test manuali di CellCheck, senza usare file reali di studenti.
+La Fase 11 integra gli asset grafici del progetto e predispone l'icona applicativa nella GUI PySide6, mantenendo invariata la struttura funzionale della shell desktop.
 
-Lo script crea dataset locali ripetibili per provare importazione profili, correzione e viewer report con casi misti su formule, numeri, testi, celle vuote e revisione manuale.
+La GUI continua a usare il tema scuro centralizzato e ora puo caricare in modo prudente l'icona `.ico` del software se il file e presente nella cartella branding.
 
-I workbook generati vengono scritti in `manual_tests/generated/`, che non deve essere committata. La documentazione operativa e disponibile in `manual_tests/README.md`.
+Restano disponibili anche i workbook sintetici generati localmente per i test manuali. I file prodotti vengono scritti in `manual_tests/generated/`, che non deve essere committata. La documentazione operativa e disponibile in `manual_tests/README.md`.
 
 La GUI usa ora un tema scuro proprietario CellCheck, centralizzato e pensato come base riutilizzabile per gli altri software desktop dell'autore.
 
@@ -43,3 +43,13 @@ L'estensione `.ccal` significa `CellCheck Assessment Language`.
 I file `.ccal` sono file JSON leggibili e modificabili internamente, ma con un'estensione personalizzata obbligatoria per dare identita al formato nativo del software.
 
 CellCheck puo ora salvare e caricare documenti `.ccal` per `correction_profile` e `correction_report`.
+
+## Branding Assets
+
+Gli asset grafici del progetto si trovano in [assets/branding](C:/Users/oliva/Documents/LavoriAI/CellCheck/assets/branding):
+
+- `cellcheck_logo_square.png`
+- `cellcheck_logo_horizontal.png`
+- `cellcheck_icon.ico`
+
+Questi file sono usati per il branding del software e per predisporre l'icona applicativa della GUI. Il packaging dell'eseguibile e la distribuzione binaria saranno gestiti in una fase successiva.
