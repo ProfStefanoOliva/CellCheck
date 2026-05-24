@@ -102,6 +102,29 @@ class ReportTable(QTableWidget):
         if item is not None:
             item.setText(comment)
 
+    def update_result_row(self, result_index: int, result: CellCorrectionResult) -> None:
+        """Refresh the visible row values for one updated result."""
+        visible_row = self.visible_row_for_result_index(result_index)
+        if visible_row is None:
+            return
+
+        status_item = self.item(visible_row, 2)
+        if status_item is not None:
+            status_item.setText(result.status.value)
+            status_item.setForeground(self._status_color(result.status))
+
+        score_item = self.item(visible_row, 3)
+        if score_item is not None:
+            score_item.setText(str(result.score_awarded))
+
+        message_item = self.item(visible_row, 6)
+        if message_item is not None:
+            message_item.setText(result.message)
+
+        comment_item = self.item(visible_row, 7)
+        if comment_item is not None:
+            comment_item.setText(result.teacher_comment)
+
     def visible_row_for_result_index(self, result_index: int) -> int | None:
         """Return the visible table row for a report result index."""
         try:

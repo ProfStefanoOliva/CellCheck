@@ -50,6 +50,7 @@ class MainWindow(QMainWindow):
             self.state,
             self._refresh_state_views,
             lambda: self.stack.setCurrentWidget(self.report_page),
+            self._save_ccal_document,
         )
         self.report_page = ReportPage(self.state)
         self.settings_page = SettingsPage()
