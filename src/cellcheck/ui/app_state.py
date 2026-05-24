@@ -15,6 +15,9 @@ class AppState:
     solution_workbook_path: str | None = None
     student_workbook_path: str | None = None
     current_profile: CorrectionProfile | None = None
+    current_profile_path: str | None = None
+    profile_dirty: bool = False
+    profile_status: str = "none"
     current_report: CorrectionReport | None = None
     current_report_path: str | None = None
     report_dirty: bool = False

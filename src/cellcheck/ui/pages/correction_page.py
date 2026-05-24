@@ -23,9 +23,13 @@ from PySide6.QtWidgets import (
 
 from cellcheck.core import CorrectionEngine, ProfileImporter
 from cellcheck.models import CorrectionProfile
-from cellcheck.models import ProfileImportOptions
 from cellcheck.storage import load_profile
 from cellcheck.ui.app_state import AppState
+from cellcheck.ui.profile_generation import (
+    generate_profile_from_workbooks,
+    parse_max_grade_text,
+    validate_profile_generation_inputs,
+)
 
 
 @dataclass(frozen=True)
@@ -407,6 +411,9 @@ class CorrectionPage(QWidget):
             return
 
         self._set_active_profile(profile)
+        self.state.current_profile_path = path
+        self.state.profile_dirty = False
+        self.state.profile_status = "imported"
         self.state.current_report = None
         self.state.current_report_path = None
         self.state.report_dirty = False
@@ -435,15 +442,13 @@ class CorrectionPage(QWidget):
 
         try:
             max_grade = self._get_max_grade_value()
-            options = ProfileImportOptions(
+            result = generate_profile_from_workbooks(
+                empty_workbook_path=self.empty_workbook_edit.text(),
+                solution_workbook_path=self.solution_workbook_edit.text(),
                 exercise_name=self.exercise_name_edit.text(),
-                max_grade=max_grade,
                 target_color=self.color_edit.text(),
-            )
-            result = self.importer.import_profile(
-                self.empty_workbook_edit.text(),
-                self.solution_workbook_edit.text(),
-                options,
+                max_grade_text=self.max_grade_edit.text(),
+                importer=self.importer,
             )
         except Exception as exc:
             QMessageBox.critical(self, "Genera profilo", str(exc))
@@ -455,6 +460,9 @@ class CorrectionPage(QWidget):
         self.state.exercise_name = self.exercise_name_edit.text()
         self.state.max_grade = max_grade
         self._set_active_profile(result.profile)
+        self.state.current_profile_path = None
+        self.state.profile_dirty = True
+        self.state.profile_status = "new"
         self.state.current_report = None
         self.state.current_report_path = None
         self.state.report_dirty = False
@@ -778,24 +786,24 @@ class CorrectionPage(QWidget):
     def _profile_generation_blockers(self) -> list[str]:
         """Return the missing requirements for profile generation."""
         blockers: list[str] = []
-
-        empty_status = self._validate_workbook_path(self.empty_workbook_edit.text())
-        if not empty_status.is_valid:
-            blockers.append("Seleziona il modello vuoto nello Step 1.")
-
-        solution_status = self._validate_workbook_path(self.solution_workbook_edit.text())
-        if not solution_status.is_valid:
-            blockers.append("Seleziona il modello risolto nello Step 2.")
-
-        if not self.exercise_name_edit.text().strip():
-            blockers.append("Inserisci il nome esercizio nello Step 3.")
-
-        if not self.color_edit.text().strip():
-            blockers.append("Inserisci il colore target nello Step 3.")
-
-        if self._max_grade_validation_message() is not None:
-            blockers.append("Imposta un punteggio massimo personalizzato valido nello Step 3.")
-
+        shared_blockers = validate_profile_generation_inputs(
+            empty_workbook_path=self.empty_workbook_edit.text(),
+            solution_workbook_path=self.solution_workbook_edit.text(),
+            exercise_name=self.exercise_name_edit.text(),
+            target_color=self.color_edit.text(),
+            max_grade_text=self.max_grade_edit.text(),
+        )
+        for blocker in shared_blockers:
+            if "modello vuoto" in blocker:
+                blockers.append("Seleziona il modello vuoto nello Step 1.")
+            elif "modello risolto" in blocker:
+                blockers.append("Seleziona il modello risolto nello Step 2.")
+            elif "nome del profilo" in blocker:
+                blockers.append("Inserisci il nome esercizio nello Step 3.")
+            elif "colore target" in blocker:
+                blockers.append("Inserisci il colore target nello Step 3.")
+            elif "punteggio massimo" in blocker:
+                blockers.append("Imposta un punteggio massimo personalizzato valido nello Step 3.")
         return blockers
 
     def _can_run_correction(self) -> bool:
@@ -840,8 +848,7 @@ class CorrectionPage(QWidget):
 
     def _get_max_grade_value(self) -> float:
         """Parse the custom maximum score field into a positive float."""
-        raw_value = self.max_grade_edit.text().strip().replace(",", ".")
-        return float(raw_value)
+        return parse_max_grade_text(self.max_grade_edit.text())
 
     def _profile_for_correction(self) -> CorrectionProfile:
         """Return the effective profile using the custom maximum score from the page."""

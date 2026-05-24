@@ -22,8 +22,8 @@ class RibbonBar(QFrame):
     correction_requested = Signal()
     report_requested = Signal()
     settings_requested = Signal()
-    open_ccal_requested = Signal()
-    save_ccal_requested = Signal()
+    help_requested = Signal()
+    about_requested = Signal()
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -50,12 +50,12 @@ class RibbonBar(QFrame):
 
         buttons = [
             ("Dashboard", self.dashboard_requested),
-            ("Importa profilo", self.profile_import_requested),
+            ("Profilo", self.profile_import_requested),
             ("Correggi", self.correction_requested),
             ("Report", self.report_requested),
             ("Impostazioni", self.settings_requested),
-            ("Apri profilo .ccal", self.open_ccal_requested),
-            ("Salva profilo .ccal", self.save_ccal_requested),
+            ("Help", self.help_requested),
+            ("?", self.about_requested),
         ]
 
         for label, signal in buttons:
