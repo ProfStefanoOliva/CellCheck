@@ -24,11 +24,13 @@ In fasi successive CellCheck dovra:
 
 ## Stato attuale
 
-Stato corrente: `clear manual test scenarios v0.17.0`.
+Stato corrente: `profile editor foundation v0.18.0`.
 
-La Fase 17 rende piu chiari i workbook sintetici per i test manuali: separa i casi automatici puri dai casi dedicati alla revisione manuale, cosi il file studente "perfetto" non risulta ambiguo.
+La Fase 18 introduce la base dell'editor profili: pagina `Profilo`, generazione dai workbook, importazione e salvataggio `.ccal`, tabella delle regole, piu aggiunta, modifica ed eliminazione manuale delle regole del profilo corrente.
 
 Il flusso guidato della GUI segue ora questo ordine: modello vuoto -> modello risolto -> profilo di correzione -> elaborato studente -> correzione -> report.
+
+La ribbon superiore usa ora i pulsanti `Help` e `?`: la gestione dei profili resta concentrata nella pagina `Profilo`, mentre `Help` apre la guida in linea e `?` mostra le informazioni sull'applicazione.
 
 La GUI continua a usare il tema scuro centralizzato e ora puo caricare in modo prudente l'icona `.ico` del software se il file e presente nella cartella branding.
 

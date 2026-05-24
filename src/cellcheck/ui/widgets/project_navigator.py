@@ -40,6 +40,7 @@ class ProjectNavigator(QTreeWidget):
                 if state.current_report is not None
                 else "Nessun report",
             ),
+            ("Help", "Guida in linea disponibile"),
         ]
 
         for title, detail in root_items:

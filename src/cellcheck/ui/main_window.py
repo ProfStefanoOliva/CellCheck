@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from cellcheck import __version__
 from cellcheck.models import CcalDocumentType
 from cellcheck.storage import load_profile, load_report, read_document_type, save_profile, save_report
 from cellcheck.ui.app_state import AppState
@@ -23,6 +24,7 @@ from cellcheck.ui.branding import get_app_icon_path
 from cellcheck.ui.pages import (
     CorrectionPage,
     DashboardPage,
+    HelpPage,
     ProfileImportPage,
     ReportPage,
     SettingsPage,
@@ -47,7 +49,12 @@ class MainWindow(QMainWindow):
         self.stack = QStackedWidget()
 
         self.dashboard_page = DashboardPage(self.state)
-        self.profile_import_page = ProfileImportPage(self.state, self._refresh_state_views)
+        self.profile_import_page = ProfileImportPage(
+            self.state,
+            self._refresh_state_views,
+            self._open_profile_document,
+            self._save_current_profile,
+        )
         self.correction_page = CorrectionPage(
             self.state,
             self._refresh_state_views,
@@ -58,12 +65,14 @@ class MainWindow(QMainWindow):
         self.report_page = ReportPage(self.state)
         self.report_page.on_load_report_requested = self._load_report_document
         self.report_page.on_save_report_requested = self._save_current_report
+        self.help_page = HelpPage()
         self.settings_page = SettingsPage()
 
         self.stack.addWidget(self.dashboard_page)
         self.stack.addWidget(self.profile_import_page)
         self.stack.addWidget(self.correction_page)
         self.stack.addWidget(self.report_page)
+        self.stack.addWidget(self.help_page)
         self.stack.addWidget(self.settings_page)
 
         splitter = QSplitter(Qt.Horizontal)
@@ -94,11 +103,11 @@ class MainWindow(QMainWindow):
             lambda: self.stack.setCurrentWidget(self.correction_page)
         )
         self.ribbon.report_requested.connect(lambda: self.stack.setCurrentWidget(self.report_page))
+        self.ribbon.help_requested.connect(lambda: self.stack.setCurrentWidget(self.help_page))
+        self.ribbon.about_requested.connect(self._show_about_dialog)
         self.ribbon.settings_requested.connect(
             lambda: self.stack.setCurrentWidget(self.settings_page)
         )
-        self.ribbon.open_ccal_requested.connect(self._open_profile_document)
-        self.ribbon.save_ccal_requested.connect(self._save_current_profile)
 
     def _refresh_state_views(self) -> None:
         """Refresh all state-aware widgets after a core action."""
@@ -107,6 +116,29 @@ class MainWindow(QMainWindow):
         self.profile_import_page.refresh_from_state()
         self.correction_page.refresh_from_state()
         self.report_page.refresh_from_state()
+
+    def _show_about_dialog(self) -> None:
+        """Show a compact About dialog with project identity and safety notes."""
+        QMessageBox.information(
+            self,
+            "Informazioni su CellCheck",
+            (
+                "CellCheck\n\n"
+                "Autore/mantenitore: Stefano Oliva\n"
+                f"Versione corrente: {__version__}\n"
+                "Data progetto: Data non specificata\n"
+                "Repository ufficiale:\n"
+                "https://github.com/ProfStefanoOliva/CellCheck\n\n"
+                "Licenza codice:\n"
+                "Il codice e predisposto per distribuzione sotto GNU AGPL-3.0; aggiungere il file LICENSE ufficiale prima della pubblicazione open source definitiva.\n\n"
+                "Nota brand:\n"
+                "Il nome CellCheck, il logo, l'icona, gli asset grafici e l'identita visiva restano riservati all'autore, salvo autorizzazione esplicita.\n\n"
+                "Disclaimer:\n"
+                "CellCheck e uno strumento di supporto alla correzione e non sostituisce il giudizio professionale del docente.\n\n"
+                "Sicurezza:\n"
+                "I file .xlsm vengono letti senza esecuzione macro."
+            ),
+        )
 
     def _open_profile_document(self) -> None:
         """Open only a correction profile into the GUI state."""
@@ -131,6 +163,12 @@ class MainWindow(QMainWindow):
                 )
 
             self.state.current_profile = load_profile(path)
+            self.state.current_profile_path = path
+            self.state.profile_dirty = False
+            self.state.profile_status = "imported"
+            self.state.current_report = None
+            self.state.current_report_path = None
+            self.state.report_dirty = False
             self.state.exercise_name = self.state.current_profile.exercise_name
             self.state.max_grade = self.state.current_profile.max_grade
         except Exception as exc:
@@ -171,6 +209,9 @@ class MainWindow(QMainWindow):
 
         try:
             save_profile(self.state.current_profile, path, overwrite=True)
+            self.state.current_profile_path = path
+            self.state.profile_dirty = False
+            self.state.profile_status = "saved"
         except Exception as exc:
             QMessageBox.critical(self, "Salva profilo di correzione", str(exc))
             return
