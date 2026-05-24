@@ -4,11 +4,12 @@ from __future__ import annotations
 
 from PySide6.QtCore import QRect, Qt
 from PySide6.QtGui import QPainter, QPixmap
-from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QLabel, QPushButton, QVBoxLayout, QWidget
 
 from cellcheck import __version__
 from cellcheck.ui.app_state import AppState
 from cellcheck.ui.branding import get_square_logo_path
+from cellcheck.ui.dialogs import ManualTestsDialog
 
 
 class DashboardPage(QWidget):
@@ -43,7 +44,7 @@ class DashboardPage(QWidget):
         layout.addWidget(description)
 
         status = QLabel(
-            "Stato funzionale 0.11.0: GUI PySide6 con importazione profilo, correzione, viewer report e branding integrato."
+            "Stato funzionale 0.13.0: GUI PySide6 con importazione profilo, correzione, viewer report, branding integrato e flusso manuale per workbook sintetici."
         )
         status.setWordWrap(True)
         layout.addWidget(status)
@@ -54,6 +55,10 @@ class DashboardPage(QWidget):
         warning.setObjectName("warningText")
         warning.setWordWrap(True)
         layout.addWidget(warning)
+
+        manual_tests_button = QPushButton("Apri strumenti test manuali")
+        manual_tests_button.clicked.connect(self._open_manual_tests_dialog)
+        layout.addWidget(manual_tests_button, 0, Qt.AlignLeft)
 
         layout.addStretch(1)
 
@@ -96,3 +101,8 @@ class DashboardPage(QWidget):
                 self.state.exercise_name.strip(),
             ]
         )
+
+    def _open_manual_tests_dialog(self) -> None:
+        """Open the dedicated manual tests dialog."""
+        dialog = ManualTestsDialog(self)
+        dialog.exec()
