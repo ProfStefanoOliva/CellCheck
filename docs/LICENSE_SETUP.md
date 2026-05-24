@@ -1,10 +1,16 @@
 # License Setup
 
-This repository is intended to use the GNU Affero General Public License v3.0 for source code distribution.
+This repository uses the GNU Affero General Public License v3.0 for source code distribution, and the official license text is now present in the root `LICENSE` file.
 
-## Recommended operational setup
+## Current status
 
-Add the `LICENSE` file using one of these approaches:
+The `LICENSE` file has already been added to the repository root.
+
+This document remains useful as a governance and verification note for future maintenance, audits, or repository reviews.
+
+## Recommended practice for future updates
+
+If the `LICENSE` file ever needs to be replaced or revalidated, use only one of these sources:
 
 1. GitHub license selector:
    choose `GNU Affero General Public License v3.0`
@@ -13,7 +19,7 @@ Add the `LICENSE` file using one of these approaches:
 
 ## Why this document exists
 
-This repository does not currently add a reconstructed license text manually in order to avoid accidental mistakes, omissions, or non-authoritative wording.
+This repository should not use a manually reconstructed license text, in order to avoid accidental mistakes, omissions, or non-authoritative wording.
 
 If you are not certain that a license text is official and exact, do not rewrite it manually.
 

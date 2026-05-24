@@ -75,9 +75,9 @@ Repository ufficiale:
 
 ## License
 
-Il codice sorgente di CellCheck e destinato alla distribuzione sotto GNU Affero General Public License v3.0.
+Il codice sorgente di CellCheck e distribuito sotto GNU Affero General Public License v3.0. Il testo ufficiale della licenza e disponibile nel file [LICENSE](C:/Users/oliva/Documents/LavoriAI/CellCheck/LICENSE).
 
-Per prudenza operativa, il file `LICENSE` non viene aggiunto qui con testo ricostruito manualmente. La procedura consigliata e descritta in [docs/LICENSE_SETUP.md](C:/Users/oliva/Documents/LavoriAI/CellCheck/docs/LICENSE_SETUP.md) e prevede l'uso del testo ufficiale GNU AGPL v3.0 tramite selettore licenze GitHub oppure fonte ufficiale FSF/SPDX senza modifiche.
+Per note operative di verifica e governance sulla gestione della licenza, fare riferimento a [docs/LICENSE_SETUP.md](C:/Users/oliva/Documents/LavoriAI/CellCheck/docs/LICENSE_SETUP.md).
 
 ## Trademark and brand
 
