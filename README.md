@@ -24,9 +24,9 @@ In fasi successive CellCheck dovra:
 
 ## Stato attuale
 
-Stato corrente: `profile editor validation and advanced rule fields v0.19.0`.
+Stato corrente: `QA pre-packaging and release readiness v0.20.0`.
 
-La Fase 19 rende piu robusto l'editor profili: validazione delle regole, dialog scrollabile, conferma su nuovo profilo, distinzione piu chiara tra tolleranza numerica, formula esatta, formula normalizzata e `manual_review`, con maggiore coerenza tra profilo, importer e motore di correzione.
+La Fase 20 consolida la quality assurance pre-packaging: controlli piu robusti su profili `.ccal` e report `.ccreport`, copertura mirata su input numerici GUI, normalizzazione prudente delle formule e stabilita del profilo editor senza introdurre funzionalita nuove invasive.
 
 Nella pagina `Profilo`, il campo `Peso` indica il valore relativo della regola, non necessariamente un voto diretto. La colonna `Quota voto` mostra invece quanto vale ogni regola sulla scala finale del profilo, calcolata come `(peso regola / somma pesi) × punteggio massimo`.
 
