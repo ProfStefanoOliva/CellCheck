@@ -24,9 +24,9 @@ In fasi successive CellCheck dovra:
 
 ## Stato attuale
 
-Stato corrente: `branding assets integration v0.11.0`.
+Stato corrente: `manual workflow integration v0.13.0`.
 
-La Fase 11 integra gli asset grafici del progetto e predispone l'icona applicativa nella GUI PySide6, mantenendo invariata la struttura funzionale della shell desktop.
+La Fase 13 integra nella GUI un piccolo flusso operativo per i test manuali: dalla Dashboard e ora possibile generare i workbook sintetici del progetto e aprire direttamente la cartella dei file generati, senza passare da PowerShell.
 
 La GUI continua a usare il tema scuro centralizzato e ora puo caricare in modo prudente l'icona `.ico` del software se il file e presente nella cartella branding.
 
