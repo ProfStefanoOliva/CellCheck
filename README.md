@@ -53,3 +53,33 @@ Gli asset grafici del progetto si trovano in [assets/branding](C:/Users/oliva/Do
 - `cellcheck_icon.ico`
 
 Questi file sono usati per il branding del software e per predisporre l'icona applicativa della GUI. Il packaging dell'eseguibile e la distribuzione binaria saranno gestiti in una fase successiva.
+
+## Official repository
+
+Repository ufficiale:
+
+[https://github.com/ProfStefanoOliva/CellCheck](https://github.com/ProfStefanoOliva/CellCheck)
+
+## License
+
+Il codice sorgente di CellCheck e destinato alla distribuzione sotto GNU Affero General Public License v3.0.
+
+Per prudenza operativa, il file `LICENSE` non viene aggiunto qui con testo ricostruito manualmente. La procedura consigliata e descritta in [docs/LICENSE_SETUP.md](C:/Users/oliva/Documents/LavoriAI/CellCheck/docs/LICENSE_SETUP.md) e prevede l'uso del testo ufficiale GNU AGPL v3.0 tramite selettore licenze GitHub oppure fonte ufficiale FSF/SPDX senza modifiche.
+
+## Trademark and brand
+
+Il nome `CellCheck`, il logo, l'icona, gli screenshot, il tema visivo e gli asset grafici ufficiali restano collegati all'autore e non sono automaticamente concessi dalla sola licenza del codice, salvo autorizzazione esplicita.
+
+Per fork, versioni modificate e uso descrittivo del nome, fare riferimento a [TRADEMARKS.md](C:/Users/oliva/Documents/LavoriAI/CellCheck/TRADEMARKS.md) e [BRAND_GUIDELINES.md](C:/Users/oliva/Documents/LavoriAI/CellCheck/BRAND_GUIDELINES.md).
+
+## Disclaimer
+
+CellCheck e uno strumento di supporto alla correzione e non sostituisce il giudizio professionale del docente. I risultati devono essere verificati dall'utente, soprattutto in contesti valutativi reali.
+
+Le formule Excel non vengono ricalcolate internamente e i file `.xlsm` non vengono eseguiti. Maggiori dettagli sono disponibili in [DISCLAIMER.md](C:/Users/oliva/Documents/LavoriAI/CellCheck/DISCLAIMER.md).
+
+## Security and sensitive data
+
+Non caricare nelle issue pubbliche file reali di studenti, dati personali, workbook sensibili o documenti istituzionali riservati.
+
+Per segnalazioni di sicurezza e linee guida sui dati sensibili, vedere [SECURITY.md](C:/Users/oliva/Documents/LavoriAI/CellCheck/SECURITY.md) e [CONTRIBUTING.md](C:/Users/oliva/Documents/LavoriAI/CellCheck/CONTRIBUTING.md).
