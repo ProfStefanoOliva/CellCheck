@@ -17,3 +17,5 @@ La ribbon espone `Help` per la guida in linea e `?` per le informazioni sull'app
 La pagina `Profilo` include ora una base di editor con validazione delle regole, dialog scrollabile, conferma su nuovo profilo, supporto per tolleranze numeriche, distinzione tra formula esatta, formula normalizzata e valore atteso, e gestione esplicita dei casi `manual_review`.
 
 Nella tabella regole, `Peso` rappresenta il valore relativo della regola. La colonna `Quota voto` visualizza la quota equivalente sulla scala finale del profilo usando la formula `(peso regola / somma pesi) × punteggio massimo`, senza modificare il modello dati.
+
+La GUI accetta input numerici con virgola o punto, ma mantiene valori numerici reali nel modello e nei file JSON `.ccal` / `.ccreport`. La visualizzazione delle tabelle privilegia il formato italiano con virgola decimale.

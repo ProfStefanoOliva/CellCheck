@@ -213,6 +213,29 @@ def test_formula_normalized_passed_with_absolute_reference_difference(tmp_path: 
     assert get_result(report, "r1").status == ResultStatus.PASSED
 
 
+def test_formula_normalized_passed_with_spacing_and_case_difference(tmp_path: Path) -> None:
+    student_path = create_student_workbook(tmp_path / "student")
+    workbook = load_workbook(student_path)
+    try:
+        workbook["Sheet1"]["A1"] = "= sum( 1 , 2 )"
+        workbook.save(student_path)
+    finally:
+        workbook.close()
+
+    profile = build_profile(
+        [
+            build_rule(
+                rule_id="r1",
+                cell="A1",
+                rule_type=RuleType.FORMULA_NORMALIZED,
+                expected_formula="=SUM(1,2)",
+            )
+        ]
+    )
+    report = CorrectionEngine().correct_workbook(profile, student_path)
+    assert get_result(report, "r1").status == ResultStatus.PASSED
+
+
 def test_formula_exact_failed_with_absolute_reference_difference(tmp_path: Path) -> None:
     student_path = create_student_workbook(tmp_path / "student")
     workbook = load_workbook(student_path)

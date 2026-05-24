@@ -30,6 +30,7 @@ from cellcheck.ui.profile_generation import (
     parse_max_grade_text,
     validate_profile_generation_inputs,
 )
+from cellcheck.ui.number_format import format_decimal_for_ui
 
 
 @dataclass(frozen=True)
@@ -462,7 +463,7 @@ class CorrectionPage(QWidget):
         self._set_active_profile(result.profile)
         self.state.current_profile_path = None
         self.state.profile_dirty = True
-        self.state.profile_status = "new"
+        self.state.profile_status = "generated"
         self.state.current_report = None
         self.state.current_report_path = None
         self.state.report_dirty = False
@@ -923,6 +924,4 @@ class CorrectionPage(QWidget):
     @staticmethod
     def _format_max_grade(value: float) -> str:
         """Return a compact string for the custom maximum score field."""
-        if float(value).is_integer():
-            return str(int(value))
-        return f"{value:.2f}"
+        return format_decimal_for_ui(value, max_decimals=2)

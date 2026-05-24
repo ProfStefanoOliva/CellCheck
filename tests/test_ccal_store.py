@@ -164,9 +164,23 @@ def test_load_profile_rejects_correction_report(tmp_path: Path) -> None:
         load_profile(path)
 
 
+def test_load_profile_rejects_legacy_report_ccal(tmp_path: Path) -> None:
+    path = tmp_path / "legacy-report.ccal"
+    save_report(build_report(), path)
+    with pytest.raises(CcalDocumentTypeError):
+        load_profile(path)
+
+
 def test_load_report_rejects_correction_profile(tmp_path: Path) -> None:
     path = tmp_path / "profile.ccal"
     save_profile(build_profile(), path)
+    with pytest.raises(CcalDocumentTypeError):
+        load_report(path)
+
+
+def test_load_report_rejects_profile_payload_in_ccreport_file(tmp_path: Path) -> None:
+    path = tmp_path / "profile.ccreport"
+    path.write_text(build_profile().to_json_string(), encoding="utf-8")
     with pytest.raises(CcalDocumentTypeError):
         load_report(path)
 

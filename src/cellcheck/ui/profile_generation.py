@@ -6,6 +6,7 @@ from pathlib import Path
 
 from cellcheck.core import ProfileImporter
 from cellcheck.models import ProfileImportOptions, ProfileImportResult
+from cellcheck.ui.number_format import parse_decimal_input
 
 
 def validate_profile_generation_inputs(
@@ -35,7 +36,7 @@ def validate_profile_generation_inputs(
 
 def parse_max_grade_text(max_grade_text: str) -> float:
     """Parse a positive float from a free-form GUI field."""
-    return float(max_grade_text.strip().replace(",", "."))
+    return parse_decimal_input(max_grade_text)
 
 
 def generate_profile_from_workbooks(
