@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -36,6 +36,7 @@ class ExerciseCase:
     code: str
     label: str
     description: str
+    category: str
     input_1: Any = None
     input_2: Any = None
 
@@ -47,81 +48,101 @@ class WorkbookSpec:
     filename: str
     title: str
     response_map: dict[str, Any]
+    cases: list[ExerciseCase] = field(default_factory=list)
     is_macro_container: bool = False
 
 
-CASES: list[ExerciseCase] = [
+AUTOMATIC_CASES: list[ExerciseCase] = [
     ExerciseCase(
         code="FORMULA_OK",
-        label="Formula corretta",
-        description="Inserire la formula di somma corretta.",
+        label="Controllo automatico - formula somma",
+        description="Percorso automatico: inserire la formula di somma corretta.",
+        category="controllo automatico",
         input_1=10,
         input_2=15,
     ),
     ExerciseCase(
         code="FORMULA_WRONG",
-        label="Formula errata",
-        description="Inserire la formula di prodotto corretta.",
+        label="Controllo automatico - formula prodotto",
+        description="Percorso automatico: inserire la formula di prodotto corretta.",
+        category="controllo automatico",
         input_1=6,
         input_2=7,
     ),
     ExerciseCase(
         code="NUMERIC_OK",
-        label="Valore numerico corretto",
-        description="Inserire il numero esatto richiesto.",
+        label="Controllo automatico - valore esatto",
+        description="Percorso automatico: inserire il numero esatto richiesto.",
+        category="controllo automatico",
         input_1="Target",
         input_2="",
     ),
     ExerciseCase(
         code="NUMERIC_TOLERANCE",
-        label="Valore numerico fuori tolleranza",
-        description="Numero usato per verifiche con tolleranza.",
+        label="Controllo automatico - tolleranza",
+        description="Percorso automatico: numero usato per verifiche con tolleranza.",
+        category="controllo automatico",
         input_1="Atteso",
         input_2="100 +/- tolleranza",
     ),
     ExerciseCase(
         code="TEXT_OK",
-        label="Testo corretto",
-        description="Inserire il testo esatto atteso.",
+        label="Controllo automatico - testo esatto",
+        description="Percorso automatico: inserire il testo esatto atteso.",
+        category="controllo automatico",
         input_1="Etichetta",
         input_2="",
     ),
     ExerciseCase(
         code="TEXT_WRONG",
-        label="Testo errato",
-        description="Inserire il testo esatto per controllo rigido.",
+        label="Controllo automatico - testo rigido",
+        description="Percorso automatico: inserire il testo esatto per controllo rigido.",
+        category="controllo automatico",
         input_1="Conferma",
         input_2="",
     ),
     ExerciseCase(
         code="TEXT_NORMALIZED",
-        label="Testo con spazi/maiuscole",
-        description="Caso utile per controlli text_normalized.",
+        label="Controllo automatico - testo normalizzato",
+        description="Percorso automatico: caso utile per controlli text_normalized.",
+        category="controllo automatico",
         input_1="Normalizzare",
         input_2="",
     ),
     ExerciseCase(
-        code="EMPTY_EXPECTED",
-        label="Cella vuota attesa",
-        description="La cella dovrebbe restare vuota.",
-        input_1="Lasciare vuoto",
-        input_2="",
-    ),
-    ExerciseCase(
         code="NON_EMPTY_EXPECTED",
-        label="Cella non vuota attesa",
-        description="La cella deve contenere un valore.",
+        label="Controllo automatico - cella non vuota attesa",
+        description="Percorso automatico: la cella deve contenere un valore.",
+        category="controllo automatico",
         input_1="Compilare",
         input_2="",
     ),
+]
+
+MANUAL_REVIEW_CASES: list[ExerciseCase] = [
+    ExerciseCase(
+        code="EMPTY_EXPECTED",
+        label="Revisione manuale - cella vuota attesa",
+        description=(
+            "Caso didattico separato: la soluzione resta vuota e il profilo generato richiede revisione manuale del docente."
+        ),
+        category="revisione manuale",
+        input_1="Lasciare vuoto",
+        input_2="Controllo docente richiesto",
+    ),
     ExerciseCase(
         code="MANUAL_REVIEW",
-        label="Revisione manuale",
-        description="Caso da trattare con controllo manuale.",
+        label="Revisione manuale - controllo docente",
+        description=(
+            "Caso dedicato alla revisione manuale: la soluzione resta volutamente vuota per generare una regola manual_review."
+        ),
+        category="revisione manuale",
         input_1="Osservazione",
-        input_2="",
+        input_2="Controllo docente richiesto",
     ),
 ]
+
+ALL_CASES = AUTOMATIC_CASES + MANUAL_REVIEW_CASES
 
 
 SOLUTION_VALUES: dict[str, Any] = {
@@ -137,21 +158,28 @@ SOLUTION_VALUES: dict[str, Any] = {
     "MANUAL_REVIEW": None,
 }
 
+AUTOMATIC_SOLUTION_VALUES = {
+    code: value for code, value in SOLUTION_VALUES.items() if code != "MANUAL_REVIEW"
+}
+
 WORKBOOK_SPECS: list[WorkbookSpec] = [
     WorkbookSpec(
         filename="01_modello_vuoto.xlsx",
-        title="Modello vuoto consegnato allo studente",
+        title="Modello vuoto per profilo automatico",
         response_map={},
+        cases=AUTOMATIC_CASES,
     ),
     WorkbookSpec(
         filename="02_modello_risolto.xlsx",
-        title="Modello risolto correttamente",
-        response_map=SOLUTION_VALUES,
+        title="Modello risolto per profilo automatico",
+        response_map=AUTOMATIC_SOLUTION_VALUES,
+        cases=AUTOMATIC_CASES,
     ),
     WorkbookSpec(
-        filename="03_studente_perfetto.xlsx",
-        title="Studente perfetto",
-        response_map=SOLUTION_VALUES,
+        filename="03_studente_perfetto_automatico.xlsx",
+        title="Studente perfetto per controlli automatici",
+        response_map=AUTOMATIC_SOLUTION_VALUES,
+        cases=AUTOMATIC_CASES,
     ),
     WorkbookSpec(
         filename="04_studente_errori_misti.xlsx",
@@ -166,12 +194,12 @@ WORKBOOK_SPECS: list[WorkbookSpec] = [
             "TEXT_NORMALIZED": "  RISPOSTA NORMALIZZATA  ",
             "EMPTY_EXPECTED": "Non doveva esserci",
             "NON_EMPTY_EXPECTED": None,
-            "MANUAL_REVIEW": "Da verificare a vista",
         },
+        cases=AUTOMATIC_CASES,
     ),
     WorkbookSpec(
         filename="05_studente_parziale.xlsx",
-        title="Studente parziale",
+        title="Studente con risposte parziali",
         response_map={
             "FORMULA_OK": lambda row: f"=C{row}+D{row}",
             "FORMULA_WRONG": None,
@@ -182,17 +210,39 @@ WORKBOOK_SPECS: list[WorkbookSpec] = [
             "TEXT_NORMALIZED": " risposta normalizzata ",
             "EMPTY_EXPECTED": None,
             "NON_EMPTY_EXPECTED": "Abbozzo",
-            "MANUAL_REVIEW": None,
         },
+        cases=AUTOMATIC_CASES,
     ),
     WorkbookSpec(
-        filename="06_modello_vuoto_macro.xlsm",
+        filename="06_modello_vuoto_revisione_manuale.xlsx",
+        title="Modello vuoto dedicato alla revisione manuale",
+        response_map={},
+        cases=ALL_CASES,
+    ),
+    WorkbookSpec(
+        filename="07_modello_risolto_revisione_manuale.xlsx",
+        title="Modello risolto dedicato alla revisione manuale",
+        response_map=SOLUTION_VALUES,
+        cases=ALL_CASES,
+    ),
+    WorkbookSpec(
+        filename="08_studente_revisione_manuale.xlsx",
+        title="Studente dedicato alla revisione manuale",
+        response_map={
+            **AUTOMATIC_SOLUTION_VALUES,
+            "MANUAL_REVIEW": "Da verificare a vista",
+        },
+        cases=ALL_CASES,
+    ),
+    WorkbookSpec(
+        filename="09_modello_vuoto_macro.xlsm",
         title="Modello vuoto macro-enabled strutturale",
         response_map={},
+        cases=AUTOMATIC_CASES,
         is_macro_container=True,
     ),
     WorkbookSpec(
-        filename="07_studente_macro.xlsm",
+        filename="10_studente_macro.xlsm",
         title="Studente macro-enabled strutturale",
         response_map={
             "FORMULA_OK": lambda row: f"=C{row}+D{row}",
@@ -204,8 +254,8 @@ WORKBOOK_SPECS: list[WorkbookSpec] = [
             "TEXT_NORMALIZED": " risposta normalizzata ",
             "EMPTY_EXPECTED": None,
             "NON_EMPTY_EXPECTED": "Presente",
-            "MANUAL_REVIEW": "Controllo manuale richiesto",
         },
+        cases=AUTOMATIC_CASES,
         is_macro_container=True,
     ),
 ]
@@ -230,7 +280,7 @@ def generate_workbook(spec: WorkbookSpec, output_dir: Path) -> Path:
     sheet.title = SHEET_NAME
 
     configure_sheet_layout(sheet, spec)
-    populate_sheet_rows(sheet, spec.response_map)
+    populate_sheet_rows(sheet, spec.cases, spec.response_map)
 
     output_path = output_dir / spec.filename
     workbook.save(output_path)
@@ -245,11 +295,11 @@ def configure_sheet_layout(sheet, spec: WorkbookSpec) -> None:
     sheet["A2"] = spec.title
     sheet["A2"].font = Font(bold=True)
     sheet["A3"] = (
-        "Le celle colorate in colonna E sono candidate alla correzione automatica."
+        "Le celle colorate in colonna F sono candidate alla correzione automatica per il profilo collegato a questo workbook."
     )
     sheet["A3"].font = ITALIC_FONT
 
-    headers = ["Caso", "Descrizione", "Dato 1", "Dato 2", "Risposta"]
+    headers = ["Caso", "Categoria", "Descrizione", "Dato 1", "Dato 2", "Risposta"]
     for column_index, header in enumerate(headers, start=1):
         cell = sheet.cell(row=TABLE_START_ROW, column=column_index, value=header)
         cell.fill = HEADER_FILL
@@ -258,18 +308,26 @@ def configure_sheet_layout(sheet, spec: WorkbookSpec) -> None:
         cell.alignment = Alignment(horizontal="center")
 
     sheet.freeze_panes = f"A{TABLE_START_ROW + 1}"
-    sheet.column_dimensions["A"].width = 22
-    sheet.column_dimensions["B"].width = 44
-    sheet.column_dimensions["C"].width = 16
-    sheet.column_dimensions["D"].width = 20
-    sheet.column_dimensions["E"].width = 28
-    sheet.column_dimensions["G"].width = 24
-    sheet.column_dimensions["H"].width = 50
+    sheet.column_dimensions["A"].width = 28
+    sheet.column_dimensions["B"].width = 22
+    sheet.column_dimensions["C"].width = 48
+    sheet.column_dimensions["D"].width = 16
+    sheet.column_dimensions["E"].width = 22
+    sheet.column_dimensions["F"].width = 30
+    sheet.column_dimensions["H"].width = 24
+    sheet.column_dimensions["I"].width = 56
 
+    profile_mode = (
+        "profilo dedicato alla revisione manuale"
+        if spec.cases == ALL_CASES
+        else "profilo per controlli automatici puri"
+    )
     info_pairs = [
         ("Formato file", spec.filename.split(".")[-1].lower()),
         ("Colore target", f"#{TARGET_COLOR_RGB}"),
         ("Foglio principale", SHEET_NAME),
+        ("Scenario didattico", spec.title),
+        ("Profilo atteso", profile_mode),
     ]
     if spec.is_macro_container:
         info_pairs.append(
@@ -281,8 +339,8 @@ def configure_sheet_layout(sheet, spec: WorkbookSpec) -> None:
 
     info_row = 1
     for label, value in info_pairs:
-        label_cell = sheet.cell(row=info_row, column=7, value=label)
-        value_cell = sheet.cell(row=info_row, column=8, value=value)
+        label_cell = sheet.cell(row=info_row, column=8, value=label)
+        value_cell = sheet.cell(row=info_row, column=9, value=value)
         label_cell.fill = INFO_FILL
         label_cell.font = HEADER_FONT
         label_cell.border = THIN_BORDER
@@ -291,15 +349,20 @@ def configure_sheet_layout(sheet, spec: WorkbookSpec) -> None:
         info_row += 1
 
 
-def populate_sheet_rows(sheet, response_map: dict[str, Any]) -> None:
+def populate_sheet_rows(
+    sheet,
+    cases: list[ExerciseCase],
+    response_map: dict[str, Any],
+) -> None:
     """Populate all exercise cases and apply the target fill to answer cells."""
     first_data_row = TABLE_START_ROW + 1
-    for offset, case in enumerate(CASES):
+    for offset, case in enumerate(cases):
         row = first_data_row + offset
         answer_value = resolve_case_value(response_map, case.code, row)
 
         row_values = [
             case.label,
+            case.category,
             case.description,
             case.input_1,
             case.input_2,
@@ -309,9 +372,9 @@ def populate_sheet_rows(sheet, response_map: dict[str, Any]) -> None:
         for column_index, value in enumerate(row_values, start=1):
             cell = sheet.cell(row=row, column=column_index, value=value)
             cell.border = THIN_BORDER
-            if column_index == 5:
+            if column_index == 6:
                 cell.fill = TARGET_FILL
-            if column_index in (1, 2):
+            if column_index in (1, 2, 3):
                 cell.alignment = Alignment(wrap_text=True, vertical="top")
 
 

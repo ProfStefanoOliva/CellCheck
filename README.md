@@ -24,15 +24,15 @@ In fasi successive CellCheck dovra:
 
 ## Stato attuale
 
-Stato corrente: `report persistence and export workflow v0.16.0`.
+Stato corrente: `clear manual test scenarios v0.17.0`.
 
-La Fase 16 consolida il ciclo di vita del report: salvataggio e caricamento del `correction_report` in formato `.ccreport`, persistenza delle revisioni manuali del docente e primo export CSV semplice per consultazione.
+La Fase 17 rende piu chiari i workbook sintetici per i test manuali: separa i casi automatici puri dai casi dedicati alla revisione manuale, cosi il file studente "perfetto" non risulta ambiguo.
 
 Il flusso guidato della GUI segue ora questo ordine: modello vuoto -> modello risolto -> profilo di correzione -> elaborato studente -> correzione -> report.
 
 La GUI continua a usare il tema scuro centralizzato e ora puo caricare in modo prudente l'icona `.ico` del software se il file e presente nella cartella branding.
 
-Restano disponibili anche i workbook sintetici generati localmente per i test manuali. I file prodotti vengono scritti in `manual_tests/generated/`, che non deve essere committata. La documentazione operativa e disponibile in `manual_tests/README.md`.
+Restano disponibili anche i workbook sintetici generati localmente per i test manuali. I file prodotti vengono scritti in `manual_tests/generated/`, che non deve essere committata. La documentazione operativa e disponibile in `manual_tests/README.md`. Il set principale ora distingue chiaramente il percorso automatico puro dal percorso dedicato alla revisione manuale.
 
 La GUI usa ora un tema scuro proprietario CellCheck, centralizzato e pensato come base riutilizzabile per gli altri software desktop dell'autore.
 
