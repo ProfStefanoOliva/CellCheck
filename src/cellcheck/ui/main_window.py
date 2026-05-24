@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QFileDialog,
     QMainWindow,
@@ -16,6 +17,7 @@ from PySide6.QtWidgets import (
 from cellcheck.models import CcalDocumentType
 from cellcheck.storage import load_profile, load_report, read_document_type, save_profile, save_report
 from cellcheck.ui.app_state import AppState
+from cellcheck.ui.branding import get_app_icon_path
 from cellcheck.ui.pages import (
     CorrectionPage,
     DashboardPage,
@@ -33,13 +35,16 @@ class MainWindow(QMainWindow):
         super().__init__(parent)
         self.state = AppState()
         self.setWindowTitle("CellCheck")
+        icon_path = get_app_icon_path()
+        if icon_path is not None:
+            self.setWindowIcon(QIcon(str(icon_path)))
         self.resize(1360, 860)
 
         self.ribbon = RibbonBar()
         self.navigator = ProjectNavigator()
         self.stack = QStackedWidget()
 
-        self.dashboard_page = DashboardPage()
+        self.dashboard_page = DashboardPage(self.state)
         self.profile_import_page = ProfileImportPage(self.state, self._refresh_state_views)
         self.correction_page = CorrectionPage(self.state, self._refresh_state_views)
         self.report_page = ReportPage(self.state)
@@ -88,6 +93,7 @@ class MainWindow(QMainWindow):
     def _refresh_state_views(self) -> None:
         """Refresh all state-aware widgets after a core action."""
         self.navigator.refresh(self.state)
+        self.dashboard_page.refresh_from_state()
         self.profile_import_page.refresh_from_state()
         self.correction_page.refresh_from_state()
         self.report_page.refresh_from_state()
