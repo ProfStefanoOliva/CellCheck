@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import csv
+from pathlib import Path
 
 from PySide6.QtWidgets import (
     QFileDialog,
@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
 )
 
 from cellcheck.models import CellCorrectionResult, ResultStatus
+from cellcheck.reporting import export_text_correction_report
 from cellcheck.ui.app_state import AppState
 from cellcheck.ui.widgets import (
     ReportDetailsPanel,
@@ -74,9 +75,9 @@ class ReportPage(QWidget):
         self.save_report_button.clicked.connect(self._save_report)
         command_row.addWidget(self.save_report_button)
 
-        self.export_report_button = QPushButton("Esporta report")
+        self.export_report_button = QPushButton("Esporta report .txt")
         self.export_report_button.setMinimumHeight(38)
-        self.export_report_button.clicked.connect(self._export_report_csv)
+        self.export_report_button.clicked.connect(self._export_report_txt)
         command_row.addWidget(self.export_report_button)
         command_row.addStretch(1)
         layout.addLayout(command_row)
@@ -293,8 +294,8 @@ class ReportPage(QWidget):
             "Il salvataggio del report non e disponibile in questa configurazione della GUI.",
         )
 
-    def _export_report_csv(self) -> None:
-        """Export the current report to a simple CSV file."""
+    def _export_report_txt(self) -> None:
+        """Export the current report to a didactic plain text file."""
         report = self.state.current_report
         if report is None:
             QMessageBox.information(
@@ -303,56 +304,28 @@ class ReportPage(QWidget):
                 "Non esiste ancora un report corrente da esportare.",
             )
             return
+        suggested_name = "report_correzione.txt"
+        if report.student_file:
+            student_stem = Path(report.student_file).stem.strip()
+            if student_stem:
+                suggested_name = f"{student_stem}_report_correzione.txt"
 
         path, _ = QFileDialog.getSaveFileName(
             self,
-            "Esporta report CSV",
-            "",
-            "CSV files (*.csv)",
+            "Esporta report testuale",
+            suggested_name,
+            "Report testuale CellCheck (*.txt)",
         )
         if not path:
             return
+        if not path.lower().endswith(".txt"):
+            path = f"{path}.txt"
 
         try:
-            with open(path, "w", encoding="utf-8-sig", newline="") as handle:
-                writer = csv.writer(handle)
-                writer.writerow(
-                    [
-                        "rule_id",
-                        "sheet_name",
-                        "cell",
-                        "range_ref",
-                        "rule_type",
-                        "status",
-                        "expected_formula",
-                        "student_formula",
-                        "expected_value",
-                        "student_value",
-                        "weight",
-                        "score_awarded",
-                        "message",
-                        "teacher_comment",
-                    ]
-                )
-                for result in report.results:
-                    writer.writerow(
-                        [
-                            result.rule_id,
-                            result.sheet_name,
-                            result.cell or "",
-                            result.range_ref or "",
-                            result.rule_type.value,
-                            result.status.value,
-                            result.expected_formula or "",
-                            result.student_formula or "",
-                            result.expected_value if result.expected_value is not None else "",
-                            result.student_value if result.student_value is not None else "",
-                            result.weight,
-                            result.score_awarded,
-                            result.message,
-                            result.teacher_comment,
-                        ]
-                    )
+            model_file = None
+            if self.state.current_profile is not None:
+                model_file = self.state.current_profile.source_solution_workbook
+            export_text_correction_report(report, path, model_file=model_file)
         except Exception as exc:
             QMessageBox.critical(self, "Esporta report", str(exc))
             return
@@ -360,5 +333,5 @@ class ReportPage(QWidget):
         QMessageBox.information(
             self,
             "Esporta report",
-            "Report esportato correttamente in formato CSV.",
+            "Report esportato correttamente in formato testuale UTF-8.",
         )
