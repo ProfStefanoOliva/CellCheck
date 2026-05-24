@@ -124,6 +124,7 @@ Confirm the packaged bundle includes:
 - Repeat the manual executable validation on a clean Windows machine or a non-development Windows profile.
 - Confirm the executable starts without relying on the development environment.
 - Note any missing runtime dependency, resource issue or path issue.
+- Follow the detailed procedure in `docs/CLEAN_MACHINE_VALIDATION.md`.
 
 ## Security And Distribution Readiness
 

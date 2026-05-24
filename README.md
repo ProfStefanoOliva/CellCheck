@@ -25,11 +25,11 @@ In fasi successive CellCheck dovra:
 
 ## Stato attuale
 
-Stato corrente: `Release candidate checklist and clean distribution validation v0.24.0`.
+Stato corrente: `Clean machine validation and local release bundle staging v0.25.0`.
 
-La Fase 24 consolida la readiness pre-release: checklist documentata per validare una futura distribuzione binaria, riferimento esplicito ai controlli su bundle, governance, macchina pulita, checksum SHA256 e verifiche manuali della GUI. Il packaging resta comunque sperimentale e non ancora una release pubblica ufficiale.
+La Fase 25 aggiunge una procedura locale e ripetibile per preparare un bundle di release candidate da validare su macchina pulita o profilo Windows non di sviluppo. Restano inclusi checklist documentata, staging locale del bundle, documenti di governance e checksum SHA256, senza pubblicare ancora alcun binario ufficiale.
 
-Le note operative per il packaging locale sono raccolte in [docs/PACKAGING_LOCAL.md](C:/Users/oliva/Documents/LavoriAI/CellCheck/docs/PACKAGING_LOCAL.md), mentre la checklist completa di validazione e distribuzione prudente e disponibile in [docs/RELEASE_CANDIDATE_CHECKLIST.md](C:/Users/oliva/Documents/LavoriAI/CellCheck/docs/RELEASE_CANDIDATE_CHECKLIST.md).
+Le note operative per il packaging locale sono raccolte in [docs/PACKAGING_LOCAL.md](C:/Users/oliva/Documents/LavoriAI/CellCheck/docs/PACKAGING_LOCAL.md), mentre la checklist completa di validazione e distribuzione prudente e disponibile in [docs/RELEASE_CANDIDATE_CHECKLIST.md](C:/Users/oliva/Documents/LavoriAI/CellCheck/docs/RELEASE_CANDIDATE_CHECKLIST.md). La procedura specifica per la verifica su macchina pulita e descritta in [docs/CLEAN_MACHINE_VALIDATION.md](C:/Users/oliva/Documents/LavoriAI/CellCheck/docs/CLEAN_MACHINE_VALIDATION.md).
 
 Nella pagina `Profilo`, il campo `Peso` indica il valore relativo della regola, non necessariamente un voto diretto. La colonna `Quota voto` mostra invece quanto vale ogni regola sulla scala finale del profilo, calcolata come `(peso regola / somma pesi) × punteggio massimo`.
 
