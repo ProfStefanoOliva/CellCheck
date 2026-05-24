@@ -24,6 +24,10 @@ class ProjectNavigator(QTreeWidget):
             ("Modello vuoto", state.empty_workbook_path or "Non selezionato"),
             ("Modello risolto", state.solution_workbook_path or "Non selezionato"),
             (
+                "Correzione guidata",
+                "Pronta" if state.current_profile is not None or state.student_workbook_path else "Da preparare",
+            ),
+            (
                 "Profilo",
                 state.current_profile.exercise_name
                 if state.current_profile is not None
