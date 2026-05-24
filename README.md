@@ -24,9 +24,9 @@ In fasi successive CellCheck dovra:
 
 ## Stato attuale
 
-Stato corrente: `manual workflow integration v0.13.0`.
+Stato corrente: `first guided correction workflow v0.14.0`.
 
-La Fase 13 integra nella GUI un piccolo flusso operativo per i test manuali: dalla Dashboard e ora possibile generare i workbook sintetici del progetto e aprire direttamente la cartella dei file generati, senza passare da PowerShell.
+La Fase 14 introduce il primo flusso guidato di correzione nella GUI: selezione del modello vuoto, modello risolto, elaborato studente, importazione o generazione del profilo `.ccal`, esecuzione della correzione e apertura del report.
 
 La GUI continua a usare il tema scuro centralizzato e ora puo caricare in modo prudente l'icona `.ico` del software se il file e presente nella cartella branding.
 

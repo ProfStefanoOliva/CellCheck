@@ -46,7 +46,11 @@ class MainWindow(QMainWindow):
 
         self.dashboard_page = DashboardPage(self.state)
         self.profile_import_page = ProfileImportPage(self.state, self._refresh_state_views)
-        self.correction_page = CorrectionPage(self.state, self._refresh_state_views)
+        self.correction_page = CorrectionPage(
+            self.state,
+            self._refresh_state_views,
+            lambda: self.stack.setCurrentWidget(self.report_page),
+        )
         self.report_page = ReportPage(self.state)
         self.settings_page = SettingsPage()
 
