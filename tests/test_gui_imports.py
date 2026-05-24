@@ -23,7 +23,7 @@ def test_ui_package_imports() -> None:
 
 
 def test_about_text_contains_essential_legal_notices() -> None:
-    about_text = build_about_text("0.21.0")
+    about_text = build_about_text("0.22.0")
     assert "CellCheck" in about_text
     assert "Stefano Oliva" in about_text
     assert "GNU Affero General Public License v3.0" in about_text

@@ -24,9 +24,11 @@ In fasi successive CellCheck dovra:
 
 ## Stato attuale
 
-Stato corrente: `Legal notices and About dialog readiness v0.21.0`.
+Stato corrente: `Packaging preparation and PyInstaller smoke test v0.22.0`.
 
-La Fase 21 consolida la readiness dei notice legali e del popup `?`: il testo informativo dell'applicazione e ora coerente con il file `LICENSE`, con l'assenza di garanzia, con la separazione tra licenza del codice e governance del brand, e con i riferimenti tecnici gia presenti nel repository.
+La Fase 22 prepara il progetto al packaging Windows con PyInstaller in modo prudente: entry point dedicato, spec versionato, risoluzione robusta delle risorse in sorgente o bundle e documentazione tecnica per smoke test locali non ancora pubblici.
+
+Le note operative per il packaging locale sono raccolte in [docs/PACKAGING_LOCAL.md](C:/Users/oliva/Documents/LavoriAI/CellCheck/docs/PACKAGING_LOCAL.md).
 
 Nella pagina `Profilo`, il campo `Peso` indica il valore relativo della regola, non necessariamente un voto diretto. La colonna `Quota voto` mostra invece quanto vale ogni regola sulla scala finale del profilo, calcolata come `(peso regola / somma pesi) × punteggio massimo`.
 
