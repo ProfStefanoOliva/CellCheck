@@ -16,13 +16,27 @@ from .errors import (
     InvalidCcalExtensionError,
 )
 
+PROFILE_EXTENSION = ".ccal"
+REPORT_EXTENSION = ".ccreport"
+LEGACY_REPORT_EXTENSION = ".ccal"
+
 
 def validate_ccal_path(path: str | Path) -> Path:
     """Return a normalized Path if it uses the .ccal extension."""
     normalized_path = Path(path)
-    if normalized_path.suffix.lower() != ".ccal":
+    if normalized_path.suffix.lower() != PROFILE_EXTENSION:
         raise InvalidCcalExtensionError(
-            f"Invalid CellCheck file extension for '{normalized_path}'. Expected a .ccal file."
+            f"Invalid CellCheck file extension for '{normalized_path}'. Expected a {PROFILE_EXTENSION} file."
+        )
+    return normalized_path
+
+
+def validate_report_path(path: str | Path) -> Path:
+    """Return a normalized Path if it uses a supported report extension."""
+    normalized_path = Path(path)
+    if normalized_path.suffix.lower() not in {REPORT_EXTENSION, LEGACY_REPORT_EXTENSION}:
+        raise InvalidCcalExtensionError(
+            f"Invalid CellCheck report extension for '{normalized_path}'. Expected a {REPORT_EXTENSION} file."
         )
     return normalized_path
 
@@ -38,12 +52,17 @@ def save_profile(
 
 
 def load_profile(path: str | Path) -> CorrectionProfile:
-    """Load a correction profile from a .ccal file."""
-    validated_path = validate_ccal_path(path)
+    """Load a correction profile from a .ccal file.
+
+    The loader also inspects .ccreport files so the caller gets a
+    document-type error instead of a generic extension error when a
+    correction report is selected by mistake.
+    """
+    validated_path = _validate_profile_load_path(path)
     document_type = read_document_type(validated_path)
     if document_type != CcalDocumentType.CORRECTION_PROFILE:
         raise CcalDocumentTypeError(
-            "Expected document_type 'correction_profile' while loading a CorrectionProfile."
+            "The selected file is a correction report, not a correction profile."
         )
 
     payload = _read_text(validated_path)
@@ -56,20 +75,20 @@ def load_profile(path: str | Path) -> CorrectionProfile:
 
 
 def save_report(report: CorrectionReport, path: str | Path, overwrite: bool = False) -> Path:
-    """Serialize a correction report to a .ccal file."""
-    validated_path = validate_ccal_path(path)
+    """Serialize a correction report to a .ccreport file."""
+    validated_path = validate_report_path(path)
     _ensure_writable_destination(validated_path, overwrite=overwrite)
     validated_path.write_text(report.to_json_string(), encoding="utf-8")
     return validated_path
 
 
 def load_report(path: str | Path) -> CorrectionReport:
-    """Load a correction report from a .ccal file."""
-    validated_path = validate_ccal_path(path)
+    """Load a correction report from a .ccreport or legacy .ccal file."""
+    validated_path = validate_report_path(path)
     document_type = read_document_type(validated_path)
     if document_type != CcalDocumentType.CORRECTION_REPORT:
         raise CcalDocumentTypeError(
-            "Expected document_type 'correction_report' while loading a CorrectionReport."
+            "The selected file is a correction profile, not a correction report."
         )
 
     payload = _read_text(validated_path)
@@ -83,7 +102,13 @@ def load_report(path: str | Path) -> CorrectionReport:
 
 def read_document_type(path: str | Path) -> CcalDocumentType:
     """Read only the document type from a .ccal file."""
-    validated_path = validate_ccal_path(path)
+    normalized_path = Path(path)
+    suffix = normalized_path.suffix.lower()
+    if suffix not in {PROFILE_EXTENSION, REPORT_EXTENSION}:
+        raise InvalidCcalExtensionError(
+            f"Invalid CellCheck file extension for '{normalized_path}'. Expected a {PROFILE_EXTENSION} or {REPORT_EXTENSION} file."
+        )
+    validated_path = normalized_path
     payload = _load_json_object(validated_path)
 
     raw_document_type = payload.get("document_type")
@@ -106,6 +131,21 @@ def _ensure_writable_destination(path: Path, overwrite: bool) -> None:
         raise CcalFileExistsError(
             f"CellCheck file already exists at '{path}'. Use overwrite=True to replace it."
         )
+
+
+def _validate_profile_load_path(path: str | Path) -> Path:
+    """Return a normalized Path for profile loading or type inspection.
+
+    Profiles are officially stored as .ccal, but .ccreport is accepted here
+    only so the loader can detect and reject a correction report with a
+    precise document-type error.
+    """
+    normalized_path = Path(path)
+    if normalized_path.suffix.lower() not in {PROFILE_EXTENSION, REPORT_EXTENSION}:
+        raise InvalidCcalExtensionError(
+            f"Invalid CellCheck file extension for '{normalized_path}'. Expected a {PROFILE_EXTENSION} file."
+        )
+    return normalized_path
 
 
 def _read_text(path: Path) -> str:

@@ -54,8 +54,8 @@ class RibbonBar(QFrame):
             ("Correggi", self.correction_requested),
             ("Report", self.report_requested),
             ("Impostazioni", self.settings_requested),
-            ("Apri .ccal", self.open_ccal_requested),
-            ("Salva .ccal", self.save_ccal_requested),
+            ("Apri profilo .ccal", self.open_ccal_requested),
+            ("Salva profilo .ccal", self.save_ccal_requested),
         ]
 
         for label, signal in buttons:

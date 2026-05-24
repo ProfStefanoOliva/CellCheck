@@ -20,7 +20,7 @@ class CellCorrectionResult(BaseModel):
     expected_value: CellValue = None
     student_value: CellValue = None
     weight: float = Field(gt=0)
-    score_awarded: float = Field(ge=0)
+    score_awarded: float
     status: ResultStatus
     message: str
     teacher_comment: str = ""
@@ -44,8 +44,8 @@ class ScoreSummary(BaseModel):
     skipped: int = Field(ge=0)
     errors: int = Field(ge=0)
     total_weight: float = Field(ge=0)
-    awarded_weight: float = Field(ge=0)
-    final_grade: float = Field(ge=0)
+    awarded_weight: float
+    final_grade: float
 
     @model_validator(mode="after")
     def validate_awarded_weight(self) -> "ScoreSummary":

@@ -50,6 +50,7 @@ class CorrectionPage(QWidget):
         state: AppState,
         on_state_changed,
         on_show_report_requested=None,
+        on_save_profile_requested=None,
         on_save_report_requested=None,
         parent: QWidget | None = None,
     ) -> None:
@@ -57,6 +58,7 @@ class CorrectionPage(QWidget):
         self.state = state
         self.on_state_changed = on_state_changed
         self.on_show_report_requested = on_show_report_requested
+        self.on_save_profile_requested = on_save_profile_requested
         self.on_save_report_requested = on_save_report_requested
         self.engine = CorrectionEngine()
         self.importer = ProfileImporter()
@@ -84,7 +86,7 @@ class CorrectionPage(QWidget):
         layout.addWidget(title)
 
         description = QLabel(
-            "Segui il flusso: modello vuoto -> modello risolto -> elaborato studente -> profilo .ccal -> correzione -> report."
+            "Segui il flusso: modello vuoto -> modello risolto -> profilo di correzione -> elaborato studente -> correzione -> report."
         )
         description.setWordWrap(True)
         layout.addWidget(description)
@@ -93,9 +95,11 @@ class CorrectionPage(QWidget):
         self.workflow_status_label.setWordWrap(True)
         layout.addWidget(self.workflow_status_label)
 
-        layout.addWidget(self._build_workbook_step_card())
+        layout.addWidget(self._build_reference_workbooks_card())
         layout.addWidget(self._build_profile_step_card())
+        layout.addWidget(self._build_student_step_card())
         layout.addWidget(self._build_correction_step_card())
+        layout.addWidget(self._build_report_step_card())
 
         notes = QLabel(
             "CellCheck non modifica i workbook originali.\n"
@@ -125,6 +129,12 @@ class CorrectionPage(QWidget):
         self.color_edit.textChanged.connect(self._refresh_workflow_status)
         self.exercise_name_edit.textChanged.connect(self._refresh_workflow_status)
         self.max_grade_edit.textChanged.connect(self._refresh_workflow_status)
+        self.empty_workbook_edit.textChanged.connect(self._sync_state_from_inputs)
+        self.solution_workbook_edit.textChanged.connect(self._sync_state_from_inputs)
+        self.student_workbook_edit.textChanged.connect(self._sync_state_from_inputs)
+        self.color_edit.textChanged.connect(self._sync_state_from_inputs)
+        self.exercise_name_edit.textChanged.connect(self._sync_state_from_inputs)
+        self.max_grade_edit.textChanged.connect(self._sync_state_from_inputs)
 
         self.refresh_from_state()
 
@@ -143,8 +153,8 @@ class CorrectionPage(QWidget):
         self._refresh_report_summary()
         self._refresh_action_buttons()
 
-    def _build_workbook_step_card(self) -> QFrame:
-        """Build the workbook selection section."""
+    def _build_reference_workbooks_card(self) -> QFrame:
+        """Build the empty/solution workbook selection section."""
         card = QFrame()
         card.setObjectName("reportSummaryWidget")
         card.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
@@ -154,14 +164,13 @@ class CorrectionPage(QWidget):
         layout.setHorizontalSpacing(14)
         layout.setVerticalSpacing(12)
 
-        step_title = QLabel("Step 1-3: Workbook")
+        step_title = QLabel("Step 1-2: Modelli di riferimento")
         step_title.setObjectName("pageSubtitle")
         step_title.setWordWrap(True)
         layout.addWidget(step_title, 0, 0, 1, 2)
 
         self.empty_workbook_edit = QLineEdit()
         self.solution_workbook_edit = QLineEdit()
-        self.student_workbook_edit = QLineEdit()
 
         layout.addWidget(QLabel("Step 1: Modello vuoto"), 1, 0)
         layout.addLayout(
@@ -185,20 +194,9 @@ class CorrectionPage(QWidget):
             1,
         )
 
-        layout.addWidget(QLabel("Step 3: Elaborato studente"), 3, 0)
-        layout.addLayout(
-            self._build_file_selector(
-                self.student_workbook_edit,
-                self._choose_student_workbook,
-                "Seleziona elaborato studente",
-            ),
-            3,
-            1,
-        )
-
         self.workbook_status_label = QLabel()
         self.workbook_status_label.setWordWrap(True)
-        layout.addWidget(self.workbook_status_label, 4, 0, 1, 2)
+        layout.addWidget(self.workbook_status_label, 3, 0, 1, 2)
         return card
 
     def _build_profile_step_card(self) -> QFrame:
@@ -212,7 +210,7 @@ class CorrectionPage(QWidget):
         layout.setHorizontalSpacing(14)
         layout.setVerticalSpacing(12)
 
-        step_title = QLabel("Step 4: Profilo .ccal")
+        step_title = QLabel("Step 3: Profilo di correzione")
         step_title.setObjectName("pageSubtitle")
         step_title.setWordWrap(True)
         layout.addWidget(step_title, 0, 0, 1, 2)
@@ -244,6 +242,11 @@ class CorrectionPage(QWidget):
         self.generate_profile_button.setMinimumHeight(38)
         self.generate_profile_button.clicked.connect(self._generate_profile)
         button_row.addWidget(self.generate_profile_button)
+
+        self.save_profile_button = QPushButton("Salva profilo .ccal")
+        self.save_profile_button.setMinimumHeight(38)
+        self.save_profile_button.clicked.connect(self._save_profile)
+        button_row.addWidget(self.save_profile_button)
         button_row.addStretch(1)
         layout.addLayout(button_row, 4, 0, 1, 2)
 
@@ -252,8 +255,42 @@ class CorrectionPage(QWidget):
         layout.addWidget(self.profile_status_label, 5, 0, 1, 2)
         return card
 
+    def _build_student_step_card(self) -> QFrame:
+        """Build the student workbook selection section."""
+        card = QFrame()
+        card.setObjectName("reportSummaryWidget")
+        card.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+
+        layout = QGridLayout(card)
+        layout.setContentsMargins(16, 16, 16, 16)
+        layout.setHorizontalSpacing(14)
+        layout.setVerticalSpacing(12)
+
+        step_title = QLabel("Step 4: Elaborato studente")
+        step_title.setObjectName("pageSubtitle")
+        step_title.setWordWrap(True)
+        layout.addWidget(step_title, 0, 0, 1, 2)
+
+        self.student_workbook_edit = QLineEdit()
+
+        layout.addWidget(QLabel("Elaborato studente"), 1, 0)
+        layout.addLayout(
+            self._build_file_selector(
+                self.student_workbook_edit,
+                self._choose_student_workbook,
+                "Seleziona elaborato studente",
+            ),
+            1,
+            1,
+        )
+
+        self.student_status_label = QLabel()
+        self.student_status_label.setWordWrap(True)
+        layout.addWidget(self.student_status_label, 2, 0, 1, 2)
+        return card
+
     def _build_correction_step_card(self) -> QFrame:
-        """Build the correction/report section."""
+        """Build the correction execution section."""
         card = QFrame()
         card.setObjectName("reportSummaryWidget")
         card.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
@@ -262,7 +299,7 @@ class CorrectionPage(QWidget):
         layout.setContentsMargins(16, 16, 16, 16)
         layout.setSpacing(12)
 
-        step_title = QLabel("Step 5-6: Correzione e report")
+        step_title = QLabel("Step 5: Correzione")
         step_title.setObjectName("pageSubtitle")
         step_title.setWordWrap(True)
         layout.addWidget(step_title)
@@ -279,11 +316,6 @@ class CorrectionPage(QWidget):
         self.show_report_button.setMinimumHeight(38)
         self.show_report_button.clicked.connect(self._show_report)
         button_row.addWidget(self.show_report_button)
-
-        self.save_report_button = QPushButton("Salva report .ccal")
-        self.save_report_button.setMinimumHeight(38)
-        self.save_report_button.clicked.connect(self._save_report)
-        button_row.addWidget(self.save_report_button)
         button_row.addStretch(1)
 
         layout.addLayout(button_row)
@@ -291,6 +323,33 @@ class CorrectionPage(QWidget):
         self.report_status_label = QLabel()
         self.report_status_label.setWordWrap(True)
         layout.addWidget(self.report_status_label)
+        return card
+
+    def _build_report_step_card(self) -> QFrame:
+        """Build the report save/show section."""
+        card = QFrame()
+        card.setObjectName("reportSummaryWidget")
+        card.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(16, 16, 16, 16)
+        layout.setSpacing(12)
+
+        step_title = QLabel("Step 6: Report")
+        step_title.setObjectName("pageSubtitle")
+        step_title.setWordWrap(True)
+        layout.addWidget(step_title)
+
+        button_row = QHBoxLayout()
+        button_row.setSpacing(10)
+
+        self.save_report_button = QPushButton("Salva report .ccreport")
+        self.save_report_button.setMinimumHeight(38)
+        self.save_report_button.clicked.connect(self._save_report)
+        button_row.addWidget(self.save_report_button)
+        button_row.addStretch(1)
+
+        layout.addLayout(button_row)
         return card
 
     def _choose_student_workbook(self) -> None:
@@ -302,13 +361,33 @@ class CorrectionPage(QWidget):
     def _choose_solution_workbook(self) -> None:
         self._choose_excel_file(self.solution_workbook_edit, "Seleziona modello risolto")
 
+    def _save_profile(self) -> None:
+        """Delegate profile saving to the existing profile save flow."""
+        if self._current_profile() is None:
+            QMessageBox.information(
+                self,
+                "Nessun profilo di correzione da salvare",
+                "Nessun profilo di correzione da salvare.",
+            )
+            return
+
+        if self.on_save_profile_requested is not None:
+            self.on_save_profile_requested()
+            return
+
+        QMessageBox.information(
+            self,
+            "Salva profilo",
+            "Il salvataggio del profilo non e disponibile in questa configurazione della GUI.",
+        )
+
     def _import_profile(self) -> None:
         """Load an existing correction profile from .ccal."""
         path, _ = QFileDialog.getOpenFileName(
             self,
             "Importa profilo .ccal",
             "",
-            "CellCheck files (*.ccal)",
+            "Profilo di correzione CellCheck (*.ccal)",
         )
         if not path:
             return
@@ -329,6 +408,8 @@ class CorrectionPage(QWidget):
 
         self._set_active_profile(profile)
         self.state.current_report = None
+        self.state.current_report_path = None
+        self.state.report_dirty = False
         self.state.empty_workbook_path = (
             profile.source_empty_workbook or self.empty_workbook_edit.text() or None
         )
@@ -375,6 +456,8 @@ class CorrectionPage(QWidget):
         self.state.max_grade = max_grade
         self._set_active_profile(result.profile)
         self.state.current_report = None
+        self.state.current_report_path = None
+        self.state.report_dirty = False
         self.summary_text.setPlainText(
             f"Profilo generato con successo.\n"
             f"Regole generate: {result.summary.generated_rules_count}\n"
@@ -407,6 +490,8 @@ class CorrectionPage(QWidget):
         self.state.max_grade = profile.max_grade
         self.state.student_workbook_path = self.student_workbook_edit.text() or None
         self.state.current_report = report
+        self.state.current_report_path = None
+        self.state.report_dirty = False
         self.on_state_changed()
         if self.on_show_report_requested is not None:
             self.on_show_report_requested()
@@ -430,7 +515,7 @@ class CorrectionPage(QWidget):
             QMessageBox.information(
                 self,
                 "Nessun report da salvare",
-                "Il report sara disponibile dopo una correzione eseguita correttamente.",
+                "Nessun report da salvare.",
             )
             return
 
@@ -487,14 +572,11 @@ class CorrectionPage(QWidget):
         workbook_lines = [
             f"Modello vuoto: {empty_status.label}",
             f"Modello risolto: {solution_status.label}",
-            f"Elaborato studente: {student_status.label}",
         ]
         if empty_status.detail:
             workbook_lines.append(f"Dettaglio modello vuoto: {empty_status.detail}")
         if solution_status.detail:
             workbook_lines.append(f"Dettaglio modello risolto: {solution_status.detail}")
-        if student_status.detail:
-            workbook_lines.append(f"Dettaglio elaborato studente: {student_status.detail}")
 
         self._apply_status_label(
             self.workbook_status_label,
@@ -502,10 +584,17 @@ class CorrectionPage(QWidget):
                 self._combine_state_names(
                     empty_status.state_name,
                     solution_status.state_name,
-                    student_status.state_name,
                 ),
                 workbook_lines,
             ),
+        )
+
+        student_lines = [f"Elaborato studente: {student_status.label}"]
+        if student_status.detail:
+            student_lines.append(f"Dettaglio elaborato studente: {student_status.detail}")
+        self._apply_status_label(
+            self.student_status_label,
+            self._compose_status_text(student_status.state_name, student_lines),
         )
 
         workflow_lines = [
@@ -531,6 +620,16 @@ class CorrectionPage(QWidget):
                 workflow_lines
                 + [
                     (
+                        "Profilo pronto."
+                        if self._current_profile() is not None
+                        else "Genera o importa un profilo di correzione nello Step 3."
+                    ),
+                    (
+                        "Elaborato studente pronto."
+                        if student_status.is_valid
+                        else "Seleziona l'elaborato dello studente nello Step 4."
+                    ),
+                    (
                         "Correzione pronta."
                         if self._can_run_correction()
                         else "Correzione da completare."
@@ -549,7 +648,7 @@ class CorrectionPage(QWidget):
                     "da completare",
                     [
                         "Nessun profilo attivo.",
-                        "Importa un file .ccal oppure genera un profilo dai modelli selezionati.",
+                        "Importa un file .ccal oppure genera un profilo dai modelli selezionati negli Step 1 e 2.",
                     ],
                 ),
             )
@@ -565,6 +664,7 @@ class CorrectionPage(QWidget):
                     f"Regole disponibili: {rules_count}",
                     f"Punteggio massimo workflow: {self.max_grade_edit.text().strip() or self._format_max_grade(self.state.max_grade)}",
                     f"Workbook sorgente: {profile.source_workbook_format.value if profile.source_workbook_format else '-'}",
+                    "Puoi salvarlo come profilo di correzione .ccal dallo Step 3.",
                 ],
             ),
         )
@@ -578,13 +678,13 @@ class CorrectionPage(QWidget):
                     "da completare",
                     [
                         "Nessun report disponibile.",
-                        "Seleziona i file, prepara il profilo e avvia la correzione.",
+                        "Seleziona l'elaborato studente nello Step 4 e avvia la correzione nello Step 5.",
                     ],
                 ),
             )
             if self._current_profile() is not None:
                 self.summary_text.setPlainText(
-                    "Profilo pronto. Completa la selezione dell'elaborato studente e avvia la correzione."
+                    "Profilo pronto. Completa lo Step 4 con l'elaborato studente e avvia la correzione nello Step 5."
                 )
             else:
                 self.summary_text.setPlainText("Nessun report disponibile.")
@@ -598,7 +698,7 @@ class CorrectionPage(QWidget):
                 [
                     f"Report pronto: voto {summary.final_grade}/{self.state.current_report.max_grade}",
                     f"Risultati disponibili: {summary.total_rules}",
-                    "Puoi aprire il report oppure salvarlo come .ccal.",
+                    "Puoi aprire il report oppure salvarlo come .ccreport.",
                 ],
             ),
         )
@@ -620,12 +720,16 @@ class CorrectionPage(QWidget):
         self.generate_profile_button.setToolTip(
             "Genera un profilo .ccal dai modelli selezionati."
         )
+        self.save_profile_button.setEnabled(True)
+        self.save_profile_button.setToolTip(
+            "Salva il profilo di correzione corrente come file .ccal."
+        )
         self.run_button.setEnabled(True)
         self.run_button.setToolTip("Esegue la correzione reale tramite CorrectionEngine.")
         self.show_report_button.setEnabled(True)
         self.show_report_button.setToolTip("Apre la pagina Report con il report corrente.")
         self.save_report_button.setEnabled(True)
-        self.save_report_button.setToolTip("Salva il report corrente come file .ccal.")
+        self.save_report_button.setToolTip("Salva il report corrente come file .ccreport.")
 
     def _validation_message_for_profile_generation(self) -> str | None:
         """Return a blocking message when profile generation cannot start."""
@@ -677,20 +781,20 @@ class CorrectionPage(QWidget):
 
         empty_status = self._validate_workbook_path(self.empty_workbook_edit.text())
         if not empty_status.is_valid:
-            blockers.append("selezionare un modello vuoto valido in formato .xlsx o .xlsm")
+            blockers.append("Seleziona il modello vuoto nello Step 1.")
 
         solution_status = self._validate_workbook_path(self.solution_workbook_edit.text())
         if not solution_status.is_valid:
-            blockers.append("selezionare un modello risolto valido in formato .xlsx o .xlsm")
+            blockers.append("Seleziona il modello risolto nello Step 2.")
 
         if not self.exercise_name_edit.text().strip():
-            blockers.append("inserire un nome esercizio")
+            blockers.append("Inserisci il nome esercizio nello Step 3.")
 
         if not self.color_edit.text().strip():
-            blockers.append("inserire il colore target")
+            blockers.append("Inserisci il colore target nello Step 3.")
 
         if self._max_grade_validation_message() is not None:
-            blockers.append("impostare un punteggio massimo personalizzato valido")
+            blockers.append("Imposta un punteggio massimo personalizzato valido nello Step 3.")
 
         return blockers
 
@@ -702,23 +806,15 @@ class CorrectionPage(QWidget):
         """Return the missing requirements for the correction step."""
         blockers: list[str] = []
 
-        solution_status = self._validate_workbook_path(self.solution_workbook_edit.text())
-        if not solution_status.is_valid:
-            blockers.append(
-                "selezionare un modello risolto valido in formato .xlsx o .xlsm"
-            )
-
         student_status = self._validate_workbook_path(self.student_workbook_edit.text())
         if not student_status.is_valid:
-            blockers.append(
-                "selezionare un elaborato studente valido in formato .xlsx o .xlsm"
-            )
+            blockers.append("Seleziona l'elaborato dello studente nello Step 4.")
 
         if self._current_profile() is None:
-            blockers.append("importare o generare un profilo .ccal valido")
+            blockers.append("Genera o importa un profilo di correzione nello Step 3.")
 
         if self._max_grade_validation_message() is not None:
-            blockers.append("impostare un punteggio massimo personalizzato valido")
+            blockers.append("Imposta un punteggio massimo personalizzato valido nello Step 3.")
 
         return blockers
 
@@ -730,6 +826,17 @@ class CorrectionPage(QWidget):
         """Store the generated/imported profile consistently in page and shared state."""
         self.active_profile = profile
         self.state.current_profile = profile
+
+    def _sync_state_from_inputs(self) -> None:
+        """Keep the shared GUI state aligned with the currently visible inputs."""
+        self.state.empty_workbook_path = self.empty_workbook_edit.text().strip() or None
+        self.state.solution_workbook_path = self.solution_workbook_edit.text().strip() or None
+        self.state.student_workbook_path = self.student_workbook_edit.text().strip() or None
+        self.state.target_color = self.color_edit.text().strip()
+        self.state.exercise_name = self.exercise_name_edit.text().strip()
+        max_grade_message = self._max_grade_validation_message()
+        if max_grade_message is None:
+            self.state.max_grade = self._get_max_grade_value()
 
     def _get_max_grade_value(self) -> float:
         """Parse the custom maximum score field into a positive float."""

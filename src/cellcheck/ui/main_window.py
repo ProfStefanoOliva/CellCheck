@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
@@ -50,9 +52,12 @@ class MainWindow(QMainWindow):
             self.state,
             self._refresh_state_views,
             lambda: self.stack.setCurrentWidget(self.report_page),
-            self._save_ccal_document,
+            self._save_current_profile,
+            self._save_current_report,
         )
         self.report_page = ReportPage(self.state)
+        self.report_page.on_load_report_requested = self._load_report_document
+        self.report_page.on_save_report_requested = self._save_current_report
         self.settings_page = SettingsPage()
 
         self.stack.addWidget(self.dashboard_page)
@@ -92,8 +97,8 @@ class MainWindow(QMainWindow):
         self.ribbon.settings_requested.connect(
             lambda: self.stack.setCurrentWidget(self.settings_page)
         )
-        self.ribbon.open_ccal_requested.connect(self._open_ccal_document)
-        self.ribbon.save_ccal_requested.connect(self._save_ccal_document)
+        self.ribbon.open_ccal_requested.connect(self._open_profile_document)
+        self.ribbon.save_ccal_requested.connect(self._save_current_profile)
 
     def _refresh_state_views(self) -> None:
         """Refresh all state-aware widgets after a core action."""
@@ -103,66 +108,140 @@ class MainWindow(QMainWindow):
         self.correction_page.refresh_from_state()
         self.report_page.refresh_from_state()
 
-    def _open_ccal_document(self) -> None:
-        """Open a .ccal profile or report into the GUI state."""
+    def _open_profile_document(self) -> None:
+        """Open only a correction profile into the GUI state."""
         path, _ = QFileDialog.getOpenFileName(
             self,
-            "Apri documento CellCheck",
+            "Apri profilo .ccal",
             "",
-            "CellCheck files (*.ccal)",
+            "Profilo di correzione CellCheck (*.ccal)",
         )
         if not path:
             return
 
         try:
             document_type = read_document_type(path)
-            if document_type == CcalDocumentType.CORRECTION_PROFILE:
-                self.state.current_profile = load_profile(path)
-                self.state.current_report = None
-                self.state.exercise_name = self.state.current_profile.exercise_name
-                self.state.max_grade = self.state.current_profile.max_grade
-            elif document_type == CcalDocumentType.CORRECTION_REPORT:
-                self.state.current_report = load_report(path)
-                self.state.student_workbook_path = self.state.current_report.student_file
-                self.state.max_grade = self.state.current_report.max_grade
-            else:
-                raise ValueError("Tipo documento .ccal non ancora gestito dalla GUI.")
+            if document_type == CcalDocumentType.CORRECTION_REPORT:
+                if Path(path).suffix.lower() == ".ccreport":
+                    raise ValueError(
+                        "Il file selezionato e un report di correzione, non un profilo. Per aprire un report usa il comando Carica report."
+                    )
+                raise ValueError(
+                    "Il file selezionato contiene un report di correzione, non un profilo."
+                )
+
+            self.state.current_profile = load_profile(path)
+            self.state.exercise_name = self.state.current_profile.exercise_name
+            self.state.max_grade = self.state.current_profile.max_grade
         except Exception as exc:
-            QMessageBox.critical(self, "Apri .ccal", str(exc))
+            QMessageBox.critical(self, "File non compatibile", str(exc))
             return
 
         self._refresh_state_views()
 
+    def _open_ccal_document(self) -> None:
+        """Compatibility wrapper for opening a correction profile."""
+        self._open_profile_document()
+
     def _save_ccal_document(self) -> None:
-        """Save the current profile or report to a .ccal file."""
-        if self.state.current_report is not None:
-            title = "Salva report"
-        elif self.state.current_profile is not None:
-            title = "Salva profilo"
-        else:
+        """Compatibility wrapper for saving the current correction profile."""
+        self._save_current_profile()
+
+    def _save_current_profile(self) -> None:
+        """Save only the current correction profile to a .ccal file."""
+        if self.state.current_profile is None:
             QMessageBox.information(
                 self,
-                "Salva .ccal",
-                "Non ci sono ancora profili o report da salvare.",
+                "Nessun profilo di correzione da salvare",
+                "Nessun profilo di correzione da salvare.",
             )
             return
 
         path, _ = QFileDialog.getSaveFileName(
             self,
-            title,
+            "Salva profilo di correzione",
             "",
-            "CellCheck files (*.ccal)",
+            "Profilo di correzione CellCheck (*.ccal)",
+        )
+        if not path:
+            return
+
+        if not Path(path).suffix:
+            path = f"{path}.ccal"
+
+        try:
+            save_profile(self.state.current_profile, path, overwrite=True)
+        except Exception as exc:
+            QMessageBox.critical(self, "Salva profilo di correzione", str(exc))
+            return
+
+        self._refresh_state_views()
+        QMessageBox.information(
+            self,
+            "Salva profilo di correzione",
+            "Profilo salvato con successo.",
+        )
+
+    def _load_report_document(self) -> None:
+        """Open a correction report into the report page."""
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Carica report .ccreport",
+            "",
+            "Report di correzione CellCheck (*.ccreport);;Report legacy CellCheck (*.ccal)",
         )
         if not path:
             return
 
         try:
-            if self.state.current_report is not None:
-                save_report(self.state.current_report, path, overwrite=True)
-            elif self.state.current_profile is not None:
-                save_profile(self.state.current_profile, path, overwrite=True)
+            document_type = read_document_type(path)
+            if document_type != CcalDocumentType.CORRECTION_REPORT:
+                if document_type == CcalDocumentType.CORRECTION_PROFILE:
+                    raise ValueError(
+                        "Il file selezionato e un profilo di correzione, non un report."
+                    )
+                raise ValueError("Il file selezionato non e un report di correzione valido.")
+            self.state.current_report = load_report(path)
+            self.state.current_report_path = path
+            self.state.report_dirty = False
+            self.state.student_workbook_path = self.state.current_report.student_file
+            self.state.max_grade = self.state.current_report.max_grade
         except Exception as exc:
-            QMessageBox.critical(self, "Salva .ccal", str(exc))
+            QMessageBox.critical(self, "File non compatibile", str(exc))
             return
 
-        QMessageBox.information(self, "Salva .ccal", "Documento salvato con successo.")
+        self._refresh_state_views()
+        self.stack.setCurrentWidget(self.report_page)
+
+    def _save_current_report(self) -> None:
+        """Save only the current report to a .ccreport file."""
+        if self.state.current_report is None:
+            QMessageBox.information(
+                self,
+                "Nessun report da salvare",
+                "Nessun report da salvare.",
+            )
+            return
+
+        path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Salva report",
+            "",
+            "Report di correzione CellCheck (*.ccreport)",
+        )
+        if not path:
+            return
+
+        if not Path(path).suffix:
+            path = f"{path}.ccreport"
+
+        try:
+            save_report(self.state.current_report, path, overwrite=True)
+            self.state.current_report_path = path
+            self.state.report_dirty = False
+        except Exception as exc:
+            QMessageBox.critical(self, "Salva report", str(exc))
+            return
+
+        self._refresh_state_views()
+        QMessageBox.information(self, "Salva report", "Report salvato con successo.")

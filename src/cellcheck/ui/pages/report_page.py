@@ -2,7 +2,18 @@
 
 from __future__ import annotations
 
-from PySide6.QtWidgets import QLabel, QSplitter, QVBoxLayout, QWidget
+import csv
+
+from PySide6.QtWidgets import (
+    QFileDialog,
+    QHBoxLayout,
+    QLabel,
+    QMessageBox,
+    QPushButton,
+    QSplitter,
+    QVBoxLayout,
+    QWidget,
+)
 
 from cellcheck.models import CellCorrectionResult, ResultStatus
 from cellcheck.ui.app_state import AppState
@@ -20,6 +31,8 @@ class ReportPage(QWidget):
     def __init__(self, state: AppState, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.state = state
+        self.on_load_report_requested = None
+        self.on_save_report_requested = None
         self._filtered_indices: list[int] = []
         self._filtered_results: list[CellCorrectionResult] = []
         self._selected_result_index: int | None = None
@@ -47,6 +60,31 @@ class ReportPage(QWidget):
         manual_review_note.setWordWrap(True)
         layout.addWidget(manual_review_note)
 
+        command_row = QHBoxLayout()
+        command_row.setContentsMargins(0, 0, 0, 0)
+        command_row.setSpacing(10)
+
+        self.load_report_button = QPushButton("Carica report .ccreport")
+        self.load_report_button.setMinimumHeight(38)
+        self.load_report_button.clicked.connect(self._load_report)
+        command_row.addWidget(self.load_report_button)
+
+        self.save_report_button = QPushButton("Salva report .ccreport")
+        self.save_report_button.setMinimumHeight(38)
+        self.save_report_button.clicked.connect(self._save_report)
+        command_row.addWidget(self.save_report_button)
+
+        self.export_report_button = QPushButton("Esporta report")
+        self.export_report_button.setMinimumHeight(38)
+        self.export_report_button.clicked.connect(self._export_report_csv)
+        command_row.addWidget(self.export_report_button)
+        command_row.addStretch(1)
+        layout.addLayout(command_row)
+
+        self.persistence_status_label = QLabel()
+        self.persistence_status_label.setWordWrap(True)
+        layout.addWidget(self.persistence_status_label)
+
         self.summary_widget = ReportSummaryWidget()
         layout.addWidget(self.summary_widget)
 
@@ -71,6 +109,20 @@ class ReportPage(QWidget):
         """Refresh summary and table from the current report."""
         report = self.state.current_report
         self.summary_widget.refresh(report)
+        if report is None:
+            self.persistence_status_label.setText("Nessun report corrente caricato.")
+        elif self.state.report_dirty:
+            self.persistence_status_label.setText(
+                "Le revisioni manuali sono applicate al report corrente. Salva il report .ccreport per conservarle."
+            )
+        elif self.state.current_report_path:
+            self.persistence_status_label.setText(
+                f"Report corrente caricato da: {self.state.current_report_path}"
+            )
+        else:
+            self.persistence_status_label.setText(
+                "Report corrente disponibile in memoria. Salvalo come .ccreport per conservarlo."
+            )
         self._apply_filters()
 
     def _apply_filters(self) -> None:
@@ -174,10 +226,12 @@ class ReportPage(QWidget):
             result.teacher_comment = (
                 f"{teacher_comment}\n\nMotivo originale: {original_message}".strip()
             )
+        self.state.report_dirty = True
         self._recalculate_report_summary()
         self.table.update_result_row(self._selected_result_index, result)
         self.summary_widget.refresh(self.state.current_report)
         self.details_panel.refresh(result)
+        self.refresh_from_state()
 
     def _recalculate_report_summary(self) -> None:
         """Recompute the current report summary, including manual negative malus values."""
@@ -206,3 +260,105 @@ class ReportPage(QWidget):
                 (raw_awarded_weight / summary.total_weight) * report.max_grade,
                 2,
             )
+
+    def _load_report(self) -> None:
+        """Delegate report loading to the main window flow when available."""
+        if self.on_load_report_requested is not None:
+            self.on_load_report_requested()
+            return
+
+        QMessageBox.information(
+            self,
+            "Carica report",
+            "Il caricamento del report non e disponibile in questa configurazione della GUI.",
+        )
+
+    def _save_report(self) -> None:
+        """Delegate report saving to the main window flow when available."""
+        if self.state.current_report is None:
+            QMessageBox.information(
+                self,
+                "Nessun report da salvare",
+                "Non esiste ancora un report corrente da salvare.",
+            )
+            return
+
+        if self.on_save_report_requested is not None:
+            self.on_save_report_requested()
+            return
+
+        QMessageBox.information(
+            self,
+            "Salva report",
+            "Il salvataggio del report non e disponibile in questa configurazione della GUI.",
+        )
+
+    def _export_report_csv(self) -> None:
+        """Export the current report to a simple CSV file."""
+        report = self.state.current_report
+        if report is None:
+            QMessageBox.information(
+                self,
+                "Nessun report da esportare",
+                "Non esiste ancora un report corrente da esportare.",
+            )
+            return
+
+        path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Esporta report CSV",
+            "",
+            "CSV files (*.csv)",
+        )
+        if not path:
+            return
+
+        try:
+            with open(path, "w", encoding="utf-8-sig", newline="") as handle:
+                writer = csv.writer(handle)
+                writer.writerow(
+                    [
+                        "rule_id",
+                        "sheet_name",
+                        "cell",
+                        "range_ref",
+                        "rule_type",
+                        "status",
+                        "expected_formula",
+                        "student_formula",
+                        "expected_value",
+                        "student_value",
+                        "weight",
+                        "score_awarded",
+                        "message",
+                        "teacher_comment",
+                    ]
+                )
+                for result in report.results:
+                    writer.writerow(
+                        [
+                            result.rule_id,
+                            result.sheet_name,
+                            result.cell or "",
+                            result.range_ref or "",
+                            result.rule_type.value,
+                            result.status.value,
+                            result.expected_formula or "",
+                            result.student_formula or "",
+                            result.expected_value if result.expected_value is not None else "",
+                            result.student_value if result.student_value is not None else "",
+                            result.weight,
+                            result.score_awarded,
+                            result.message,
+                            result.teacher_comment,
+                        ]
+                    )
+        except Exception as exc:
+            QMessageBox.critical(self, "Esporta report", str(exc))
+            return
+
+        QMessageBox.information(
+            self,
+            "Esporta report",
+            "Report esportato correttamente in formato CSV.",
+        )
