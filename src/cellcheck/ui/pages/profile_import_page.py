@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QHBoxLayout,
     QLabel,
+    QMenu,
     QMessageBox,
     QPushButton,
     QTableWidget,
@@ -18,9 +19,16 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from cellcheck.models import CorrectionProfile, CorrectionRule, WorksheetProfile
+from cellcheck.models import (
+    CorrectionProfile,
+    CorrectionRule,
+    RuleType,
+    ToleranceMode,
+    WorksheetProfile,
+)
 from cellcheck.ui.app_state import AppState
 from cellcheck.ui.dialogs import GenerateProfileDialog, ProfileRuleDialog
+from cellcheck.ui.number_format import format_decimal_for_ui
 
 
 class ProfilePage(QWidget):
@@ -100,7 +108,13 @@ class ProfilePage(QWidget):
         self.summary_label.setWordWrap(True)
         root_layout.addWidget(self.summary_label)
 
-        self.rules_table = QTableWidget(0, 8)
+        self.weights_help_label = QLabel(
+            "Il peso indica il valore relativo della regola. Il voto finale viene calcolato come: (punteggio ottenuto / somma dei pesi) × punteggio massimo. La colonna 'Quota voto' mostra quanto vale ogni regola sulla scala finale scelta."
+        )
+        self.weights_help_label.setWordWrap(True)
+        root_layout.addWidget(self.weights_help_label)
+
+        self.rules_table = QTableWidget(0, 9)
         self.rules_table.setObjectName("reportTable")
         self.rules_table.setHorizontalHeaderLabels(
             [
@@ -109,7 +123,8 @@ class ProfilePage(QWidget):
                 "Cella / range",
                 "Tipo regola",
                 "Peso",
-                "Atteso",
+                "Quota voto",
+                "Atteso / formula",
                 "Modalita",
                 "Nota docente",
             ]
@@ -117,6 +132,8 @@ class ProfilePage(QWidget):
         self.rules_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.rules_table.setSelectionMode(QTableWidget.SingleSelection)
         self.rules_table.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.rules_table.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.rules_table.customContextMenuRequested.connect(self._open_rules_context_menu)
         self.rules_table.verticalHeader().setVisible(False)
         self.rules_table.horizontalHeader().setStretchLastSection(True)
         self.rules_table.horizontalHeader().setDefaultAlignment(
@@ -141,6 +158,7 @@ class ProfilePage(QWidget):
 
         status_text_map = {
             "new": "Profilo nuovo",
+            "generated": "Profilo generato",
             "imported": "Profilo importato",
             "modified": "Profilo modificato",
             "saved": "Profilo salvato",
@@ -176,24 +194,43 @@ class ProfilePage(QWidget):
         if profile is None:
             return
 
+        total_weight = self._total_profile_weight(profile)
+
         for worksheet_index, worksheet in enumerate(profile.worksheets):
             for rule_index, rule in enumerate(worksheet.rules):
                 row = self.rules_table.rowCount()
                 self.rules_table.insertRow(row)
                 self._rule_locations.append((worksheet_index, rule_index))
-                self._set_table_item(row, 0, rule.id)
-                self._set_table_item(row, 1, worksheet.sheet_name)
-                self._set_table_item(row, 2, rule.cell or rule.range_ref or "-")
-                self._set_table_item(row, 3, rule.rule_type.value)
-                self._set_table_item(row, 4, self._format_number(rule.weight))
-                self._set_table_item(row, 5, self._rule_expected_text(rule))
-                self._set_table_item(row, 6, "abilitata" if rule.enabled else "disabilitata")
-                self._set_table_item(row, 7, rule.teacher_note or "")
+                for column, value in enumerate(
+                    self._rule_table_values(
+                        worksheet.sheet_name,
+                        rule,
+                        total_weight=total_weight,
+                        max_grade=profile.max_grade,
+                    )
+                ):
+                    self._set_table_item(row, column, value)
 
         self.rules_table.resizeColumnsToContents()
 
     def _create_new_profile(self) -> None:
         """Create a new editable profile with safe defaults."""
+        if self.state.current_profile is not None:
+            message = (
+                "Il profilo corrente contiene modifiche non salvate. Vuoi davvero creare un nuovo profilo?"
+                if self.state.profile_dirty
+                else "Esiste gia un profilo corrente. Vuoi davvero sostituirlo con un nuovo profilo?"
+            )
+            answer = QMessageBox.question(
+                self,
+                "Nuovo profilo",
+                message,
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No,
+            )
+            if answer != QMessageBox.Yes:
+                return
+
         profile = CorrectionProfile(
             exercise_name="Nuovo profilo",
             max_grade=self.state.max_grade if self.state.max_grade > 0 else 100.0,
@@ -242,7 +279,7 @@ class ProfilePage(QWidget):
         self.state.current_profile = profile
         self.state.current_profile_path = None
         self.state.profile_dirty = True
-        self.state.profile_status = "new"
+        self.state.profile_status = "generated"
         self.state.current_report = None
         self.state.current_report_path = None
         self.state.report_dirty = False
@@ -299,6 +336,7 @@ class ProfilePage(QWidget):
             expected_value=rule_data.expected_value,
             weight=rule_data.weight,
             enabled=rule_data.enabled,
+            tolerance=rule_data.tolerance,
             teacher_note=rule_data.teacher_note,
         )
         self._upsert_rule(profile, new_rule)
@@ -326,8 +364,9 @@ class ProfilePage(QWidget):
             return
 
         rule_data = dialog.get_rule_data()
-        updated_rule = original_rule.model_copy(
-            update={
+        updated_rule = CorrectionRule.model_validate(
+            {
+                **original_rule.model_dump(),
                 "sheet_name": rule_data.sheet_name,
                 "cell": rule_data.cell,
                 "range_ref": rule_data.range_ref,
@@ -336,13 +375,19 @@ class ProfilePage(QWidget):
                 "expected_value": rule_data.expected_value,
                 "weight": rule_data.weight,
                 "enabled": rule_data.enabled,
+                "tolerance": rule_data.tolerance.model_dump()
+                if rule_data.tolerance is not None
+                else None,
                 "teacher_note": rule_data.teacher_note,
             }
         )
 
-        profile.worksheets[worksheet_index].rules.pop(rule_index)
-        self._remove_empty_worksheet(profile, worksheet_index)
-        self._upsert_rule(profile, updated_rule)
+        self._replace_rule_at_location(
+            profile,
+            worksheet_index=worksheet_index,
+            rule_index=rule_index,
+            updated_rule=updated_rule,
+        )
         self._mark_profile_modified()
 
     def _delete_rule(self) -> None:
@@ -392,6 +437,38 @@ class ProfilePage(QWidget):
             WorksheetProfile(sheet_name=rule.sheet_name, rules=[rule])
         )
 
+    def _replace_rule_at_location(
+        self,
+        profile: CorrectionProfile,
+        *,
+        worksheet_index: int,
+        rule_index: int,
+        updated_rule: CorrectionRule,
+    ) -> None:
+        """Replace one rule while preserving its logical position whenever possible."""
+        original_worksheet = profile.worksheets[worksheet_index]
+        original_sheet_name = original_worksheet.sheet_name
+
+        if updated_rule.sheet_name == original_sheet_name:
+            original_worksheet.rules[rule_index] = updated_rule
+            return
+
+        original_worksheet.rules.pop(rule_index)
+        if not original_worksheet.rules:
+            profile.worksheets.pop(worksheet_index)
+
+        for target_worksheet in profile.worksheets:
+            if target_worksheet.sheet_name == updated_rule.sheet_name:
+                insert_index = min(rule_index, len(target_worksheet.rules))
+                target_worksheet.rules.insert(insert_index, updated_rule)
+                return
+
+        insert_worksheet_index = min(worksheet_index, len(profile.worksheets))
+        profile.worksheets.insert(
+            insert_worksheet_index,
+            WorksheetProfile(sheet_name=updated_rule.sheet_name, rules=[updated_rule]),
+        )
+
     def _remove_empty_worksheet(self, profile: CorrectionProfile, worksheet_index: int) -> None:
         """Drop worksheet containers left without rules."""
         if worksheet_index < len(profile.worksheets) and not profile.worksheets[worksheet_index].rules:
@@ -404,11 +481,68 @@ class ProfilePage(QWidget):
             return None
         return self._rule_locations[row]
 
+    def _open_rules_context_menu(self, position) -> None:
+        """Open a context menu for the rule under the cursor."""
+        if self.state.current_profile is None:
+            return
+
+        row = self.rules_table.rowAt(position.y())
+        if row < 0 or row >= len(self._rule_locations):
+            return
+
+        self.rules_table.setCurrentCell(row, 0)
+        self.rules_table.selectRow(row)
+
+        menu = QMenu(self)
+        edit_action = menu.addAction("Modifica regola")
+        delete_action = menu.addAction("Elimina regola")
+
+        chosen_action = menu.exec(self.rules_table.viewport().mapToGlobal(position))
+        if chosen_action == edit_action:
+            self._edit_rule()
+        elif chosen_action == delete_action:
+            self._delete_rule()
+
     def _set_table_item(self, row: int, column: int, text: str) -> None:
         """Populate one profile table cell."""
         item = QTableWidgetItem(text)
         item.setFlags(item.flags() & ~Qt.ItemIsEditable)
         self.rules_table.setItem(row, column, item)
+
+    @classmethod
+    def _rule_table_values(
+        cls,
+        worksheet_name: str,
+        rule: CorrectionRule,
+        *,
+        total_weight: float,
+        max_grade: float | None,
+    ) -> list[str]:
+        """Return robust display values for one table row."""
+        try:
+            return [
+                cls._safe_table_text(rule.id),
+                cls._safe_table_text(worksheet_name or rule.sheet_name),
+                cls._safe_table_text(rule.cell or rule.range_ref, fallback="-"),
+                cls._safe_table_text(cls._rule_type_text(rule)),
+                cls._safe_table_text(cls._format_weight(rule.weight)),
+                cls._safe_table_text(cls._quota_vote_text(rule.weight, total_weight, max_grade)),
+                cls._safe_table_text(cls._rule_expected_text(rule), fallback="-"),
+                cls._safe_table_text(cls._rule_mode_text(rule), fallback="-"),
+                cls._safe_table_text(rule.teacher_note, fallback=""),
+            ]
+        except Exception:
+            return [
+                cls._safe_table_text(rule.id),
+                cls._safe_table_text(worksheet_name or rule.sheet_name),
+                cls._safe_table_text(rule.cell or rule.range_ref, fallback="-"),
+                "Regola",
+                cls._safe_table_text(cls._format_weight(rule.weight)),
+                "-",
+                cls._safe_table_text(rule.expected_formula or rule.expected_value, fallback="-"),
+                cls._safe_table_text(getattr(rule.rule_type, "value", rule.rule_type), fallback="-"),
+                cls._safe_table_text(rule.teacher_note, fallback=""),
+            ]
 
     @staticmethod
     def _rule_expected_text(rule: CorrectionRule) -> str:
@@ -420,11 +554,87 @@ class ProfilePage(QWidget):
         return str(rule.expected_value)
 
     @staticmethod
+    def _rule_mode_text(rule: CorrectionRule) -> str:
+        """Return a compact mode summary for one rule row."""
+        mode_parts = ["abilitata" if rule.enabled else "disabilitata"]
+        if rule.rule_type == RuleType.FORMULA_EXACT:
+            mode_parts.append("Formula esatta")
+        elif rule.rule_type == RuleType.FORMULA_NORMALIZED:
+            mode_parts.append("Formula normalizzata")
+        elif rule.rule_type == RuleType.MANUAL_REVIEW:
+            mode_parts.append("Revisione manuale")
+        if rule.range_ref:
+            mode_parts.append("Range")
+        if rule.tolerance is not None and rule.tolerance.mode != ToleranceMode.NONE:
+            tolerance_parts = [ProfilePage._tolerance_mode_text(rule.tolerance.mode)]
+            if rule.tolerance.absolute is not None:
+                tolerance_parts.append(f"abs={ProfilePage._format_number(rule.tolerance.absolute)}")
+            if rule.tolerance.relative is not None:
+                tolerance_parts.append(f"rel={ProfilePage._format_number(rule.tolerance.relative)}")
+            mode_parts.append("Tolleranza: " + ", ".join(tolerance_parts))
+        return " | ".join(mode_parts)
+
+    @staticmethod
+    def _rule_type_text(rule: CorrectionRule) -> str:
+        """Return a user-facing rule type label for the table."""
+        type_map = {
+            RuleType.FORMULA_EXACT: "Formula",
+            RuleType.FORMULA_NORMALIZED: "Formula",
+            RuleType.NUMERIC_VALUE: "Valore numerico",
+            RuleType.TEXT_VALUE: "Testo esatto",
+            RuleType.TEXT_NORMALIZED: "Testo normalizzato",
+            RuleType.NON_EMPTY: "Cella non vuota",
+            RuleType.EMPTY: "Cella vuota",
+            RuleType.MANUAL_REVIEW: "Revisione manuale",
+        }
+        return type_map.get(rule.rule_type, rule.rule_type.value)
+
+    @staticmethod
+    def _tolerance_mode_text(mode: ToleranceMode) -> str:
+        """Return a readable label for one tolerance mode."""
+        tolerance_map = {
+            ToleranceMode.NONE: "Nessuna",
+            ToleranceMode.ABSOLUTE: "Assoluta",
+            ToleranceMode.RELATIVE: "Relativa",
+            ToleranceMode.ABSOLUTE_OR_RELATIVE: "Assoluta o relativa",
+        }
+        return tolerance_map.get(mode, mode.value)
+
+    @staticmethod
+    def _safe_table_text(value: object, *, fallback: str = "-") -> str:
+        """Convert table values to readable text without leaving blank cells unexpectedly."""
+        if value is None:
+            return fallback
+        text = str(value).strip()
+        return text if text else fallback
+
+    @staticmethod
     def _format_number(value: float) -> str:
         """Format numeric values compactly for the profile table."""
-        if float(value).is_integer():
-            return str(int(value))
-        return f"{value:.2f}"
+        return format_decimal_for_ui(value, max_decimals=2)
+
+    @staticmethod
+    def _format_weight(value: float) -> str:
+        """Format rule weights consistently for the profile table."""
+        return format_decimal_for_ui(value, max_decimals=4)
+
+    @classmethod
+    def _quota_vote_text(
+        cls,
+        rule_weight: float,
+        total_weight: float,
+        max_grade: float | None,
+    ) -> str:
+        """Return the rule quota on the final grading scale."""
+        if max_grade is None or total_weight <= 0:
+            return "-"
+        quota = (rule_weight / total_weight) * max_grade
+        return cls._format_weight(quota)
+
+    @staticmethod
+    def _total_profile_weight(profile: CorrectionProfile) -> float:
+        """Return the sum of rule weights in the current profile."""
+        return sum(rule.weight for worksheet in profile.worksheets for rule in worksheet.rules)
 
     @staticmethod
     def _next_rule_id(profile: CorrectionProfile) -> str:

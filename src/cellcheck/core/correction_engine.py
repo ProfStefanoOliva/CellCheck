@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 
 from cellcheck.models import (
     CellCorrectionResult,
@@ -157,14 +158,7 @@ class CorrectionEngine:
                 score_awarded=0.0,
             )
         if rule.rule_type == RuleType.FORMULA_NORMALIZED:
-            return self._build_result(
-                rule=rule,
-                status=ResultStatus.WARNING,
-                student_formula=formula_snapshot.formula,
-                student_value=value_snapshot.value,
-                message="Normalized formula comparison not implemented yet.",
-                score_awarded=0.0,
-            )
+            return self._evaluate_formula_normalized(rule, formula_snapshot, value_snapshot)
 
         raise UnsupportedRuleTypeError(
             f"Tipo regola non ancora supportato: {rule.rule_type.value}."
@@ -190,6 +184,35 @@ class CorrectionEngine:
             student_value=value_snapshot.value,
             message="Formula diversa da quella attesa.",
             score_awarded=0.0,
+        )
+
+    def _evaluate_formula_normalized(self, rule, formula_snapshot, value_snapshot) -> CellCorrectionResult:
+        """Compare formulas after a minimal textual normalization."""
+        expected_formula = rule.expected_formula
+        student_formula = formula_snapshot.formula
+
+        if expected_formula is None:
+            raise CorrectionRuleError(
+                f"Regola formula_normalized '{rule.id}' senza expected_formula."
+            )
+
+        normalized_expected = self._normalize_formula(expected_formula)
+        normalized_student = self._normalize_formula(student_formula)
+        is_match = (
+            normalized_student is not None and normalized_student == normalized_expected
+        )
+
+        return self._build_result(
+            rule=rule,
+            status=ResultStatus.PASSED if is_match else ResultStatus.FAILED,
+            student_formula=student_formula,
+            student_value=value_snapshot.value,
+            message=(
+                "Formula corretta dopo normalizzazione."
+                if is_match
+                else "Formula diversa da quella attesa dopo normalizzazione."
+            ),
+            score_awarded=rule.weight if is_match else 0.0,
         )
 
     def _evaluate_numeric_value(self, rule, formula_snapshot, value_snapshot) -> CellCorrectionResult:
@@ -342,6 +365,16 @@ class CorrectionEngine:
         if formula_snapshot.has_formula:
             return False
         return value_snapshot.value in (None, "")
+
+    @staticmethod
+    def _normalize_formula(formula: str | None) -> str | None:
+        """Normalize formula text without evaluating it."""
+        if formula is None:
+            return None
+
+        normalized = formula.strip().upper().replace("$", "")
+        normalized = re.sub(r"\s+", "", normalized)
+        return normalized
 
     def _build_missing_sheet_result(self, rule: CorrectionRule) -> CellCorrectionResult:
         """Create an error result when the worksheet is missing."""
