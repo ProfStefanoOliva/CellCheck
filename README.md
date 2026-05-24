@@ -24,9 +24,9 @@ In fasi successive CellCheck dovra:
 
 ## Stato attuale
 
-Stato corrente: `first guided correction workflow v0.14.0`.
+Stato corrente: `guided workflow validation and report handoff v0.15.0`.
 
-La Fase 14 introduce il primo flusso guidato di correzione nella GUI: selezione del modello vuoto, modello risolto, elaborato studente, importazione o generazione del profilo `.ccal`, esecuzione della correzione e apertura del report.
+La Fase 15 rende piu robusto il flusso guidato di correzione: validazione degli input, stati testuali dei passaggi, handoff piu chiaro del report alla ReportPage e accesso prudente al salvataggio del report `.ccal`.
 
 La GUI continua a usare il tema scuro centralizzato e ora puo caricare in modo prudente l'icona `.ico` del software se il file e presente nella cartella branding.
 

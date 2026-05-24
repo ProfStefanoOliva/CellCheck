@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from PySide6.QtWidgets import QLabel, QSplitter, QVBoxLayout, QWidget
 
-from cellcheck.models import CellCorrectionResult
+from cellcheck.models import CellCorrectionResult, ResultStatus
 from cellcheck.ui.app_state import AppState
 from cellcheck.ui.widgets import (
     ReportDetailsPanel,
@@ -36,7 +36,16 @@ class ReportPage(QWidget):
             "Esplora il CorrectionReport corrente, filtra i risultati e aggiorna i commenti docente."
         )
         subtitle.setObjectName("pageSubtitle")
+        subtitle.setWordWrap(True)
         layout.addWidget(subtitle)
+
+        manual_review_note = QLabel(
+            "Per i casi contrassegnati come revisione manuale, apri eventualmente il workbook solo per consultazione "
+            "e riporta la decisione nel commento docente."
+        )
+        manual_review_note.setObjectName("warningText")
+        manual_review_note.setWordWrap(True)
+        layout.addWidget(manual_review_note)
 
         self.summary_widget = ReportSummaryWidget()
         layout.addWidget(self.summary_widget)
@@ -49,7 +58,7 @@ class ReportPage(QWidget):
         self.table = ReportTable()
         self.table.result_selected.connect(self._handle_table_selection)
         self.details_panel = ReportDetailsPanel()
-        self.details_panel.teacher_comment_changed.connect(self._update_teacher_comment)
+        self.details_panel.manual_review_applied.connect(self._apply_manual_review)
 
         splitter.addWidget(self.table)
         splitter.addWidget(self.details_panel)
@@ -115,14 +124,85 @@ class ReportPage(QWidget):
         self._selected_result_index = None
         self.details_panel.refresh(None)
 
-    def _update_teacher_comment(self, comment: str) -> None:
-        """Update the teacher comment in AppState for the selected result."""
-        if self.state.current_report is None or self._selected_result_index is None:
+    def _apply_manual_review(self, payload: object) -> None:
+        """Apply a teacher-driven manual review decision to the selected result."""
+        if (
+            self.state.current_report is None
+            or self._selected_result_index is None
+            or not isinstance(payload, dict)
+        ):
             return
 
         if not (0 <= self._selected_result_index < len(self.state.current_report.results)):
             return
 
-        selected_result = self.state.current_report.results[self._selected_result_index]
-        selected_result.teacher_comment = comment
-        self.table.update_teacher_comment(self._selected_result_index, comment)
+        result = self.state.current_report.results[self._selected_result_index]
+        decision = payload.get("decision")
+        manual_score = payload.get("manual_score")
+        teacher_comment = payload.get("teacher_comment", "")
+        original_message = result.message
+
+        if decision == "leave_zero":
+            result.score_awarded = 0.0
+            result.status = ResultStatus.FAILED
+            result.message = "Revisione manuale docente: lasciato punteggio zero."
+        elif decision == "accept":
+            result.score_awarded = result.weight
+            result.status = ResultStatus.PASSED
+            result.message = "Revisione manuale docente: voce accettata."
+        elif decision == "partial":
+            result.score_awarded = float(manual_score or 0.0)
+            result.status = ResultStatus.WARNING
+            result.message = (
+                f"Revisione manuale docente: assegnato punteggio parziale {result.score_awarded}."
+            )
+        elif decision == "malus":
+            result.score_awarded = float(manual_score or 0.0)
+            result.status = ResultStatus.WARNING
+            result.message = (
+                f"Revisione manuale docente: applicato malus, punteggio finale {result.score_awarded}."
+            )
+        elif decision == "note_only":
+            result.message = (
+                "Revisione manuale docente annotata senza modifica automatica del punteggio."
+            )
+        else:
+            return
+
+        result.teacher_comment = teacher_comment
+        if original_message and original_message != result.message:
+            result.teacher_comment = (
+                f"{teacher_comment}\n\nMotivo originale: {original_message}".strip()
+            )
+        self._recalculate_report_summary()
+        self.table.update_result_row(self._selected_result_index, result)
+        self.summary_widget.refresh(self.state.current_report)
+        self.details_panel.refresh(result)
+
+    def _recalculate_report_summary(self) -> None:
+        """Recompute the current report summary, including manual negative malus values."""
+        report = self.state.current_report
+        if report is None:
+            return
+
+        results = report.results
+        summary = report.summary
+        summary.total_rules = len(results)
+        summary.passed = sum(1 for result in results if result.status == ResultStatus.PASSED)
+        summary.failed = sum(1 for result in results if result.status == ResultStatus.FAILED)
+        summary.warnings = sum(1 for result in results if result.status == ResultStatus.WARNING)
+        summary.manual_review = sum(
+            1 for result in results if result.status == ResultStatus.MANUAL_REVIEW
+        )
+        summary.skipped = sum(1 for result in results if result.status == ResultStatus.SKIPPED)
+        summary.errors = sum(1 for result in results if result.status == ResultStatus.ERROR)
+        summary.total_weight = sum(max(result.weight, 0) for result in results)
+        raw_awarded_weight = sum(result.score_awarded for result in results)
+        summary.awarded_weight = raw_awarded_weight
+        if summary.total_weight <= 0 or report.max_grade <= 0:
+            summary.final_grade = 0.0
+        else:
+            summary.final_grade = round(
+                (raw_awarded_weight / summary.total_weight) * report.max_grade,
+                2,
+            )

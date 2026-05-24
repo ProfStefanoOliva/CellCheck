@@ -53,7 +53,7 @@ class ProfileImportPage(QWidget):
         self.color_edit = QLineEdit()
         self.exercise_name_edit = QLineEdit()
         self.max_grade_spin = QDoubleSpinBox()
-        self.max_grade_spin.setRange(0.1, 1000.0)
+        self.max_grade_spin.setRange(0.01, 1000.0)
         self.max_grade_spin.setDecimals(2)
         self.max_grade_spin.setSingleStep(1.0)
 
@@ -83,7 +83,7 @@ class ProfileImportPage(QWidget):
         grid.addWidget(QLabel("Nome esercizio"), 3, 0)
         grid.addWidget(self.exercise_name_edit, 3, 1)
 
-        grid.addWidget(QLabel("Voto massimo"), 4, 0)
+        grid.addWidget(QLabel("Punteggio massimo"), 4, 0)
         grid.addWidget(self.max_grade_spin, 4, 1)
 
         self.generate_button = QPushButton("Genera profilo")

@@ -18,4 +18,4 @@ class AppState:
     current_report: CorrectionReport | None = None
     target_color: str = "#D9D9D9"
     exercise_name: str = ""
-    max_grade: float = 30.0
+    max_grade: float = 100.0
