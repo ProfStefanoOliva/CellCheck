@@ -1,0 +1,11 @@
+Project: CellCheck
+Author/Maintainer: Stefano Oliva
+Copyright (C) 2026 Stefano Oliva
+
+Source code license notice:
+CellCheck source code is intended to be licensed under the GNU Affero General Public License v3.0.
+Repository maintainers should add the official LICENSE file using the official GNU AGPL v3.0 text, as described in docs/LICENSE_SETUP.md.
+
+Brand and assets notice:
+The CellCheck name, logo, icon, visual identity, screenshots and brand assets are not licensed under the AGPL unless explicitly stated.
+Use of the CellCheck brand for modified or redistributed versions requires separate permission from the maintainer.
