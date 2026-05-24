@@ -20,13 +20,14 @@ In fasi successive CellCheck dovra:
 - assegnare pesi a celle o quesiti;
 - calcolare un voto massimo configurabile;
 - generare report dettagliati cella per cella;
-- salvare i profili in file `.ccal` e i report in file `.ccreport`.
+- salvare i profili in file `.ccal` e i report in file `.ccreport`;
+- esportare un riepilogo testuale `.txt` del report di correzione per la consultazione docente.
 
 ## Stato attuale
 
-Stato corrente: `Packaging preparation and PyInstaller smoke test v0.22.0`.
+Stato corrente: `Plain text correction report export v0.23.0`.
 
-La Fase 22 prepara il progetto al packaging Windows con PyInstaller in modo prudente: entry point dedicato, spec versionato, risoluzione robusta delle risorse in sorgente o bundle e documentazione tecnica per smoke test locali non ancora pubblici.
+La Fase 23 aggiunge un export testuale leggibile del report di correzione: il file `.ccreport` resta il formato strutturato JSON, mentre l'export `.txt` produce un riepilogo didattico UTF-8 con intestazione, punteggio totale, celle verificate, criterio di valutazione e dettaglio cella per cella basato solo sui dati realmente presenti nel report.
 
 Le note operative per il packaging locale sono raccolte in [docs/PACKAGING_LOCAL.md](C:/Users/oliva/Documents/LavoriAI/CellCheck/docs/PACKAGING_LOCAL.md).
 
