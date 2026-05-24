@@ -26,3 +26,11 @@ def test_governance_files_are_available_for_packaging() -> None:
     assert get_governance_file_path("BRAND_GUIDELINES.md") is not None
     assert get_governance_file_path("DISCLAIMER.md") is not None
     assert get_governance_file_path("README.md") is not None
+
+
+def test_release_candidate_checklist_exists() -> None:
+    assert get_runtime_root().joinpath("docs", "RELEASE_CANDIDATE_CHECKLIST.md").is_file()
+
+
+def test_release_hash_script_exists() -> None:
+    assert get_runtime_root().joinpath("tools", "compute_release_hash.ps1").is_file()
