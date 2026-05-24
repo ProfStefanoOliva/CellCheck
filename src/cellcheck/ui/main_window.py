@@ -32,6 +32,26 @@ from cellcheck.ui.pages import (
 from cellcheck.ui.widgets import ProjectNavigator, RibbonBar
 
 
+def build_about_text(version: str) -> str:
+    """Build the About dialog text shown from the ribbon."""
+    return (
+        "CellCheck\n\n"
+        "Autore/mantenitore: Stefano Oliva\n"
+        f"Versione corrente: {version}\n"
+        "Repository ufficiale:\n"
+        "https://github.com/ProfStefanoOliva/CellCheck\n\n"
+        "Licenza codice:\n"
+        "GNU Affero General Public License v3.0. Vedere il file LICENSE nella root del repository.\n\n"
+        "Garanzia:\n"
+        "Il software e distribuito senza garanzia; CellCheck resta uno strumento di supporto e non sostituisce il giudizio professionale del docente.\n\n"
+        "Brand e identita del prodotto:\n"
+        "La licenza del codice non concede automaticamente diritti sul nome CellCheck, sul logo, sull'icona, sugli screenshot, sul tema visivo o sugli altri asset grafici ufficiali.\n"
+        "Per la governance del brand vedere TRADEMARKS.md e BRAND_GUIDELINES.md.\n\n"
+        "Sicurezza:\n"
+        "I file .xlsm vengono letti senza esecuzione macro."
+    )
+
+
 class MainWindow(QMainWindow):
     """Office-like shell around the existing CellCheck core services."""
 
@@ -122,22 +142,7 @@ class MainWindow(QMainWindow):
         QMessageBox.information(
             self,
             "Informazioni su CellCheck",
-            (
-                "CellCheck\n\n"
-                "Autore/mantenitore: Stefano Oliva\n"
-                f"Versione corrente: {__version__}\n"
-                "Data progetto: Data non specificata\n"
-                "Repository ufficiale:\n"
-                "https://github.com/ProfStefanoOliva/CellCheck\n\n"
-                "Licenza codice:\n"
-                "Il codice e predisposto per distribuzione sotto GNU AGPL-3.0; aggiungere il file LICENSE ufficiale prima della pubblicazione open source definitiva.\n\n"
-                "Nota brand:\n"
-                "Il nome CellCheck, il logo, l'icona, gli asset grafici e l'identita visiva restano riservati all'autore, salvo autorizzazione esplicita.\n\n"
-                "Disclaimer:\n"
-                "CellCheck e uno strumento di supporto alla correzione e non sostituisce il giudizio professionale del docente.\n\n"
-                "Sicurezza:\n"
-                "I file .xlsm vengono letti senza esecuzione macro."
-            ),
+            build_about_text(__version__),
         )
 
     def _open_profile_document(self) -> None:

@@ -24,9 +24,9 @@ In fasi successive CellCheck dovra:
 
 ## Stato attuale
 
-Stato corrente: `QA pre-packaging and release readiness v0.20.0`.
+Stato corrente: `Legal notices and About dialog readiness v0.21.0`.
 
-La Fase 20 consolida la quality assurance pre-packaging: controlli piu robusti su profili `.ccal` e report `.ccreport`, copertura mirata su input numerici GUI, normalizzazione prudente delle formule e stabilita del profilo editor senza introdurre funzionalita nuove invasive.
+La Fase 21 consolida la readiness dei notice legali e del popup `?`: il testo informativo dell'applicazione e ora coerente con il file `LICENSE`, con l'assenza di garanzia, con la separazione tra licenza del codice e governance del brand, e con i riferimenti tecnici gia presenti nel repository.
 
 Nella pagina `Profilo`, il campo `Peso` indica il valore relativo della regola, non necessariamente un voto diretto. La colonna `Quota voto` mostra invece quanto vale ogni regola sulla scala finale del profilo, calcolata come `(peso regola / somma pesi) × punteggio massimo`.
 
