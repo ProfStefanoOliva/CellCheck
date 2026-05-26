@@ -79,10 +79,12 @@ def test_release_bundle_script_reads_version_from_pyproject_when_not_provided() 
 def test_public_docs_do_not_use_local_windows_paths() -> None:
     for relative_path in [
         "README.md",
+        "docs/PACKAGING_LOCAL.md",
+        "docs/RELEASE_CANDIDATE_CHECKLIST.md",
+        "docs/CLEAN_MACHINE_VALIDATION.md",
         "NOTICE",
         "TRADEMARKS.md",
         "BRAND_GUIDELINES.md",
-        "docs/PACKAGING_LOCAL.md",
     ]:
         payload = get_runtime_root().joinpath(relative_path).read_text(encoding="utf-8")
         assert "C:/Users" not in payload

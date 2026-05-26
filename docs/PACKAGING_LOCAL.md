@@ -46,9 +46,9 @@ Suggested local command:
 pyinstaller cellcheck.spec --noconfirm
 ```
 
-After a successful local smoke build, follow the full validation flow in [docs/RELEASE_CANDIDATE_CHECKLIST.md](C:/Users/oliva/Documents/LavoriAI/CellCheck/docs/RELEASE_CANDIDATE_CHECKLIST.md) before considering any broader distribution.
+After a successful local smoke build, follow the full validation flow in [docs/RELEASE_CANDIDATE_CHECKLIST.md](RELEASE_CANDIDATE_CHECKLIST.md) before considering any broader distribution.
 
-For validation on a clean Windows machine or non-development profile, prepare a local staged bundle and follow [docs/CLEAN_MACHINE_VALIDATION.md](C:/Users/oliva/Documents/LavoriAI/CellCheck/docs/CLEAN_MACHINE_VALIDATION.md).
+For validation on a clean Windows machine or non-development profile, prepare a local staged bundle and follow [docs/CLEAN_MACHINE_VALIDATION.md](CLEAN_MACHINE_VALIDATION.md).
 
 The clean-machine validation has already produced a positive external result for the local `v0.25.0` bundle, and the current phase focuses on documenting that result and preparing the next controlled publication step.
 
