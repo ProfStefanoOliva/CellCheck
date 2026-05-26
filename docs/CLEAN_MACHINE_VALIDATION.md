@@ -7,6 +7,18 @@ This document explains how to validate a local CellCheck release-candidate bundl
 
 The goal is to verify the packaged executable in a realistic user environment before any future public release.
 
+## Validation Outcome For v0.25.0 / Preparation For v0.26.0
+
+An external validation of the local `v0.25.0` release-candidate bundle was completed with a positive outcome on a clean Windows machine or on a Windows profile outside the development environment.
+
+Recorded outcome:
+
+- `CellCheck.exe` started correctly.
+- The main application pages were reachable.
+- The core flows remained operational in the packaged environment.
+
+This positive result supports the `v0.26.0` phase as a public-release-readiness preparation step, but it does not remove the need for further checks before any public distribution and does not by itself publish or certify a public release.
+
 ## Preconditions
 
 - Use a bundle prepared locally from a machine where `dist\CellCheck.exe` has already been generated.
@@ -132,3 +144,4 @@ The validation should not depend on:
 - Record any launch error, missing asset, path issue or runtime warning.
 - If the validation machine reports antivirus or SmartScreen friction, record it for release review.
 - Keep the validation notes together with the release-candidate checklist and SHA256 checksum.
+- Keep the external validation result updated for each future release candidate.

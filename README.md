@@ -25,9 +25,9 @@ In fasi successive CellCheck dovra:
 
 ## Stato attuale
 
-Stato corrente: `Clean machine validation and local release bundle staging v0.25.0`.
+Stato corrente: `Public release readiness and clean machine validation record v0.26.0`.
 
-La Fase 25 aggiunge una procedura locale e ripetibile per preparare un bundle di release candidate da validare su macchina pulita o profilo Windows non di sviluppo. Restano inclusi checklist documentata, staging locale del bundle, documenti di governance e checksum SHA256, senza pubblicare ancora alcun binario ufficiale.
+La Fase 26 documenta l'esito positivo della validazione su macchina pulita del bundle locale precedente e prepara il progetto alla prima pubblicazione pubblica controllata. La pubblicazione resta comunque manuale e separata: il progetto non promette supporto operativo, garanzie o disponibilita continuativa del binario.
 
 Le note operative per il packaging locale sono raccolte in [docs/PACKAGING_LOCAL.md](C:/Users/oliva/Documents/LavoriAI/CellCheck/docs/PACKAGING_LOCAL.md), mentre la checklist completa di validazione e distribuzione prudente e disponibile in [docs/RELEASE_CANDIDATE_CHECKLIST.md](C:/Users/oliva/Documents/LavoriAI/CellCheck/docs/RELEASE_CANDIDATE_CHECKLIST.md). La procedura specifica per la verifica su macchina pulita e descritta in [docs/CLEAN_MACHINE_VALIDATION.md](C:/Users/oliva/Documents/LavoriAI/CellCheck/docs/CLEAN_MACHINE_VALIDATION.md).
 

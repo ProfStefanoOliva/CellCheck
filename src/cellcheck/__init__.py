@@ -1,3 +1,3 @@
 """Top-level package for CellCheck."""
 
-__version__ = "0.25.0"
+__version__ = "0.26.0"
