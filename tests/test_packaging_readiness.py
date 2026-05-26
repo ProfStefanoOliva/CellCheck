@@ -57,3 +57,20 @@ def test_release_candidate_checklist_mentions_txt_ccreport_license_and_sha256() 
 def test_gitignore_excludes_release_candidates() -> None:
     gitignore = get_runtime_root().joinpath(".gitignore").read_text(encoding="utf-8")
     assert "release_candidates/" in gitignore
+
+
+def test_clean_machine_doc_records_positive_external_validation() -> None:
+    clean_machine_doc = get_runtime_root().joinpath("docs", "CLEAN_MACHINE_VALIDATION.md").read_text(
+        encoding="utf-8"
+    )
+    assert "v0.25.0" in clean_machine_doc
+    assert "positive" in clean_machine_doc.lower()
+
+
+def test_release_bundle_script_reads_version_from_pyproject_when_not_provided() -> None:
+    script = get_runtime_root().joinpath("tools", "prepare_release_candidate_bundle.ps1").read_text(
+        encoding="utf-8"
+    )
+    assert "pyproject.toml" in script
+    assert 'param(' in script
+    assert '[string]$Version' in script

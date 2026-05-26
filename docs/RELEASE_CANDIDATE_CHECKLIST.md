@@ -4,6 +4,12 @@ This checklist is for local validation of a future public Windows release of Cel
 
 It does not publish a binary release and does not replace the existing development or packaging workflow.
 
+## Recorded External Validation Status
+
+- External validation of the `v0.25.0` local release-candidate bundle completed with positive outcome on a clean Windows machine or non-development Windows profile.
+- `CellCheck.exe` started correctly and the main application functions were confirmed as operational in that environment.
+- The checklist below still remains mandatory before any public publication step.
+
 ## Scope
 
 Use this checklist only after the project has already passed its normal development checks and a local packaging smoke test has succeeded.

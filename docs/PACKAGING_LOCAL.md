@@ -50,6 +50,8 @@ After a successful local smoke build, follow the full validation flow in [docs/R
 
 For validation on a clean Windows machine or non-development profile, prepare a local staged bundle and follow [docs/CLEAN_MACHINE_VALIDATION.md](C:/Users/oliva/Documents/LavoriAI/CellCheck/docs/CLEAN_MACHINE_VALIDATION.md).
 
+The clean-machine validation has already produced a positive external result for the local `v0.25.0` bundle, and the current phase focuses on documenting that result and preparing the next controlled publication step.
+
 ## Pre-release Checks Still Required
 
 Before any public distribution, verify at least:
