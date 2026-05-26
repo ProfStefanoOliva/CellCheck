@@ -74,3 +74,38 @@ def test_release_bundle_script_reads_version_from_pyproject_when_not_provided() 
     assert "pyproject.toml" in script
     assert 'param(' in script
     assert '[string]$Version' in script
+
+
+def test_public_docs_do_not_use_local_windows_paths() -> None:
+    for relative_path in [
+        "README.md",
+        "NOTICE",
+        "TRADEMARKS.md",
+        "BRAND_GUIDELINES.md",
+        "docs/PACKAGING_LOCAL.md",
+    ]:
+        payload = get_runtime_root().joinpath(relative_path).read_text(encoding="utf-8")
+        assert "C:/Users" not in payload
+
+
+def test_public_docs_do_not_contain_obsolete_license_placeholders() -> None:
+    payloads = [
+        get_runtime_root().joinpath("NOTICE").read_text(encoding="utf-8"),
+        get_runtime_root().joinpath("TRADEMARKS.md").read_text(encoding="utf-8"),
+        get_runtime_root().joinpath("BRAND_GUIDELINES.md").read_text(encoding="utf-8"),
+    ]
+    for payload in payloads:
+        lowered = payload.lower()
+        assert "intended to be licensed" not in lowered
+        assert "should add the official license file" not in lowered
+        assert "terms intended for the gnu affero general public license" not in lowered
+        assert "terms intended for the project" not in lowered
+
+
+def test_notice_and_readme_reference_agpl_and_license() -> None:
+    notice = get_runtime_root().joinpath("NOTICE").read_text(encoding="utf-8")
+    readme = get_runtime_root().joinpath("README.md").read_text(encoding="utf-8")
+    assert "GNU Affero General Public License v3.0" in notice
+    assert "LICENSE" in notice
+    assert "GNU Affero General Public License v3.0" in readme
+    assert "[LICENSE](LICENSE)" in readme
