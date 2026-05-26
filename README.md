@@ -25,11 +25,11 @@ In fasi successive CellCheck dovra:
 
 ## Stato attuale
 
-Stato corrente: `Public release readiness and clean machine validation record v0.26.0`.
+Stato corrente: `Public license docs cleanup v0.26.1`.
 
 La Fase 26 documenta l'esito positivo della validazione su macchina pulita del bundle locale precedente e prepara il progetto alla prima pubblicazione pubblica controllata. La pubblicazione resta comunque manuale e separata: il progetto non promette supporto operativo, garanzie o disponibilita continuativa del binario.
 
-Le note operative per il packaging locale sono raccolte in [docs/PACKAGING_LOCAL.md](C:/Users/oliva/Documents/LavoriAI/CellCheck/docs/PACKAGING_LOCAL.md), mentre la checklist completa di validazione e distribuzione prudente e disponibile in [docs/RELEASE_CANDIDATE_CHECKLIST.md](C:/Users/oliva/Documents/LavoriAI/CellCheck/docs/RELEASE_CANDIDATE_CHECKLIST.md). La procedura specifica per la verifica su macchina pulita e descritta in [docs/CLEAN_MACHINE_VALIDATION.md](C:/Users/oliva/Documents/LavoriAI/CellCheck/docs/CLEAN_MACHINE_VALIDATION.md).
+Le note operative per il packaging locale sono raccolte in [docs/PACKAGING_LOCAL.md](docs/PACKAGING_LOCAL.md), mentre la checklist completa di validazione e distribuzione prudente e disponibile in [docs/RELEASE_CANDIDATE_CHECKLIST.md](docs/RELEASE_CANDIDATE_CHECKLIST.md). La procedura specifica per la verifica su macchina pulita e descritta in [docs/CLEAN_MACHINE_VALIDATION.md](docs/CLEAN_MACHINE_VALIDATION.md).
 
 Nella pagina `Profilo`, il campo `Peso` indica il valore relativo della regola, non necessariamente un voto diretto. La colonna `Quota voto` mostra invece quanto vale ogni regola sulla scala finale del profilo, calcolata come `(peso regola / somma pesi) × punteggio massimo`.
 
@@ -62,7 +62,7 @@ Per compatibilita prudente, i vecchi report `.ccal` possono ancora essere carica
 
 ## Branding Assets
 
-Gli asset grafici del progetto si trovano in [assets/branding](C:/Users/oliva/Documents/LavoriAI/CellCheck/assets/branding):
+Gli asset grafici del progetto si trovano in [assets/branding](assets/branding):
 
 - `cellcheck_logo_square.png`
 - `cellcheck_logo_horizontal.png`
@@ -78,24 +78,24 @@ Repository ufficiale:
 
 ## License
 
-Il codice sorgente di CellCheck e distribuito sotto GNU Affero General Public License v3.0. Il testo ufficiale della licenza e disponibile nel file [LICENSE](C:/Users/oliva/Documents/LavoriAI/CellCheck/LICENSE).
+Il codice sorgente di CellCheck e distribuito sotto GNU Affero General Public License v3.0. Il testo ufficiale della licenza e disponibile nel file [LICENSE](LICENSE).
 
-Per note operative di verifica e governance sulla gestione della licenza, fare riferimento a [docs/LICENSE_SETUP.md](C:/Users/oliva/Documents/LavoriAI/CellCheck/docs/LICENSE_SETUP.md).
+Per note operative di verifica e governance sulla gestione della licenza, fare riferimento a [docs/LICENSE_SETUP.md](docs/LICENSE_SETUP.md).
 
 ## Trademark and brand
 
 Il nome `CellCheck`, il logo, l'icona, gli screenshot, il tema visivo e gli asset grafici ufficiali restano collegati all'autore e non sono automaticamente concessi dalla sola licenza del codice, salvo autorizzazione esplicita.
 
-Per fork, versioni modificate e uso descrittivo del nome, fare riferimento a [TRADEMARKS.md](C:/Users/oliva/Documents/LavoriAI/CellCheck/TRADEMARKS.md) e [BRAND_GUIDELINES.md](C:/Users/oliva/Documents/LavoriAI/CellCheck/BRAND_GUIDELINES.md).
+Per fork, versioni modificate e uso descrittivo del nome, fare riferimento a [TRADEMARKS.md](TRADEMARKS.md) e [BRAND_GUIDELINES.md](BRAND_GUIDELINES.md).
 
 ## Disclaimer
 
 CellCheck e uno strumento di supporto alla correzione e non sostituisce il giudizio professionale del docente. I risultati devono essere verificati dall'utente, soprattutto in contesti valutativi reali.
 
-Le formule Excel non vengono ricalcolate internamente e i file `.xlsm` non vengono eseguiti. Maggiori dettagli sono disponibili in [DISCLAIMER.md](C:/Users/oliva/Documents/LavoriAI/CellCheck/DISCLAIMER.md).
+Le formule Excel non vengono ricalcolate internamente e i file `.xlsm` non vengono eseguiti. Maggiori dettagli sono disponibili in [DISCLAIMER.md](DISCLAIMER.md).
 
 ## Security and sensitive data
 
 Non caricare nelle issue pubbliche file reali di studenti, dati personali, workbook sensibili o documenti istituzionali riservati.
 
-Per segnalazioni di sicurezza e linee guida sui dati sensibili, vedere [SECURITY.md](C:/Users/oliva/Documents/LavoriAI/CellCheck/SECURITY.md) e [CONTRIBUTING.md](C:/Users/oliva/Documents/LavoriAI/CellCheck/CONTRIBUTING.md).
+Per segnalazioni di sicurezza e linee guida sui dati sensibili, vedere [SECURITY.md](SECURITY.md) e [CONTRIBUTING.md](CONTRIBUTING.md).

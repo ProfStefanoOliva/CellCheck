@@ -32,7 +32,7 @@ The official visual identity, including the dark theme and associated branding e
 
 ## Forks and modified versions
 
-Forks are allowed under the open source code license terms intended for the project, but modified versions should:
+Forks are allowed under the open source code license terms used by the project, but modified versions should:
 
 - use a different product name;
 - avoid official branding assets;

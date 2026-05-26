@@ -2,7 +2,7 @@
 
 `CellCheck` is the name of the project and software maintained by Stefano Oliva.
 
-The source code may be copied, modified, and redistributed under the terms intended for the GNU Affero General Public License v3.0. However, the code license does not automatically grant the right to use the `CellCheck` name, logo, icon, official screenshots, visual identity, or other brand assets for modified distributions.
+The source code may be copied, modified, and redistributed under the terms of the GNU Affero General Public License v3.0. However, the code license does not automatically grant the right to use the `CellCheck` name, logo, icon, official screenshots, visual identity, or other brand assets for modified distributions.
 
 ## What is allowed
 
