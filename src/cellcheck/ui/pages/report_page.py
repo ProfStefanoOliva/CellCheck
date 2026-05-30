@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 from PySide6.QtWidgets import (
+    QComboBox,
     QFileDialog,
     QHBoxLayout,
     QLabel,
@@ -39,6 +38,7 @@ class ReportPage(QWidget):
         self.state = state
         self.on_load_report_requested = None
         self.on_save_report_requested = None
+        self.on_state_changed = None
         self._filtered_indices: list[int] = []
         self._filtered_results: list[CellCorrectionResult] = []
         self._selected_result_index: int | None = None
@@ -60,6 +60,16 @@ class ReportPage(QWidget):
         self.manual_review_note_label.setObjectName("warningText")
         self.manual_review_note_label.setWordWrap(True)
         layout.addWidget(self.manual_review_note_label)
+
+        selector_row = QHBoxLayout()
+        selector_row.setContentsMargins(0, 0, 0, 0)
+        selector_row.setSpacing(10)
+        self.report_selector_label = QLabel()
+        selector_row.addWidget(self.report_selector_label)
+        self.report_selector_combo = QComboBox()
+        self.report_selector_combo.currentIndexChanged.connect(self._handle_report_selection_changed)
+        selector_row.addWidget(self.report_selector_combo, 1)
+        layout.addLayout(selector_row)
 
         command_row = QHBoxLayout()
         command_row.setContentsMargins(0, 0, 0, 0)
@@ -112,6 +122,7 @@ class ReportPage(QWidget):
         self.title_label.setText(tr("report.title"))
         self.subtitle_label.setText(tr("report.subtitle"))
         self.manual_review_note_label.setText(tr("report.manual_note"))
+        self.report_selector_label.setText(tr("report.select"))
         self.load_report_button.setText(tr("report.load"))
         self.save_report_button.setText(tr("report.save"))
         self.export_report_button.setText(tr("report.export"))
@@ -122,10 +133,16 @@ class ReportPage(QWidget):
 
     def refresh_from_state(self) -> None:
         """Refresh summary and table from the current report."""
+        self._refresh_report_selector()
         report = self.state.current_report
+        report_name = self.state.current_report_display_name()
+        if report_name:
+            self.subtitle_label.setText(f"{tr('report.subtitle')}\n{report_name}")
+        else:
+            self.subtitle_label.setText(tr("report.subtitle"))
         self.summary_widget.refresh(report)
         if report is None:
-            self.persistence_status_label.setText("Nessun report corrente caricato.")
+            self.persistence_status_label.setText(tr("report.none_available"))
         elif self.state.report_dirty:
             self.persistence_status_label.setText(
                 "Le revisioni manuali sono applicate al report corrente. Salva il report .ccreport per conservarle."
@@ -145,6 +162,9 @@ class ReportPage(QWidget):
         self._filtered_indices = []
         self._filtered_results = []
         self._selected_result_index = None
+        self.report_selector_combo.blockSignals(True)
+        self.report_selector_combo.clear()
+        self.report_selector_combo.blockSignals(False)
         self.filter_bar.clear_filters(emit_signal=False)
         self.table.load_results([], [])
         self.details_panel.refresh(None)
@@ -260,12 +280,15 @@ class ReportPage(QWidget):
             return
 
         result.teacher_comment = teacher_comment
-        self.state.report_dirty = True
+        self.state.mark_current_report_dirty(True)
         self._recalculate_report_summary()
         self.table.update_result_row(self._selected_result_index, result)
         self.summary_widget.refresh(self.state.current_report)
         self.details_panel.refresh(result)
-        self.refresh_from_state()
+        if self.on_state_changed is not None:
+            self.on_state_changed()
+        else:
+            self.refresh_from_state()
 
     def _recalculate_report_summary(self) -> None:
         """Recompute the current report summary, including manual negative malus values."""
@@ -375,10 +398,9 @@ class ReportPage(QWidget):
             )
             return
         suggested_name = "report_correzione.txt"
-        if report.student_file:
-            student_stem = Path(report.student_file).stem.strip()
-            if student_stem:
-                suggested_name = f"{student_stem}_report_correzione.txt"
+        report_name = self.state.current_report_display_name()
+        if report_name:
+            suggested_name = f"{report_name}.txt"
 
         path, _ = QFileDialog.getSaveFileName(
             self,
@@ -405,3 +427,34 @@ class ReportPage(QWidget):
             "Esporta report",
             "Report esportato correttamente in formato testuale UTF-8.",
         )
+
+    def _refresh_report_selector(self) -> None:
+        """Reload the in-session report selector without losing the current selection."""
+        options = self.state.available_report_options()
+        if options and self.state.current_report is None:
+            self.state.select_report_by_student_file(options[0][0])
+        current_key = self.state.selected_report_student_file
+        self.report_selector_combo.blockSignals(True)
+        self.report_selector_combo.clear()
+        for key, label in options:
+            self.report_selector_combo.addItem(label, key)
+        if options:
+            selected_index = 0
+            for index, (key, _label) in enumerate(options):
+                if key == current_key:
+                    selected_index = index
+                    break
+            self.report_selector_combo.setCurrentIndex(selected_index)
+        self.report_selector_combo.setEnabled(bool(options))
+        self.report_selector_combo.blockSignals(False)
+
+    def _handle_report_selection_changed(self, index: int) -> None:
+        """Switch the visible report when the user changes the combo selection."""
+        if index < 0:
+            return
+        student_file = self.report_selector_combo.itemData(index)
+        if isinstance(student_file, str) and self.state.select_report_by_student_file(student_file):
+            if self.on_state_changed is not None:
+                self.on_state_changed()
+            else:
+                self.refresh_from_state()

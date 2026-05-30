@@ -57,16 +57,21 @@ def test_sidebar_keys_exist_in_primary_language() -> None:
     for key in [
         "navigator.empty_workbook",
         "navigator.not_selected",
+        "navigator.profile_reference",
         "navigator.solution_workbook",
         "navigator.guided_correction",
         "navigator.to_prepare",
         "navigator.profile",
         "navigator.no_profile",
         "navigator.student_files",
+        "navigator.correct",
+        "navigator.view_report",
         "navigator.report",
         "navigator.no_report",
         "navigator.help",
         "navigator.help_available",
+        "report.select",
+        "report.none_available",
     ]:
         assert key in TRANSLATIONS["it"]
 
@@ -90,5 +95,17 @@ def test_dashboard_about_and_help_keys_exist_in_primary_language() -> None:
         "new_workspace.tooltip",
         "new_workspace.confirm_title",
         "new_workspace.confirm_message",
-    ]:
+        ]:
         assert key in TRANSLATIONS["it"]
+
+
+def test_multi_report_keys_exist_for_all_supported_languages() -> None:
+    keys = [
+        "navigator.correct",
+        "navigator.view_report",
+        "report.select",
+        "report.none_available",
+    ]
+    for language_code, _label in available_languages():
+        for key in keys:
+            assert key in TRANSLATIONS[language_code]

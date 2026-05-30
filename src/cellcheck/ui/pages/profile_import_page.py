@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from pathlib import Path
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
@@ -263,9 +264,7 @@ class ProfilePage(QWidget):
         self.state.current_profile_path = None
         self.state.profile_dirty = True
         self.state.profile_status = "new"
-        self.state.current_report = None
-        self.state.current_report_path = None
-        self.state.report_dirty = False
+        self.state.clear_reports()
         self.state.exercise_name = profile.exercise_name
         self.state.max_grade = profile.max_grade
         self.on_state_changed()
@@ -297,13 +296,21 @@ class ProfilePage(QWidget):
 
         result = dialog.result
         profile = result.profile
+        profile.blank_workbook_name = (
+            Path(result.summary.empty_workbook_path).name
+            if result.summary.empty_workbook_path
+            else None
+        )
+        profile.solved_workbook_name = (
+            Path(result.summary.solution_workbook_path).name
+            if result.summary.solution_workbook_path
+            else None
+        )
         self.state.current_profile = profile
         self.state.current_profile_path = None
         self.state.profile_dirty = True
         self.state.profile_status = "generated"
-        self.state.current_report = None
-        self.state.current_report_path = None
-        self.state.report_dirty = False
+        self.state.clear_reports()
         self.state.empty_workbook_path = result.summary.empty_workbook_path
         self.state.solution_workbook_path = result.summary.solution_workbook_path
         self.state.target_color = result.summary.target_rgb
@@ -463,9 +470,7 @@ class ProfilePage(QWidget):
         """Refresh shared profile state after an edit operation."""
         self.state.profile_dirty = True
         self.state.profile_status = "modified" if self.state.current_profile_path else "new"
-        self.state.current_report = None
-        self.state.current_report_path = None
-        self.state.report_dirty = False
+        self.state.clear_reports()
         self.on_state_changed()
 
     def _upsert_rule(self, profile: CorrectionProfile, rule: CorrectionRule) -> None:

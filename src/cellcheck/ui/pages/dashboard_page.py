@@ -100,9 +100,9 @@ class DashboardPage(QWidget):
             [
                 self.state.empty_workbook_path,
                 self.state.solution_workbook_path,
-                self.state.student_workbook_path,
+                self.state.student_workbook_paths,
                 self.state.current_profile is not None,
-                self.state.current_report is not None,
+                self.state.session_reports,
                 self.state.exercise_name.strip(),
             ]
         )

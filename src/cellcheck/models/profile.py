@@ -25,6 +25,8 @@ class CorrectionProfile(BaseModel):
     max_grade: float = Field(gt=0)
     source_empty_workbook: str | None = None
     source_solution_workbook: str | None = None
+    blank_workbook_name: str | None = None
+    solved_workbook_name: str | None = None
     source_workbook_format: WorkbookFormat | None = None
     macro_enabled: bool = False
     worksheets: list[WorksheetProfile] = Field(default_factory=list)
