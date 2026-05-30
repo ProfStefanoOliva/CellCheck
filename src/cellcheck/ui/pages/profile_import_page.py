@@ -27,7 +27,11 @@ from cellcheck.models import (
     WorksheetProfile,
 )
 from cellcheck.ui.app_state import AppState
-from cellcheck.ui.dialogs import GenerateProfileDialog, ProfileRuleDialog
+from cellcheck.ui.dialogs import (
+    EvaluationTableDialog,
+    GenerateProfileDialog,
+    ProfileRuleDialog,
+)
 from cellcheck.ui.i18n import tr
 from cellcheck.ui.number_format import format_decimal_for_ui
 
@@ -97,6 +101,10 @@ class ProfilePage(QWidget):
         self.delete_rule_button.clicked.connect(self._delete_rule)
         actions_layout.addWidget(self.delete_rule_button, 1, 2)
 
+        self.evaluation_table_button = QPushButton()
+        self.evaluation_table_button.clicked.connect(self._open_evaluation_table_dialog)
+        actions_layout.addWidget(self.evaluation_table_button, 1, 3)
+
         root_layout.addWidget(actions_card)
 
         self.status_label = QLabel()
@@ -111,7 +119,7 @@ class ProfilePage(QWidget):
         self.weights_help_label.setWordWrap(True)
         root_layout.addWidget(self.weights_help_label)
 
-        self.rules_table = QTableWidget(0, 9)
+        self.rules_table = QTableWidget(0, 10)
         self.rules_table.setObjectName("reportTable")
         self.rules_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.rules_table.setSelectionMode(QTableWidget.SingleSelection)
@@ -139,6 +147,7 @@ class ProfilePage(QWidget):
         self.add_rule_button.setText(tr("profile.add_rule"))
         self.edit_rule_button.setText(tr("profile.edit_rule"))
         self.delete_rule_button.setText(tr("profile.delete_rule"))
+        self.evaluation_table_button.setText(tr("profile.evaluation_table"))
         self.weights_help_label.setText(tr("profile.weights_help"))
         self.rules_table.setHorizontalHeaderLabels(
             [
@@ -150,6 +159,7 @@ class ProfilePage(QWidget):
                 tr("profile.table.quota"),
                 tr("profile.table.expected"),
                 tr("profile.table.mode"),
+                tr("profile.table.required_activity"),
                 tr("profile.table.note"),
             ]
         )
@@ -349,6 +359,7 @@ class ProfilePage(QWidget):
             enabled=rule_data.enabled,
             tolerance=rule_data.tolerance,
             teacher_note=rule_data.teacher_note,
+            required_activity=rule_data.required_activity,
         )
         self._upsert_rule(profile, new_rule)
         self._mark_profile_modified()
@@ -390,6 +401,7 @@ class ProfilePage(QWidget):
                 if rule_data.tolerance is not None
                 else None,
                 "teacher_note": rule_data.teacher_note,
+                "required_activity": rule_data.required_activity,
             }
         )
 
@@ -428,6 +440,24 @@ class ProfilePage(QWidget):
         profile.worksheets[worksheet_index].rules.pop(rule_index)
         self._remove_empty_worksheet(profile, worksheet_index)
         self._mark_profile_modified()
+
+    def _open_evaluation_table_dialog(self) -> None:
+        """Open the editable student-facing evaluation table preview."""
+        profile = self.state.current_profile
+        if profile is None:
+            QMessageBox.information(
+                self,
+                tr("evaluation_table.title"),
+                tr("evaluation_table.no_profile"),
+            )
+            return
+
+        dialog = EvaluationTableDialog(
+            profile,
+            self.state.current_profile_path,
+            self,
+        )
+        dialog.exec()
 
     def _mark_profile_modified(self) -> None:
         """Refresh shared profile state after an edit operation."""
@@ -540,6 +570,7 @@ class ProfilePage(QWidget):
                 cls._safe_table_text(cls._quota_vote_text(rule.weight, total_weight, max_grade)),
                 cls._safe_table_text(cls._rule_expected_text(rule), fallback="-"),
                 cls._safe_table_text(cls._rule_mode_text(rule), fallback="-"),
+                cls._safe_table_text(rule.required_activity, fallback=""),
                 cls._safe_table_text(rule.teacher_note, fallback=""),
             ]
         except Exception:
@@ -552,6 +583,7 @@ class ProfilePage(QWidget):
                 "-",
                 cls._safe_table_text(rule.expected_formula or rule.expected_value, fallback="-"),
                 cls._safe_table_text(getattr(rule.rule_type, "value", rule.rule_type), fallback="-"),
+                cls._safe_table_text(rule.required_activity, fallback=""),
                 cls._safe_table_text(rule.teacher_note, fallback=""),
             ]
 

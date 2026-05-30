@@ -22,6 +22,7 @@ class CorrectionRule(BaseModel):
     enabled: bool = True
     tolerance: ToleranceConfig | None = None
     teacher_note: str = ""
+    required_activity: str = ""
 
     @model_validator(mode="after")
     def validate_target_reference(self) -> "CorrectionRule":
