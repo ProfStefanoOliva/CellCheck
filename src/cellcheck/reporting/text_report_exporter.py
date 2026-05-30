@@ -62,6 +62,25 @@ def build_text_correction_report(
         lines.append(f"  Formula modello:  {_display_text(result.expected_formula)}")
         lines.append(f"  Valore trovato:   {_display_text(result.student_value)}")
         lines.append(f"  Valore atteso:    {_display_text(result.expected_value)}")
+        if result.requires_manual_review:
+            lines.append("  Richiede revisione manuale: Si")
+        elif result.rule_type.value == "manual_review":
+            lines.append("  Richiedeva revisione manuale: Si")
+        if result.was_teacher_reviewed:
+            label = (
+                "  Revisione manuale docente registrata: Si"
+                if result.rule_type.value == "manual_review"
+                else "  Rettifica manuale docente registrata: Si"
+            )
+            lines.append(label)
+            original_message = result.original_outcome_message
+            if original_message and original_message != result.message:
+                original_label = (
+                    "  Esito originale:"
+                    if result.rule_type.value == "manual_review"
+                    else "  Esito automatico originale:"
+                )
+                lines.append(f"{original_label} {_display_text(original_message)}")
         lines.append(f"  Note: {_display_text(result.message)}")
         if result.teacher_comment:
             lines.append(f"  Commento docente: {_display_text(result.teacher_comment)}")

@@ -168,6 +168,56 @@ def test_correction_report_json_roundtrip() -> None:
     assert restored == report
 
 
+def test_teacher_review_helper_properties_cover_manual_and_automatic_rows() -> None:
+    automatic_result = build_report().results[0].model_copy(
+        update={
+            "status": ResultStatus.WARNING,
+            "score_awarded": 0.0,
+            "message": (
+                "Rettifica manuale docente: lasciato punteggio zero. "
+                "Esito automatico originale: Value matches."
+            ),
+            "teacher_comment": "Corretto manualmente dal docente.",
+        }
+    )
+    manual_review_result = CellCorrectionResult(
+        rule_id="rule-manual",
+        sheet_name="Sheet1",
+        cell="B2",
+        rule_type=RuleType.MANUAL_REVIEW,
+        expected_value="Verifica docente",
+        student_value="Dato",
+        weight=1.0,
+        score_awarded=0.0,
+        status=ResultStatus.MANUAL_REVIEW,
+        message="Controllo richiesto al docente.",
+    )
+    reviewed_manual_result = manual_review_result.model_copy(
+        update={
+            "status": ResultStatus.PASSED,
+            "score_awarded": 1.0,
+            "message": (
+                "Revisione manuale docente: voce accettata. "
+                "Esito originale: Controllo richiesto al docente."
+            ),
+        }
+    )
+
+    assert automatic_result.was_teacher_reviewed is True
+    assert automatic_result.requires_manual_review is False
+    assert automatic_result.original_outcome_message == "Value matches."
+    assert automatic_result.teacher_review_label == "rettifica manuale"
+
+    assert manual_review_result.was_teacher_reviewed is False
+    assert manual_review_result.requires_manual_review is True
+    assert manual_review_result.original_outcome_message == "Controllo richiesto al docente."
+    assert manual_review_result.teacher_review_label == "revisione manuale"
+
+    assert reviewed_manual_result.was_teacher_reviewed is True
+    assert reviewed_manual_result.requires_manual_review is False
+    assert reviewed_manual_result.original_outcome_message == "Controllo richiesto al docente."
+
+
 def test_correction_report_json_roundtrip_preserves_teacher_comment_and_malus() -> None:
     report = build_report().model_copy(
         update={
@@ -201,3 +251,53 @@ def test_correction_report_json_roundtrip_preserves_teacher_comment_and_malus() 
     assert restored.results[0].teacher_comment == "Verificato manualmente: applicato malus."
     assert restored.summary.awarded_weight == -0.5
     assert restored.summary.final_grade == -7.5
+
+
+def test_correction_report_json_loading_remains_backward_compatible_without_new_fields() -> None:
+    payload = """
+{
+  "cellcheck_format": "ccal",
+  "format_version": "1.0",
+  "document_type": "correction_report",
+  "software_name": "CellCheck",
+  "minimum_cellcheck_version": "0.7.0",
+  "profile_name": "Budget Exercise",
+  "student_file": "student.xlsx",
+  "student_workbook_format": "xlsx",
+  "macro_enabled": false,
+  "max_grade": 30.0,
+  "summary": {
+    "total_rules": 1,
+    "passed": 1,
+    "failed": 0,
+    "warnings": 0,
+    "manual_review": 0,
+    "skipped": 0,
+    "errors": 0,
+    "total_weight": 2.0,
+    "awarded_weight": 2.0,
+    "final_grade": 30.0
+  },
+  "results": [
+    {
+      "rule_id": "rule-1",
+      "sheet_name": "Sheet1",
+      "cell": "A1",
+      "rule_type": "numeric_value",
+      "expected_value": 42,
+      "student_value": 42,
+      "weight": 2.0,
+      "score_awarded": 2.0,
+      "status": "passed",
+      "message": "Value matches.",
+      "teacher_comment": ""
+    }
+  ]
+}
+"""
+
+    restored = CorrectionReport.from_json_string(payload)
+
+    assert restored.results[0].was_teacher_reviewed is False
+    assert restored.results[0].requires_manual_review is False
+    assert restored.results[0].original_outcome_message == "Value matches."

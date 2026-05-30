@@ -254,6 +254,50 @@ def test_report_roundtrip_preserves_teacher_comment_and_manual_malus(tmp_path: P
     assert loaded.summary.final_grade == -7.5
 
 
+def test_report_roundtrip_preserves_manual_override_on_automatic_row(tmp_path: Path) -> None:
+    path = tmp_path / "automatic-override.ccreport"
+    report = build_report().model_copy(
+        update={
+            "summary": ScoreSummary(
+                total_rules=1,
+                passed=0,
+                failed=0,
+                warnings=1,
+                manual_review=0,
+                skipped=0,
+                errors=0,
+                total_weight=2.0,
+                awarded_weight=1.0,
+                final_grade=15.0,
+            ),
+            "results": [
+                build_report().results[0].model_copy(
+                    update={
+                        "score_awarded": 1.0,
+                        "status": ResultStatus.WARNING,
+                        "message": (
+                            "Rettifica manuale docente: assegnato punteggio parziale 1.0. "
+                            "Esito automatico originale: Value matches."
+                        ),
+                        "teacher_comment": "Accettato solo in parte dal docente.",
+                    }
+                )
+            ],
+        }
+    )
+
+    save_report(report, path)
+    loaded = load_report(path)
+
+    assert loaded.results[0].score_awarded == 1.0
+    assert loaded.results[0].status == ResultStatus.WARNING
+    assert loaded.results[0].teacher_comment == "Accettato solo in parte dal docente."
+    assert loaded.results[0].was_teacher_reviewed is True
+    assert loaded.results[0].original_outcome_message == "Value matches."
+    assert loaded.summary.awarded_weight == 1.0
+    assert loaded.summary.final_grade == 15.0
+
+
 def test_legacy_report_ccal_is_still_loadable(tmp_path: Path) -> None:
     path = tmp_path / "legacy-report.ccal"
     report = build_report()

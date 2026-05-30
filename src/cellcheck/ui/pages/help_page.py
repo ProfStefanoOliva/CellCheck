@@ -93,7 +93,7 @@ class HelpPage(QWidget):
             "1. Creare o importare un profilo nella pagina Profilo.\n"
             "2. Usare Correzione guidata per selezionare profilo ed elaborato studente.\n"
             "3. Generare il report.\n"
-            "4. Revisionare manualmente le voci che lo richiedono.\n"
+            "4. Revisionare manualmente le voci che lo richiedono o rettificare qualsiasi riga automatica dal Report.\n"
             "5. Salvare il report."
         )
 
@@ -118,8 +118,8 @@ class HelpPage(QWidget):
     def _section_report() -> str:
         return (
             "La pagina Report consente di filtrare i risultati, leggere i dettagli "
-            "cella per cella e annotare i casi di revisione manuale.\n\n"
-            "Le revisioni manuali aggiornano il report corrente, ma non modificano i workbook originali."
+            "cella per cella, applicare revisioni manuali obbligatorie e rettificare manualmente qualsiasi esito automatico.\n\n"
+            "Le revisioni manuali aggiornano il report corrente, il riepilogo e l'export testuale, ma non modificano i workbook originali."
         )
 
     @staticmethod

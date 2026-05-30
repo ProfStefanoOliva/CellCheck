@@ -1,10 +1,18 @@
 """Correction report models."""
 
+from __future__ import annotations
+
 from pydantic import BaseModel, Field, model_validator
 
 from .enums import CcalDocumentType, ResultStatus, RuleType, WorkbookFormat
 
 CellValue = str | int | float | bool | None
+
+MANUAL_REVIEW_MESSAGE_PREFIX = "Revisione manuale docente:"
+MANUAL_OVERRIDE_MESSAGE_PREFIX = "Rettifica manuale docente:"
+MANUAL_NOTE_MESSAGE_PREFIX = "Annotazione docente"
+ORIGINAL_MESSAGE_LABEL = "Esito originale:"
+ORIGINAL_AUTO_MESSAGE_LABEL = "Esito automatico originale:"
 
 
 class CellCorrectionResult(BaseModel):
@@ -31,6 +39,42 @@ class CellCorrectionResult(BaseModel):
         if self.score_awarded > self.weight:
             raise ValueError("score_awarded cannot be greater than weight")
         return self
+
+    @property
+    def requires_manual_review(self) -> bool:
+        """Return True when the rule still needs a mandatory teacher decision."""
+        return self.rule_type == RuleType.MANUAL_REVIEW and self.status == ResultStatus.MANUAL_REVIEW
+
+    @property
+    def was_teacher_reviewed(self) -> bool:
+        """Return True when the row already contains a teacher-driven update."""
+        message = self.message.strip()
+        return message.startswith(
+            (
+                MANUAL_REVIEW_MESSAGE_PREFIX,
+                MANUAL_OVERRIDE_MESSAGE_PREFIX,
+                MANUAL_NOTE_MESSAGE_PREFIX,
+            )
+        )
+
+    @property
+    def teacher_review_label(self) -> str:
+        """Return the human-facing label for the teacher intervention type."""
+        if self.rule_type == RuleType.MANUAL_REVIEW:
+            return "revisione manuale"
+        return "rettifica manuale"
+
+    @property
+    def original_outcome_message(self) -> str:
+        """Return the original automatic/manual outcome stored inside the message."""
+        message = self.message.strip()
+        for label in (ORIGINAL_AUTO_MESSAGE_LABEL, ORIGINAL_MESSAGE_LABEL):
+            marker = f" {label} "
+            if marker in message:
+                return message.split(marker, 1)[1].strip()
+            if message.startswith(label):
+                return message[len(label) :].strip()
+        return message
 
 
 class ScoreSummary(BaseModel):
