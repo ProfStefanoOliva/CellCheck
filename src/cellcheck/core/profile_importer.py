@@ -40,7 +40,7 @@ class ProfileImporter:
             solution_path, data_only=False
         ) as solution_reader:
             color_scan_result = color_scanner.scan_fill_color(
-                options.target_color,
+                color_target.normalized_argb,
                 sheet_names=options.sheet_names,
             )
             solution_info = solution_reader.get_workbook_info()

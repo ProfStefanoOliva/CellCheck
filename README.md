@@ -25,7 +25,7 @@ In fasi successive CellCheck dovra:
 
 ## Stato attuale
 
-Stato corrente: `Universal manual override for report rows v0.27.0`.
+Stato corrente: `Robust Excel background color detection v0.28.0`.
 
 La Fase 26 documenta l'esito positivo della validazione su macchina pulita del bundle locale precedente e prepara il progetto alla prima pubblicazione pubblica controllata. La pubblicazione resta comunque manuale e separata: il progetto non promette supporto operativo, garanzie o disponibilita continuativa del binario.
 
@@ -42,6 +42,8 @@ La GUI continua a usare il tema scuro centralizzato e ora puo caricare in modo p
 Restano disponibili anche i workbook sintetici generati localmente per i test manuali. I file prodotti vengono scritti in `manual_tests/generated/`, che non deve essere committata. La documentazione operativa e disponibile in `manual_tests/README.md`. Il set principale ora distingue chiaramente il percorso automatico puro dal percorso dedicato alla revisione manuale.
 
 Nella pagina `Report`, ogni riga del report puo ora essere rettificata manualmente dal docente anche se nasce da una regola valutata automaticamente. Le regole `manual_review` continuano comunque a richiedere obbligatoriamente il passaggio umano, mentre le rettifiche manuali su righe automatiche aggiornano punteggio, commento docente, riepilogo, salvataggio `.ccreport` ed export `.txt`.
+
+Nella generazione automatica del profilo da workbook, il colore target delle celle viene normalizzato in forma stabile e il software cerca solo le celle con quel background. Sono gestiti in modo robusto i casi RGB/ARGB e, quando openpyxl e il workbook lo consentono senza ambiguita, anche colori indexed o theme. I colori tema non risolvibili in modo affidabile vengono ignorati prudenzialmente invece di produrre falsi positivi.
 
 La GUI usa ora un tema scuro proprietario CellCheck, centralizzato e pensato come base riutilizzabile per gli altri software desktop dell'autore.
 

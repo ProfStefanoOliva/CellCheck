@@ -13,7 +13,7 @@ from cellcheck.models import (
     WorkbookFormat,
 )
 
-from .color_utils import parse_color_input
+from .color_utils import color_matches_target, parse_color_input, resolve_cell_fill_color
 from .errors import ColorScanError, UnsupportedWorkbookFormatError, WorkbookReadError, WorksheetNotFoundError
 
 
@@ -35,7 +35,7 @@ class ColorScanner:
     def scan_fill_color(
         self, target_color: str, sheet_names: list[str] | None = None
     ) -> ColorScanResult:
-        """Return all cells whose explicit RGB fill matches the target color."""
+        """Return all cells whose resolved background fill matches the target color."""
         color_target = parse_color_input(target_color)
         workbook = self._require_workbook()
         selected_sheet_names = self._resolve_sheet_names(sheet_names)
@@ -56,18 +56,16 @@ class ColorScanner:
                 max_col=max_column,
             ):
                 for cell in row:
-                    color_info = self._extract_rgb_fill(cell)
-                    if color_info is None:
+                    resolved_color = resolve_cell_fill_color(cell, workbook)
+                    if resolved_color is None:
                         ignored_cells_count += 1
                         continue
 
-                    color_kind, detected_argb = color_info
-                    if color_kind != "rgb":
+                    if resolved_color.source_kind not in {"rgb", "indexed", "theme"}:
                         unsupported_color_cells_count += 1
                         continue
 
-                    detected_rgb = detected_argb[-6:]
-                    if detected_rgb != color_target.normalized_rgb:
+                    if not color_matches_target(resolved_color, color_target):
                         ignored_cells_count += 1
                         continue
 
@@ -77,8 +75,8 @@ class ColorScanner:
                         CellColorMatch(
                             sheet_name=sheet_name,
                             cell=cell.coordinate,
-                            detected_rgb=detected_rgb,
-                            detected_argb=detected_argb,
+                            detected_rgb=resolved_color.normalized_rgb,
+                            detected_argb=resolved_color.normalized_argb,
                             value_preview=raw_value,
                             has_formula=has_formula,
                             formula=raw_value if has_formula else None,
@@ -169,32 +167,3 @@ class ColorScanner:
         raise UnsupportedWorkbookFormatError(
             f"Unsupported workbook format for '{path}'. Only .xlsx and .xlsm are supported."
         )
-
-    @staticmethod
-    def _extract_rgb_fill(cell) -> tuple[str, str] | None:
-        """Return explicit fill color information for a cell when available."""
-        fill = getattr(cell, "fill", None)
-        if fill is None:
-            return None
-
-        color = getattr(fill, "fgColor", None)
-        if color is None:
-            return None
-
-        color_type = getattr(color, "type", None)
-        if color_type != "rgb":
-            if color_type in {"theme", "indexed", "auto"}:
-                return (color_type, "")
-            return None
-
-        raw_rgb = getattr(color, "rgb", None)
-        if not raw_rgb:
-            return None
-
-        normalized = raw_rgb.upper()
-        if len(normalized) == 6:
-            normalized = f"FF{normalized}"
-        if len(normalized) != 8:
-            return ("unsupported", "")
-
-        return ("rgb", normalized)

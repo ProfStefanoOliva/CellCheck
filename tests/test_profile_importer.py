@@ -8,6 +8,7 @@ from cellcheck.models import ProfileImportOptions, RuleType, WorkbookFormat
 
 
 TARGET_FILL = PatternFill(fill_type="solid", fgColor="FFD9D9D9")
+OTHER_FILL = PatternFill(fill_type="solid", fgColor="FFFF0000")
 
 
 def create_template_workbook(path: Path) -> Path:
@@ -38,6 +39,20 @@ def create_solution_workbook(path: Path) -> Path:
 
     second_sheet = workbook.create_sheet("Sheet2")
     second_sheet["A1"] = "Second sheet"
+
+    workbook.save(path)
+    workbook.close()
+    return path
+
+
+def create_multi_color_template_workbook(path: Path) -> Path:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Sheet1"
+    sheet["A1"].fill = TARGET_FILL
+    sheet["B2"].fill = OTHER_FILL
+    sheet["C3"].fill = TARGET_FILL
+    sheet["D4"].fill = OTHER_FILL
 
     workbook.save(path)
     workbook.close()
@@ -78,6 +93,24 @@ def test_import_profile_uses_target_color_selected_by_user(tmp_path: Path) -> No
 
     assert result.summary.target_rgb == "D9D9D9"
     assert result.summary.target_argb == "FFD9D9D9"
+
+
+def test_import_profile_extracts_only_cells_of_the_requested_target_color(tmp_path: Path) -> None:
+    empty_path = create_multi_color_template_workbook(tmp_path / "empty.xlsx")
+    solution_path = create_solution_workbook(tmp_path / "solution.xlsx")
+
+    result = ProfileImporter().import_profile(
+        empty_path,
+        solution_path,
+        build_options(target_color="D9D9D9"),
+    )
+
+    sheet1_rules = {rule.cell for worksheet in result.profile.worksheets for rule in worksheet.rules}
+
+    assert "A1" in sheet1_rules
+    assert "C3" in sheet1_rules
+    assert "B2" not in sheet1_rules
+    assert "D4" not in sheet1_rules
 
 
 def test_import_profile_creates_formula_exact_rule(tmp_path: Path) -> None:
