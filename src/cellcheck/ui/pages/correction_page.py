@@ -373,8 +373,8 @@ class CorrectionPage(QWidget):
         )
         if not paths:
             return
-        self.state.set_student_workbook_paths(paths)
-        self.clear_report_state_for_new_student_selection()
+        merged_paths = [*self.state.student_workbook_paths, *paths]
+        self.state.set_student_workbook_paths(merged_paths)
         self._set_student_display_text(self._student_workbook_display_text())
         self._refresh_workflow_status()
         self._refresh_report_summary()
@@ -391,10 +391,6 @@ class CorrectionPage(QWidget):
         """Place focus on the student workbook field for sidebar-driven navigation."""
         self.student_workbook_edit.setFocus()
         self.student_workbook_edit.selectAll()
-
-    def clear_report_state_for_new_student_selection(self) -> None:
-        """Clear report session data after changing the student workbook selection."""
-        self.state.clear_reports()
 
     def _save_profile(self) -> None:
         """Delegate profile saving to the existing profile save flow."""
@@ -519,10 +515,38 @@ class CorrectionPage(QWidget):
         self.on_state_changed()
 
     def _run_correction(self) -> None:
-        """Run the correction engine against the selected student workbook."""
-        blocking_message = self._validation_message_for_correction()
+        """Run correction for all still-pending student workbooks."""
+        self.correct_pending_students()
+
+    def correct_student_workbook(self, student_path: str) -> None:
+        """Correct only one selected student workbook from the sidebar workflow."""
+        self._correct_students([student_path])
+
+    def correct_pending_students(self) -> None:
+        """Correct all loaded student workbooks that still have no report."""
+        pending_paths = self.state.pending_student_workbook_paths()
+        if not pending_paths:
+            QMessageBox.information(
+                self,
+                tr("correction.run"),
+                tr("correction.no_pending_students"),
+            )
+            return
+        self._correct_students(pending_paths)
+
+    def _correct_students(self, student_paths: list[str]) -> None:
+        """Correct the given student workbooks without touching unrelated reports."""
+        blocking_message = self._validation_message_for_target_students(student_paths)
         if blocking_message is not None:
             QMessageBox.warning(self, "Correzione non pronta", blocking_message)
+            return
+
+        if not student_paths:
+            QMessageBox.information(
+                self,
+                tr("correction.run"),
+                tr("correction.no_pending_students"),
+            )
             return
 
         try:
@@ -533,7 +557,7 @@ class CorrectionPage(QWidget):
 
         reports = []
         errors: list[str] = []
-        for student_path in self.state.student_workbook_paths:
+        for student_path in student_paths:
             try:
                 reports.append(self.engine.correct_workbook(profile, student_path))
             except Exception as exc:
@@ -545,7 +569,10 @@ class CorrectionPage(QWidget):
 
         self._set_active_profile(profile)
         self.state.max_grade = profile.max_grade
-        self.state.replace_session_reports(reports)
+        for report in reports:
+            self.state.add_or_replace_report(report, dirty=False, select=False)
+        if reports:
+            self.state.select_report_by_student_file(reports[0].student_file)
         self.state.student_workbook_path = (
             self.state.student_workbook_paths[0]
             if self.state.student_workbook_paths
@@ -555,11 +582,34 @@ class CorrectionPage(QWidget):
         if errors:
             QMessageBox.warning(
                 self,
-                "Correzione completata con avvisi",
-                "Alcuni file non sono stati corretti correttamente:\n" + "\n".join(errors),
+                tr("correction.batch_warning_title"),
+                tr("correction.batch_warning_message", details="\n".join(errors)),
             )
-        if self.on_show_report_requested is not None:
+        if reports and self.on_show_report_requested is not None:
             self.on_show_report_requested()
+
+    def _validation_message_for_target_students(self, student_paths: list[str]) -> str | None:
+        """Return a blocking message for correcting the specific target student files."""
+        blockers: list[str] = []
+
+        student_status = self._validate_workbook_paths(student_paths)
+        if not student_status.is_valid:
+            blockers.append("Seleziona l'elaborato dello studente nello Step 4.")
+
+        if self._current_profile() is None:
+            blockers.append("Genera o importa un profilo di correzione nello Step 3.")
+
+        if self._max_grade_validation_message() is not None:
+            blockers.append("Imposta un punteggio massimo personalizzato valido nello Step 3.")
+
+        if blockers:
+            bullet_list = "\n".join(f"- {item}" for item in blockers)
+            return (
+                "Per eseguire la correzione completa questi passaggi:\n"
+                f"{bullet_list}"
+            )
+
+        return None
 
     def _show_report(self) -> None:
         """Switch to the report page when a report is available."""

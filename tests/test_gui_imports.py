@@ -58,6 +58,8 @@ def test_ribbon_bar_exposes_language_action() -> None:
     assert hasattr(ProjectNavigator, "guided_correction_requested")
     assert hasattr(ProjectNavigator, "student_files_requested")
     assert hasattr(ProjectNavigator, "student_report_requested")
+    assert hasattr(ProjectNavigator, "correct_student_requested")
+    assert hasattr(ProjectNavigator, "correct_all_students_requested")
     assert hasattr(ProjectNavigator, "help_requested")
 
 

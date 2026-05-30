@@ -65,6 +65,7 @@ def test_sidebar_keys_exist_in_primary_language() -> None:
         "navigator.no_profile",
         "navigator.student_files",
         "navigator.correct",
+        "navigator.correct_all",
         "navigator.view_report",
         "navigator.report",
         "navigator.no_report",
@@ -72,6 +73,11 @@ def test_sidebar_keys_exist_in_primary_language() -> None:
         "navigator.help_available",
         "report.select",
         "report.none_available",
+        "report.save_all",
+        "report.save_all_done",
+        "correction.no_pending_students",
+        "correction.batch_warning_title",
+        "correction.batch_warning_message",
     ]:
         assert key in TRANSLATIONS["it"]
 
@@ -102,9 +108,15 @@ def test_dashboard_about_and_help_keys_exist_in_primary_language() -> None:
 def test_multi_report_keys_exist_for_all_supported_languages() -> None:
     keys = [
         "navigator.correct",
+        "navigator.correct_all",
         "navigator.view_report",
         "report.select",
         "report.none_available",
+        "report.save_all",
+        "report.save_all_done",
+        "correction.no_pending_students",
+        "correction.batch_warning_title",
+        "correction.batch_warning_message",
     ]
     for language_code, _label in available_languages():
         for key in keys:

@@ -105,6 +105,67 @@ def test_student_sidebar_rows_show_only_filename_and_status_icon() -> None:
     assert "C:/classi/Rossi/Studente_01.xlsx" == student_child.toolTip(0)
 
 
+def test_context_menu_for_pending_student_offers_only_correct() -> None:
+    _app()
+    navigator = ProjectNavigator()
+    state = AppState()
+    state.set_student_workbook_paths(["C:/classi/Rossi/Studente_01.xlsx"])
+    navigator.refresh(state)
+
+    student_child = navigator.topLevelItem(4).child(0)
+    actions = navigator._context_action_specs(student_child)
+
+    assert [key for key, _enabled, _callback in actions] == ["navigator.correct"]
+
+
+def test_context_menu_for_corrected_student_offers_only_view_report() -> None:
+    _app()
+    navigator = ProjectNavigator()
+    state = AppState()
+    state.set_student_workbook_paths(["C:/classi/Rossi/Studente_01.xlsx"])
+    state.add_or_replace_report(_report("C:/classi/Rossi/Studente_01.xlsx"))
+    navigator.refresh(state)
+
+    student_child = navigator.topLevelItem(4).child(0)
+    actions = navigator._context_action_specs(student_child)
+
+    assert [key for key, _enabled, _callback in actions] == ["navigator.view_report"]
+
+
+def test_context_menu_for_student_root_offers_correct_all() -> None:
+    _app()
+    navigator = ProjectNavigator()
+    state = AppState()
+    state.set_student_workbook_paths(
+        [
+            "C:/classi/Rossi/Studente_01.xlsx",
+            "C:/classi/Rossi/Studente_02.xlsx",
+        ]
+    )
+    navigator.refresh(state)
+
+    student_root = navigator.topLevelItem(4)
+    actions = navigator._context_action_specs(student_root)
+
+    assert [key for key, _enabled, _callback in actions] == ["navigator.correct_all"]
+    assert actions[0][1] is True
+
+
+def test_context_menu_for_student_root_disables_correct_all_when_nothing_is_pending() -> None:
+    _app()
+    navigator = ProjectNavigator()
+    state = AppState()
+    state.set_student_workbook_paths(["C:/classi/Rossi/Studente_01.xlsx"])
+    state.add_or_replace_report(_report("C:/classi/Rossi/Studente_01.xlsx"))
+    navigator.refresh(state)
+
+    student_root = navigator.topLevelItem(4)
+    actions = navigator._context_action_specs(student_root)
+
+    assert [key for key, _enabled, _callback in actions] == ["navigator.correct_all"]
+    assert actions[0][1] is False
+
+
 def test_help_item_has_no_placeholder_child_row() -> None:
     _app()
     navigator = ProjectNavigator()

@@ -29,6 +29,8 @@ class ProjectNavigator(QTreeWidget):
     student_files_requested = Signal()
     help_requested = Signal()
     student_report_requested = Signal(str)
+    correct_student_requested = Signal(str)
+    correct_all_students_requested = Signal()
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -145,21 +147,49 @@ class ProjectNavigator(QTreeWidget):
         if item is None:
             return
 
-        student_path = item.data(0, self.STUDENT_PATH_ROLE)
-        if not student_path:
-            return
-
         menu = QMenu(self)
-        if self._last_state.report_for_student(student_path) is None:
-            action = QAction(tr("navigator.correct"), self)
-            action.triggered.connect(lambda checked=False: self.student_files_requested.emit())
-        else:
-            action = QAction(tr("navigator.view_report"), self)
-            action.triggered.connect(
-                lambda checked=False, path=student_path: self.student_report_requested.emit(path)
-            )
-        menu.addAction(action)
+        action_specs = self._context_action_specs(item)
+        if not action_specs:
+            return
+        for label_key, enabled, callback in action_specs:
+            action = QAction(tr(label_key), self)
+            action.setEnabled(enabled)
+            action.triggered.connect(callback)
+            menu.addAction(action)
         menu.exec(self.viewport().mapToGlobal(position))
+
+    def _context_action_specs(
+        self,
+        item: QTreeWidgetItem,
+    ) -> list[tuple[str, bool, object]]:
+        """Return the minimal context-menu actions available for one navigator item."""
+        destination = item.data(0, Qt.UserRole)
+        student_path = item.data(0, self.STUDENT_PATH_ROLE)
+        if destination == self.STUDENT_FILES_DESTINATION and not student_path:
+            return [
+                (
+                    "navigator.correct_all",
+                    bool(self._last_state.pending_student_workbook_paths()),
+                    lambda checked=False: self.correct_all_students_requested.emit(),
+                )
+            ]
+        if student_path:
+            if self._last_state.student_requires_correction(student_path):
+                return [
+                    (
+                        "navigator.correct",
+                        True,
+                        lambda checked=False, path=student_path: self.correct_student_requested.emit(path),
+                    )
+                ]
+            return [
+                (
+                    "navigator.view_report",
+                    True,
+                    lambda checked=False, path=student_path: self.student_report_requested.emit(path),
+                )
+            ]
+        return []
 
     def _populate_student_items(self, root_item: QTreeWidgetItem, state: AppState) -> None:
         """Add compact student rows with status icons under the student-files root."""

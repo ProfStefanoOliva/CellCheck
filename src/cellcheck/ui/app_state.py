@@ -118,12 +118,14 @@ class AppState:
     @staticmethod
     def normalize_session_path(path: str) -> str:
         """Return a stable normalized key for workbook/report identity."""
-        return os.path.normcase(os.path.normpath(path.strip()))
+        normalized = path.strip().replace("\\", "/")
+        return os.path.normcase(os.path.normpath(normalized))
 
     @staticmethod
     def student_file_name(path: str | Path) -> str:
         """Return only the file name for a student workbook path."""
-        return Path(path).name
+        raw_path = str(path).replace("\\", "/")
+        return raw_path.rsplit("/", 1)[-1]
 
     @classmethod
     def student_storage_key(cls, path: str) -> str:
@@ -133,7 +135,7 @@ class AppState:
     @classmethod
     def report_display_name_from_student_file(cls, student_file: str) -> str:
         """Return the student-based display name for a report."""
-        stem = Path(student_file).stem.strip()
+        stem = Path(cls.student_file_name(student_file)).stem.strip()
         return stem or "Report"
 
     @classmethod
@@ -158,6 +160,18 @@ class AppState:
     def display_student_workbook_names(self) -> list[str]:
         """Return only file names for the selected student workbooks."""
         return [self.student_file_name(path) for path in self.student_workbook_paths]
+
+    def student_requires_correction(self, student_path: str) -> bool:
+        """Return True when the selected student file has no report yet."""
+        return self.report_for_student(student_path) is None
+
+    def pending_student_workbook_paths(self) -> list[str]:
+        """Return only the student workbooks that still need correction."""
+        return [
+            student_path
+            for student_path in self.student_workbook_paths
+            if self.student_requires_correction(student_path)
+        ]
 
     def clear_reports(self) -> None:
         """Remove all in-session reports and related selection metadata."""

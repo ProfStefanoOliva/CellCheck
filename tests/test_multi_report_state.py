@@ -12,6 +12,7 @@ from cellcheck.ui.app_state import (
     STUDENT_STATUS_LOADED,
     STUDENT_STATUS_REVIEW,
 )
+from cellcheck.ui.main_window import MainWindow
 
 
 def _build_report(
@@ -55,11 +56,16 @@ def _build_report(
 
 def test_student_file_name_uses_only_basename() -> None:
     assert AppState.student_file_name("C:/classi/Rossi/Studente_01.xlsx") == "Studente_01.xlsx"
+    assert AppState.student_file_name(r"C:\classi\Rossi\Studente_01.xlsx") == "Studente_01.xlsx"
 
 
 def test_report_display_name_uses_student_stem() -> None:
     assert (
         AppState.report_display_name_from_student_file("C:/classi/Rossi/Verifica_Rossi_Mario.xlsx")
+        == "Verifica_Rossi_Mario"
+    )
+    assert (
+        AppState.report_display_name_from_student_file(r"C:\classi\Rossi\Verifica_Rossi_Mario.xlsx")
         == "Verifica_Rossi_Mario"
     )
 
@@ -84,6 +90,19 @@ def test_multiple_student_selection_is_preserved_in_order() -> None:
 
     assert state.student_workbook_path == "C:/classi/Rossi/Studente_01.xlsx"
     assert state.display_student_workbook_names() == ["Studente_01.xlsx", "Studente_02.xlsm"]
+
+
+def test_pending_students_exclude_already_corrected_files() -> None:
+    state = AppState()
+    state.set_student_workbook_paths(
+        [
+            "C:/classi/Rossi/Studente_01.xlsx",
+            "C:/classi/Rossi/Studente_02.xlsx",
+        ]
+    )
+    state.add_or_replace_report(_build_report("C:/classi/Rossi/Studente_01.xlsx"), select=False)
+
+    assert state.pending_student_workbook_paths() == ["C:/classi/Rossi/Studente_02.xlsx"]
 
 
 def test_reports_are_distinct_per_student_and_selectable() -> None:
@@ -151,3 +170,10 @@ def test_current_report_display_name_matches_student_file_stem() -> None:
     state.add_or_replace_report(_build_report("C:/classi/Rossi/Verifica_Rossi_Mario.xlsx"))
 
     assert state.current_report_display_name() == "Verifica_Rossi_Mario"
+
+
+def test_unique_output_stem_uses_predictable_numeric_suffixes() -> None:
+    used_names: set[str] = set()
+
+    assert MainWindow._unique_output_stem("Studente_01", used_names) == "Studente_01"
+    assert MainWindow._unique_output_stem("Studente_01", used_names) == "Studente_01_2"
