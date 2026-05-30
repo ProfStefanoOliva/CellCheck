@@ -105,3 +105,37 @@ def test_ccreport_json_save_load_remains_unchanged(tmp_path: Path) -> None:
     loaded = load_report(path)
 
     assert loaded == report
+
+
+def test_text_report_includes_manual_override_and_teacher_comment() -> None:
+    report = build_report().model_copy(
+        update={
+            "results": [
+                build_report().results[0].model_copy(
+                    update={
+                        "status": ResultStatus.WARNING,
+                        "score_awarded": 2.0,
+                        "message": (
+                            "Rettifica manuale docente: assegnato punteggio parziale 2.0. "
+                            "Esito automatico originale: Formula corretta."
+                        ),
+                        "teacher_comment": "Parzialmente accettata dal docente.",
+                    }
+                ),
+                build_report().results[1].model_copy(
+                    update={
+                        "rule_type": RuleType.MANUAL_REVIEW,
+                        "status": ResultStatus.MANUAL_REVIEW,
+                        "message": "Controllo richiesto al docente.",
+                    }
+                ),
+            ]
+        }
+    )
+
+    text = build_text_correction_report(report)
+
+    assert "Rettifica manuale docente registrata: Si" in text
+    assert "Esito automatico originale: Formula corretta." in text
+    assert "Commento docente: Parzialmente accettata dal docente." in text
+    assert "Richiede revisione manuale: Si" in text

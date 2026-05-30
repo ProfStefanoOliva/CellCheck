@@ -15,7 +15,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from cellcheck.models import CellCorrectionResult, ResultStatus
+from cellcheck.models import (
+    CellCorrectionResult,
+    ResultStatus,
+    RuleType,
+)
 from cellcheck.reporting import export_text_correction_report
 from cellcheck.ui.app_state import AppState
 from cellcheck.ui.widgets import (
@@ -47,15 +51,15 @@ class ReportPage(QWidget):
         layout.addWidget(title)
 
         subtitle = QLabel(
-            "Esplora il CorrectionReport corrente, filtra i risultati e aggiorna i commenti docente."
+            "Esplora il CorrectionReport corrente, filtra i risultati e rettifica manualmente qualsiasi riga del report."
         )
         subtitle.setObjectName("pageSubtitle")
         subtitle.setWordWrap(True)
         layout.addWidget(subtitle)
 
         manual_review_note = QLabel(
-            "Per i casi contrassegnati come revisione manuale, apri eventualmente il workbook solo per consultazione "
-            "e riporta la decisione nel commento docente."
+            "Le regole di tipo revisione manuale continuano a richiedere obbligatoriamente il passaggio umano. "
+            "In piu, ogni esito automatico puo essere rettificato dal docente dalla pagina Report."
         )
         manual_review_note.setObjectName("warningText")
         manual_review_note.setWordWrap(True)
@@ -193,40 +197,50 @@ class ReportPage(QWidget):
         decision = payload.get("decision")
         manual_score = payload.get("manual_score")
         teacher_comment = payload.get("teacher_comment", "")
-        original_message = result.message
+        original_message = result.original_outcome_message
+        review_prefix = self._teacher_review_prefix(result)
 
         if decision == "leave_zero":
             result.score_awarded = 0.0
             result.status = ResultStatus.FAILED
-            result.message = "Revisione manuale docente: lasciato punteggio zero."
+            result.message = self._build_teacher_review_message(
+                review_prefix,
+                "lasciato punteggio zero.",
+                original_message,
+            )
         elif decision == "accept":
             result.score_awarded = result.weight
             result.status = ResultStatus.PASSED
-            result.message = "Revisione manuale docente: voce accettata."
+            result.message = self._build_teacher_review_message(
+                review_prefix,
+                "voce accettata.",
+                original_message,
+            )
         elif decision == "partial":
             result.score_awarded = float(manual_score or 0.0)
             result.status = ResultStatus.WARNING
-            result.message = (
-                f"Revisione manuale docente: assegnato punteggio parziale {result.score_awarded}."
+            result.message = self._build_teacher_review_message(
+                review_prefix,
+                f"assegnato punteggio parziale {result.score_awarded}.",
+                original_message,
             )
         elif decision == "malus":
             result.score_awarded = float(manual_score or 0.0)
             result.status = ResultStatus.WARNING
-            result.message = (
-                f"Revisione manuale docente: applicato malus, punteggio finale {result.score_awarded}."
+            result.message = self._build_teacher_review_message(
+                review_prefix,
+                f"applicato malus, punteggio finale {result.score_awarded}.",
+                original_message,
             )
         elif decision == "note_only":
-            result.message = (
-                "Revisione manuale docente annotata senza modifica automatica del punteggio."
+            result.message = self._build_teacher_note_message(
+                result,
+                original_message,
             )
         else:
             return
 
         result.teacher_comment = teacher_comment
-        if original_message and original_message != result.message:
-            result.teacher_comment = (
-                f"{teacher_comment}\n\nMotivo originale: {original_message}".strip()
-            )
         self.state.report_dirty = True
         self._recalculate_report_summary()
         self.table.update_result_row(self._selected_result_index, result)
@@ -261,6 +275,43 @@ class ReportPage(QWidget):
                 (raw_awarded_weight / summary.total_weight) * report.max_grade,
                 2,
             )
+
+    @staticmethod
+    def _teacher_review_prefix(result: CellCorrectionResult) -> str:
+        """Return the correct message prefix for the current row."""
+        if result.rule_type == RuleType.MANUAL_REVIEW:
+            return "Revisione manuale docente:"
+        return "Rettifica manuale docente:"
+
+    @staticmethod
+    def _build_teacher_review_message(
+        prefix: str,
+        action_text: str,
+        original_message: str,
+    ) -> str:
+        """Build a stable message for teacher-reviewed rows."""
+        message = f"{prefix} {action_text}".strip()
+        if original_message:
+            label = "Esito originale:" if prefix.startswith("Revisione") else "Esito automatico originale:"
+            message = f"{message} {label} {original_message}"
+        return message
+
+    @staticmethod
+    def _build_teacher_note_message(
+        result: CellCorrectionResult,
+        original_message: str,
+    ) -> str:
+        """Build a stable message for note-only teacher annotations."""
+        if result.rule_type == RuleType.MANUAL_REVIEW:
+            message = "Revisione manuale docente: annotata decisione senza modifica del punteggio."
+            if original_message:
+                message = f"{message} Esito originale: {original_message}"
+            return message
+
+        message = "Annotazione docente su esito automatico: nessuna modifica al punteggio."
+        if original_message:
+            message = f"{message} Esito automatico originale: {original_message}"
+        return message
 
     def _load_report(self) -> None:
         """Delegate report loading to the main window flow when available."""

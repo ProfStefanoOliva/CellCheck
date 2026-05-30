@@ -25,7 +25,7 @@ In fasi successive CellCheck dovra:
 
 ## Stato attuale
 
-Stato corrente: `Public license docs cleanup v0.26.1`.
+Stato corrente: `Universal manual override for report rows v0.27.0`.
 
 La Fase 26 documenta l'esito positivo della validazione su macchina pulita del bundle locale precedente e prepara il progetto alla prima pubblicazione pubblica controllata. La pubblicazione resta comunque manuale e separata: il progetto non promette supporto operativo, garanzie o disponibilita continuativa del binario.
 
@@ -40,6 +40,8 @@ La ribbon superiore usa ora i pulsanti `Help` e `?`: la gestione dei profili res
 La GUI continua a usare il tema scuro centralizzato e ora puo caricare in modo prudente l'icona `.ico` del software se il file e presente nella cartella branding.
 
 Restano disponibili anche i workbook sintetici generati localmente per i test manuali. I file prodotti vengono scritti in `manual_tests/generated/`, che non deve essere committata. La documentazione operativa e disponibile in `manual_tests/README.md`. Il set principale ora distingue chiaramente il percorso automatico puro dal percorso dedicato alla revisione manuale.
+
+Nella pagina `Report`, ogni riga del report puo ora essere rettificata manualmente dal docente anche se nasce da una regola valutata automaticamente. Le regole `manual_review` continuano comunque a richiedere obbligatoriamente il passaggio umano, mentre le rettifiche manuali su righe automatiche aggiornano punteggio, commento docente, riepilogo, salvataggio `.ccreport` ed export `.txt`.
 
 La GUI usa ora un tema scuro proprietario CellCheck, centralizzato e pensato come base riutilizzabile per gli altri software desktop dell'autore.
 
