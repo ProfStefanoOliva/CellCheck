@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
 
 from cellcheck import __version__
 from cellcheck.models import CcalDocumentType
+from cellcheck.reporting import export_text_correction_report
 from cellcheck.storage import load_profile, load_report, read_document_type, save_profile, save_report
 from cellcheck.ui.app_state import AppState
 from cellcheck.ui.branding import get_app_icon_path
@@ -88,6 +89,7 @@ class MainWindow(QMainWindow):
         self.report_page = ReportPage(self.state)
         self.report_page.on_load_report_requested = self._load_report_document
         self.report_page.on_save_report_requested = self._save_current_report
+        self.report_page.on_save_all_reports_requested = self._save_all_reports
         self.report_page.on_state_changed = self._refresh_state_views
         self.help_page = HelpPage()
         self.settings_page = SettingsPage()
@@ -125,6 +127,8 @@ class MainWindow(QMainWindow):
         self.navigator.guided_correction_requested.connect(self._show_guided_correction_page)
         self.navigator.student_files_requested.connect(self._show_student_files_page)
         self.navigator.student_report_requested.connect(self._show_report_for_student)
+        self.navigator.correct_student_requested.connect(self._correct_single_student_from_sidebar)
+        self.navigator.correct_all_students_requested.connect(self._correct_all_students_from_sidebar)
         self.navigator.help_requested.connect(self._show_help_page)
         self.ribbon.profile_import_requested.connect(
             lambda: self.stack.setCurrentWidget(self.profile_import_page)
@@ -156,6 +160,16 @@ class MainWindow(QMainWindow):
         if self.state.select_report_by_student_file(student_file):
             self._refresh_state_views()
             self.stack.setCurrentWidget(self.report_page)
+
+    def _correct_single_student_from_sidebar(self, student_file: str) -> None:
+        """Run correction only for the selected student workbook from the sidebar."""
+        self.stack.setCurrentWidget(self.correction_page)
+        self.correction_page.correct_student_workbook(student_file)
+
+    def _correct_all_students_from_sidebar(self) -> None:
+        """Run correction for all pending student workbooks from the sidebar."""
+        self.stack.setCurrentWidget(self.correction_page)
+        self.correction_page.correct_pending_students()
 
     def retranslate_ui(self) -> None:
         """Refresh the main window and all translatable child widgets."""
@@ -379,3 +393,59 @@ class MainWindow(QMainWindow):
 
         self._refresh_state_views()
         QMessageBox.information(self, "Salva report", "Report salvato con successo.")
+
+    def _save_all_reports(self) -> None:
+        """Save every in-session report as .ccreport and .txt into one target folder."""
+        if not self.state.session_reports:
+            QMessageBox.information(
+                self,
+                tr("report.save_all"),
+                tr("report.none_available"),
+            )
+            return
+
+        directory = QFileDialog.getExistingDirectory(
+            self,
+            tr("report.save_all"),
+            "",
+        )
+        if not directory:
+            return
+
+        used_names: set[str] = set()
+        model_file = None
+        if self.state.current_profile is not None:
+            model_file = self.state.current_profile.source_solution_workbook
+
+        for report in self.state.session_reports:
+            base_name = self.state.report_display_name_from_student_file(report.student_file)
+            unique_base = self._unique_output_stem(base_name, used_names)
+            report_path = str(Path(directory) / f"{unique_base}.ccreport")
+            txt_path = str(Path(directory) / f"{unique_base}.txt")
+            save_report(report, report_path, overwrite=True)
+            export_text_correction_report(report, txt_path, model_file=model_file)
+            self.state.add_or_replace_report(
+                report,
+                report_path=report_path,
+                dirty=self.state.report_dirty_flags.get(self.state.report_storage_key(report), False),
+                select=False,
+            )
+
+        self._refresh_state_views()
+        QMessageBox.information(
+            self,
+            tr("report.save_all"),
+            tr("report.save_all_done"),
+        )
+
+    @staticmethod
+    def _unique_output_stem(base_name: str, used_names: set[str]) -> str:
+        """Return a predictable unique file stem inside one batch save folder."""
+        normalized_base = base_name or "report"
+        candidate = normalized_base
+        suffix = 2
+        while candidate.casefold() in used_names:
+            candidate = f"{normalized_base}_{suffix}"
+            suffix += 1
+        used_names.add(candidate.casefold())
+        return candidate

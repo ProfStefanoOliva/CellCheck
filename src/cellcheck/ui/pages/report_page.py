@@ -38,6 +38,7 @@ class ReportPage(QWidget):
         self.state = state
         self.on_load_report_requested = None
         self.on_save_report_requested = None
+        self.on_save_all_reports_requested = None
         self.on_state_changed = None
         self._filtered_indices: list[int] = []
         self._filtered_results: list[CellCorrectionResult] = []
@@ -89,6 +90,11 @@ class ReportPage(QWidget):
         self.export_report_button.setMinimumHeight(38)
         self.export_report_button.clicked.connect(self._export_report_txt)
         command_row.addWidget(self.export_report_button)
+
+        self.save_all_reports_button = QPushButton()
+        self.save_all_reports_button.setMinimumHeight(38)
+        self.save_all_reports_button.clicked.connect(self._save_all_reports)
+        command_row.addWidget(self.save_all_reports_button)
         command_row.addStretch(1)
         layout.addLayout(command_row)
 
@@ -126,6 +132,7 @@ class ReportPage(QWidget):
         self.load_report_button.setText(tr("report.load"))
         self.save_report_button.setText(tr("report.save"))
         self.export_report_button.setText(tr("report.export"))
+        self.save_all_reports_button.setText(tr("report.save_all"))
         self.summary_widget.retranslate_ui()
         self.filter_bar.retranslate_ui()
         self.table.retranslate_ui()
@@ -385,6 +392,18 @@ class ReportPage(QWidget):
             self,
             "Salva report",
             "Il salvataggio del report non e disponibile in questa configurazione della GUI.",
+        )
+
+    def _save_all_reports(self) -> None:
+        """Delegate batch report saving to the main window flow when available."""
+        if self.on_save_all_reports_requested is not None:
+            self.on_save_all_reports_requested()
+            return
+
+        QMessageBox.information(
+            self,
+            tr("report.save_all"),
+            tr("report.none_available"),
         )
 
     def _export_report_txt(self) -> None:
