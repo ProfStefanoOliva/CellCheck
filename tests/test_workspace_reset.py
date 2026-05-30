@@ -22,18 +22,22 @@ def test_reset_workspace_clears_profile_report_and_paths() -> None:
     profile = CorrectionProfile(
         exercise_name="Profilo demo",
         max_grade=30.0,
+        blank_workbook_name="modello_vuoto.xlsx",
+        solved_workbook_name="modello_risolto.xlsx",
         worksheets=[],
     )
     state = AppState(
         empty_workbook_path="C:/temp/empty.xlsx",
         solution_workbook_path="C:/temp/solution.xlsx",
         student_workbook_path="C:/temp/student.xlsx",
+        student_workbook_paths=["C:/temp/student.xlsx", "C:/temp/student2.xlsx"],
         current_profile=profile,
         current_profile_path="C:/temp/profilo.ccal",
         profile_dirty=True,
         profile_status="modified",
         current_report=object(),  # type: ignore[arg-type]
         current_report_path="C:/temp/report.ccreport",
+        session_reports=[object()],  # type: ignore[list-item]
         report_dirty=True,
         exercise_name="Compito 1",
         max_grade=30.0,
@@ -44,15 +48,20 @@ def test_reset_workspace_clears_profile_report_and_paths() -> None:
     assert state.empty_workbook_path is None
     assert state.solution_workbook_path is None
     assert state.student_workbook_path is None
+    assert state.student_workbook_paths == []
     assert state.current_profile is None
     assert state.current_profile_path is None
     assert state.profile_dirty is False
     assert state.profile_status == "none"
     assert state.current_report is None
     assert state.current_report_path is None
+    assert state.session_reports == []
+    assert state.selected_report_student_file is None
     assert state.report_dirty is False
     assert state.exercise_name == ""
     assert state.max_grade == 100.0
+    assert state.display_blank_workbook_name() is None
+    assert state.display_solved_workbook_name() is None
 
 
 def test_reset_workspace_does_not_delete_files_on_disk(tmp_path: Path) -> None:
@@ -75,3 +84,19 @@ def test_reset_workspace_does_not_delete_files_on_disk(tmp_path: Path) -> None:
     assert profile_file.exists()
     assert report_file.exists()
     assert workbook_file.exists()
+
+
+def test_guided_correction_ready_helper_is_prudent() -> None:
+    assert AppState().is_guided_correction_ready() is False
+
+    state = AppState(current_profile=CorrectionProfile(exercise_name="Profilo", max_grade=10.0, worksheets=[]))
+    assert state.is_guided_correction_ready() is True
+    assert state.navigator_destination_for_guided_correction() == "guided_correction"
+
+    state = AppState(empty_workbook_path="C:/temp/modello.xlsx")
+    assert state.is_guided_correction_ready() is True
+    assert state.navigator_destination_for_guided_correction() == "guided_correction"
+
+
+def test_student_files_destination_points_to_student_step() -> None:
+    assert AppState.navigator_destination_for_student_files() == "student_files"

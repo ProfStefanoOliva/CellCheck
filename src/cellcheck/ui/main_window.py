@@ -88,6 +88,7 @@ class MainWindow(QMainWindow):
         self.report_page = ReportPage(self.state)
         self.report_page.on_load_report_requested = self._load_report_document
         self.report_page.on_save_report_requested = self._save_current_report
+        self.report_page.on_state_changed = self._refresh_state_views
         self.help_page = HelpPage()
         self.settings_page = SettingsPage()
 
@@ -121,19 +122,40 @@ class MainWindow(QMainWindow):
         """Wire ribbon actions to navigation and file actions."""
         self.ribbon.dashboard_requested.connect(lambda: self.stack.setCurrentWidget(self.dashboard_page))
         self.ribbon.new_requested.connect(self._start_new_workspace)
+        self.navigator.guided_correction_requested.connect(self._show_guided_correction_page)
+        self.navigator.student_files_requested.connect(self._show_student_files_page)
+        self.navigator.student_report_requested.connect(self._show_report_for_student)
+        self.navigator.help_requested.connect(self._show_help_page)
         self.ribbon.profile_import_requested.connect(
             lambda: self.stack.setCurrentWidget(self.profile_import_page)
         )
-        self.ribbon.correction_requested.connect(
-            lambda: self.stack.setCurrentWidget(self.correction_page)
-        )
+        self.ribbon.correction_requested.connect(self._show_guided_correction_page)
         self.ribbon.report_requested.connect(lambda: self.stack.setCurrentWidget(self.report_page))
-        self.ribbon.help_requested.connect(lambda: self.stack.setCurrentWidget(self.help_page))
+        self.ribbon.help_requested.connect(self._show_help_page)
         self.ribbon.about_requested.connect(self._show_about_dialog)
         self.ribbon.language_requested.connect(self._show_language_dialog)
         self.ribbon.settings_requested.connect(
             lambda: self.stack.setCurrentWidget(self.settings_page)
         )
+
+    def _show_guided_correction_page(self) -> None:
+        """Navigate to the guided correction workflow page."""
+        self.stack.setCurrentWidget(self.correction_page)
+
+    def _show_student_files_page(self) -> None:
+        """Navigate to the guided correction page for student workbook selection."""
+        self._show_guided_correction_page()
+        self.correction_page.focus_student_workbook_input()
+
+    def _show_help_page(self) -> None:
+        """Navigate to the integrated help page."""
+        self.stack.setCurrentWidget(self.help_page)
+
+    def _show_report_for_student(self, student_file: str) -> None:
+        """Navigate to the report page selecting the report for the given student."""
+        if self.state.select_report_by_student_file(student_file):
+            self._refresh_state_views()
+            self.stack.setCurrentWidget(self.report_page)
 
     def retranslate_ui(self) -> None:
         """Refresh the main window and all translatable child widgets."""
@@ -228,9 +250,9 @@ class MainWindow(QMainWindow):
             self.state.current_profile_path = path
             self.state.profile_dirty = False
             self.state.profile_status = "imported"
-            self.state.current_report = None
-            self.state.current_report_path = None
-            self.state.report_dirty = False
+            self.state.clear_reports()
+            self.state.empty_workbook_path = None
+            self.state.solution_workbook_path = None
             self.state.exercise_name = self.state.current_profile.exercise_name
             self.state.max_grade = self.state.current_profile.max_grade
         except Exception as exc:
@@ -304,11 +326,10 @@ class MainWindow(QMainWindow):
                         "Il file selezionato e un profilo di correzione, non un report."
                     )
                 raise ValueError("Il file selezionato non e un report di correzione valido.")
-            self.state.current_report = load_report(path)
-            self.state.current_report_path = path
-            self.state.report_dirty = False
-            self.state.student_workbook_path = self.state.current_report.student_file
-            self.state.max_grade = self.state.current_report.max_grade
+            report = load_report(path)
+            self.state.add_or_replace_report(report, report_path=path, dirty=False, select=True)
+            self.state.set_student_workbook_paths(self.state.student_workbook_paths)
+            self.state.max_grade = report.max_grade
         except Exception as exc:
             QMessageBox.critical(self, "File non compatibile", str(exc))
             return
@@ -326,10 +347,15 @@ class MainWindow(QMainWindow):
             )
             return
 
+        suggested_name = "report.ccreport"
+        report_name = self.state.current_report_display_name()
+        if report_name:
+            suggested_name = f"{report_name}.ccreport"
+
         path, _ = QFileDialog.getSaveFileName(
             self,
             "Salva report",
-            "",
+            suggested_name,
             "Report di correzione CellCheck (*.ccreport)",
         )
         if not path:
@@ -340,8 +366,13 @@ class MainWindow(QMainWindow):
 
         try:
             save_report(self.state.current_report, path, overwrite=True)
-            self.state.current_report_path = path
-            self.state.report_dirty = False
+            if self.state.current_report is not None:
+                self.state.add_or_replace_report(
+                    self.state.current_report,
+                    report_path=path,
+                    dirty=False,
+                    select=True,
+                )
         except Exception as exc:
             QMessageBox.critical(self, "Salva report", str(exc))
             return

@@ -72,6 +72,7 @@ class CorrectionPage(QWidget):
         self.active_profile: CorrectionProfile | None = self.state.current_profile
         self._browse_buttons: list[QPushButton] = []
         self._color_buttons: list[QPushButton] = []
+        self._student_display_text = ""
 
         outer_layout = QVBoxLayout(self)
         outer_layout.setContentsMargins(0, 0, 0, 0)
@@ -147,7 +148,7 @@ class CorrectionPage(QWidget):
         self.active_profile = self.state.current_profile
         self.empty_workbook_edit.setText(self.state.empty_workbook_path or "")
         self.solution_workbook_edit.setText(self.state.solution_workbook_path or "")
-        self.student_workbook_edit.setText(self.state.student_workbook_path or "")
+        self._set_student_display_text(self._student_workbook_display_text())
         self.color_edit.setText(self.state.target_color)
         self.exercise_name_edit.setText(self.state.exercise_name)
         self.max_grade_edit.setText(self._format_max_grade(self.state.max_grade))
@@ -281,6 +282,7 @@ class CorrectionPage(QWidget):
         layout.addWidget(self.student_step_title, 0, 0, 1, 2)
 
         self.student_workbook_edit = QLineEdit()
+        self.student_workbook_edit.setReadOnly(True)
 
         self.student_workbook_label = QLabel()
         layout.addWidget(self.student_workbook_label, 1, 0)
@@ -363,13 +365,36 @@ class CorrectionPage(QWidget):
         return card
 
     def _choose_student_workbook(self) -> None:
-        self._choose_excel_file(self.student_workbook_edit, "Seleziona file studente")
+        paths, _ = QFileDialog.getOpenFileNames(
+            self,
+            "Seleziona file studente",
+            "",
+            "Excel files (*.xlsx *.xlsm)",
+        )
+        if not paths:
+            return
+        self.state.set_student_workbook_paths(paths)
+        self.clear_report_state_for_new_student_selection()
+        self._set_student_display_text(self._student_workbook_display_text())
+        self._refresh_workflow_status()
+        self._refresh_report_summary()
+        self._refresh_action_buttons()
+        self.on_state_changed()
 
     def _choose_empty_workbook(self) -> None:
         self._choose_excel_file(self.empty_workbook_edit, "Seleziona modello vuoto")
 
     def _choose_solution_workbook(self) -> None:
         self._choose_excel_file(self.solution_workbook_edit, "Seleziona modello risolto")
+
+    def focus_student_workbook_input(self) -> None:
+        """Place focus on the student workbook field for sidebar-driven navigation."""
+        self.student_workbook_edit.setFocus()
+        self.student_workbook_edit.selectAll()
+
+    def clear_report_state_for_new_student_selection(self) -> None:
+        """Clear report session data after changing the student workbook selection."""
+        self.state.clear_reports()
 
     def _save_profile(self) -> None:
         """Delegate profile saving to the existing profile save flow."""
@@ -420,14 +445,14 @@ class CorrectionPage(QWidget):
         self.state.current_profile_path = path
         self.state.profile_dirty = False
         self.state.profile_status = "imported"
-        self.state.current_report = None
-        self.state.current_report_path = None
-        self.state.report_dirty = False
+        self.state.clear_reports()
+        self.state.empty_workbook_path = None
+        self.state.solution_workbook_path = None
         self.state.empty_workbook_path = (
-            profile.source_empty_workbook or self.empty_workbook_edit.text() or None
+            None
         )
         self.state.solution_workbook_path = (
-            profile.source_solution_workbook or self.solution_workbook_edit.text() or None
+            None
         )
         self.state.exercise_name = profile.exercise_name
         self.state.max_grade = profile.max_grade
@@ -468,12 +493,20 @@ class CorrectionPage(QWidget):
         self.state.exercise_name = self.exercise_name_edit.text()
         self.state.max_grade = max_grade
         self._set_active_profile(result.profile)
+        self.state.current_profile.blank_workbook_name = (
+            Path(self.empty_workbook_edit.text()).name
+            if self.empty_workbook_edit.text().strip()
+            else None
+        )
+        self.state.current_profile.solved_workbook_name = (
+            Path(self.solution_workbook_edit.text()).name
+            if self.solution_workbook_edit.text().strip()
+            else None
+        )
         self.state.current_profile_path = None
         self.state.profile_dirty = True
         self.state.profile_status = "generated"
-        self.state.current_report = None
-        self.state.current_report_path = None
-        self.state.report_dirty = False
+        self.state.clear_reports()
         self.summary_text.setPlainText(
             f"Profilo generato con successo.\n"
             f"Regole generate: {result.summary.generated_rules_count}\n"
@@ -494,21 +527,37 @@ class CorrectionPage(QWidget):
 
         try:
             profile = self._profile_for_correction()
-            report = self.engine.correct_workbook(
-                profile,
-                self.student_workbook_edit.text(),
-            )
         except Exception as exc:
             QMessageBox.critical(self, "Correzione", str(exc))
             return
 
+        reports = []
+        errors: list[str] = []
+        for student_path in self.state.student_workbook_paths:
+            try:
+                reports.append(self.engine.correct_workbook(profile, student_path))
+            except Exception as exc:
+                errors.append(f"{Path(student_path).name}: {exc}")
+
+        if not reports and errors:
+            QMessageBox.critical(self, "Correzione", "\n".join(errors))
+            return
+
         self._set_active_profile(profile)
         self.state.max_grade = profile.max_grade
-        self.state.student_workbook_path = self.student_workbook_edit.text() or None
-        self.state.current_report = report
-        self.state.current_report_path = None
-        self.state.report_dirty = False
+        self.state.replace_session_reports(reports)
+        self.state.student_workbook_path = (
+            self.state.student_workbook_paths[0]
+            if self.state.student_workbook_paths
+            else None
+        )
         self.on_state_changed()
+        if errors:
+            QMessageBox.warning(
+                self,
+                "Correzione completata con avvisi",
+                "Alcuni file non sono stati corretti correttamente:\n" + "\n".join(errors),
+            )
         if self.on_show_report_requested is not None:
             self.on_show_report_requested()
 
@@ -630,7 +679,7 @@ class CorrectionPage(QWidget):
         """Update workflow-wide and workbook-step statuses."""
         empty_status = self._validate_workbook_path(self.empty_workbook_edit.text())
         solution_status = self._validate_workbook_path(self.solution_workbook_edit.text())
-        student_status = self._validate_workbook_path(self.student_workbook_edit.text())
+        student_status = self._validate_workbook_paths(self.state.student_workbook_paths)
 
         workbook_lines = [
             f"Modello vuoto: {empty_status.label}",
@@ -869,7 +918,7 @@ class CorrectionPage(QWidget):
         """Return the missing requirements for the correction step."""
         blockers: list[str] = []
 
-        student_status = self._validate_workbook_path(self.student_workbook_edit.text())
+        student_status = self._validate_workbook_paths(self.state.student_workbook_paths)
         if not student_status.is_valid:
             blockers.append("Seleziona l'elaborato dello studente nello Step 4.")
 
@@ -894,12 +943,27 @@ class CorrectionPage(QWidget):
         """Keep the shared GUI state aligned with the currently visible inputs."""
         self.state.empty_workbook_path = self.empty_workbook_edit.text().strip() or None
         self.state.solution_workbook_path = self.solution_workbook_edit.text().strip() or None
-        self.state.student_workbook_path = self.student_workbook_edit.text().strip() or None
+        self.state.student_workbook_path = (
+            self.state.student_workbook_paths[0]
+            if self.state.student_workbook_paths
+            else None
+        )
         self.state.target_color = self.color_edit.text().strip()
         self.state.exercise_name = self.exercise_name_edit.text().strip()
         max_grade_message = self._max_grade_validation_message()
         if max_grade_message is None:
             self.state.max_grade = self._get_max_grade_value()
+        if self.state.current_profile is not None:
+            self.state.current_profile.blank_workbook_name = (
+                Path(self.state.empty_workbook_path).name
+                if self.state.empty_workbook_path
+                else self.state.current_profile.blank_workbook_name
+            )
+            self.state.current_profile.solved_workbook_name = (
+                Path(self.state.solution_workbook_path).name
+                if self.state.solution_workbook_path
+                else self.state.current_profile.solved_workbook_name
+            )
 
     def _get_max_grade_value(self) -> float:
         """Parse the custom maximum score field into a positive float."""
@@ -951,6 +1015,39 @@ class CorrectionPage(QWidget):
         if not path.exists():
             return FileValidationState("errore", "errore", "File non trovato.")
         return FileValidationState("valido", "valido")
+
+    @classmethod
+    def _validate_workbook_paths(cls, paths: list[str]) -> FileValidationState:
+        """Validate one or more selected student workbook paths."""
+        if not paths:
+            return FileValidationState("non selezionato", "non selezionato")
+        states = [cls._validate_workbook_path(path) for path in paths]
+        if any(state.state_name == "errore" for state in states):
+            details = [state.detail for state in states if state.detail]
+            return FileValidationState("errore", "errore", "; ".join(details))
+        if all(state.is_valid for state in states):
+            if len(paths) == 1:
+                return FileValidationState("valido", "valido")
+            return FileValidationState("valido", f"validi ({len(paths)})")
+        return FileValidationState("non selezionato", "non selezionato")
+
+    def _student_workbook_display_text(self) -> str:
+        """Return a compact UI string for the selected student workbooks."""
+        names = self.state.display_student_workbook_names()
+        if not names:
+            return ""
+        if len(names) == 1:
+            return names[0]
+        return "; ".join(names)
+
+    def _set_student_display_text(self, text: str) -> None:
+        """Update the read-only student workbook field without rebuilding session paths."""
+        self._student_display_text = text
+        tooltip = "\n".join(self.state.student_workbook_paths) if self.state.student_workbook_paths else text
+        self.student_workbook_edit.blockSignals(True)
+        self.student_workbook_edit.setText(text)
+        self.student_workbook_edit.setToolTip(tooltip)
+        self.student_workbook_edit.blockSignals(False)
 
     @staticmethod
     def _apply_status_label(label: QLabel, text: str) -> None:
