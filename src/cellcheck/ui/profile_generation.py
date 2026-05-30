@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from cellcheck.core import ProfileImporter
+from cellcheck.core import InvalidColorInputError, ProfileImporter, parse_color_input
 from cellcheck.models import ProfileImportOptions, ProfileImportResult
 from cellcheck.ui.number_format import parse_decimal_input
 
@@ -28,6 +28,11 @@ def validate_profile_generation_inputs(
         blockers.append("Inserisci il nome del profilo.")
     if not target_color.strip():
         blockers.append("Inserisci il colore target delle celle da correggere.")
+    else:
+        try:
+            parse_color_input(target_color)
+        except InvalidColorInputError:
+            blockers.append("Inserisci un colore target valido in formato #RRGGBB, RRGGBB o AARRGGBB.")
     if _validate_max_grade_text(max_grade_text) is not None:
         blockers.append("Imposta un punteggio massimo personalizzato valido.")
 
@@ -49,10 +54,11 @@ def generate_profile_from_workbooks(
     importer: ProfileImporter | None = None,
 ) -> ProfileImportResult:
     """Generate a correction profile by reusing the existing ProfileImporter."""
+    normalized_target = parse_color_input(target_color)
     options = ProfileImportOptions(
         exercise_name=exercise_name.strip(),
         max_grade=parse_max_grade_text(max_grade_text),
-        target_color=target_color.strip(),
+        target_color=f"#{normalized_target.normalized_rgb}",
     )
     active_importer = importer or ProfileImporter()
     return active_importer.import_profile(

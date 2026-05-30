@@ -457,7 +457,9 @@ class CorrectionPage(QWidget):
 
         self.state.empty_workbook_path = self.empty_workbook_edit.text() or None
         self.state.solution_workbook_path = self.solution_workbook_edit.text() or None
-        self.state.target_color = self.color_edit.text() or self.state.target_color
+        normalized_target_color = f"#{result.summary.target_rgb}"
+        self.state.target_color = normalized_target_color
+        self.color_edit.setText(normalized_target_color)
         self.state.exercise_name = self.exercise_name_edit.text()
         self.state.max_grade = max_grade
         self._set_active_profile(result.profile)
