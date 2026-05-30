@@ -120,6 +120,7 @@ class MainWindow(QMainWindow):
     def _connect_signals(self) -> None:
         """Wire ribbon actions to navigation and file actions."""
         self.ribbon.dashboard_requested.connect(lambda: self.stack.setCurrentWidget(self.dashboard_page))
+        self.ribbon.new_requested.connect(self._start_new_workspace)
         self.ribbon.profile_import_requested.connect(
             lambda: self.stack.setCurrentWidget(self.profile_import_page)
         )
@@ -182,6 +183,24 @@ class MainWindow(QMainWindow):
             tr("language.updated.title"),
             tr("language.updated.message"),
         )
+
+    def _start_new_workspace(self) -> None:
+        """Reset the GUI session to an empty new-work state."""
+        if self.state.has_active_workspace_data():
+            answer = QMessageBox.question(
+                self,
+                tr("new_workspace.confirm_title"),
+                tr("new_workspace.confirm_message"),
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No,
+            )
+            if answer != QMessageBox.Yes:
+                return
+
+        self.state.reset_workspace()
+        self.report_page.reset_view_state()
+        self._refresh_state_views()
+        self.stack.setCurrentWidget(self.dashboard_page)
 
     def _open_profile_document(self) -> None:
         """Open only a correction profile into the GUI state."""

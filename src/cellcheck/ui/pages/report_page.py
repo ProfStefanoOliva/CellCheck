@@ -140,6 +140,15 @@ class ReportPage(QWidget):
             )
         self._apply_filters()
 
+    def reset_view_state(self) -> None:
+        """Clear report-specific filters, selections and details for a new workspace."""
+        self._filtered_indices = []
+        self._filtered_results = []
+        self._selected_result_index = None
+        self.filter_bar.clear_filters(emit_signal=False)
+        self.table.load_results([], [])
+        self.details_panel.refresh(None)
+
     def _apply_filters(self) -> None:
         """Apply current filters to the report results."""
         report = self.state.current_report

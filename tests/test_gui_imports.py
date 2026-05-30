@@ -54,6 +54,7 @@ def test_about_text_contains_essential_legal_notices() -> None:
 
 def test_ribbon_bar_exposes_language_action() -> None:
     assert hasattr(RibbonBar, "language_requested")
+    assert hasattr(RibbonBar, "new_requested")
 
 
 def test_about_text_uses_current_language_translation() -> None:
