@@ -24,6 +24,7 @@ from PySide6.QtWidgets import (
 )
 
 from cellcheck.models import CorrectionRule, RuleType, ToleranceConfig, ToleranceMode
+from cellcheck.ui.i18n import tr
 from cellcheck.ui.number_format import format_decimal_for_ui, parse_decimal_input
 
 CELL_REF_RE = re.compile(r"^[A-Za-z]{1,3}[1-9][0-9]{0,6}$")
@@ -52,6 +53,7 @@ class RuleEditorData:
     enabled: bool
     tolerance: ToleranceConfig | None
     teacher_note: str
+    required_activity: str
 
 
 class ProfileRuleDialog(QDialog):
@@ -166,15 +168,20 @@ class ProfileRuleDialog(QDialog):
         self.expected_formula_edit.setPlaceholderText("es. =$A$1+$B$1")
         self.expected_value_edit = QLineEdit()
         self.expected_value_edit.setPlaceholderText("Valore o testo atteso")
+        self.required_activity_edit = QTextEdit()
+        self.required_activity_edit.setMinimumHeight(90)
+        self.required_activity_edit.setPlaceholderText(tr("profile.required_activity.placeholder"))
         self.formula_mode_label = QLabel("Modalita confronto formula")
         self.expected_formula_label = QLabel("Formula attesa")
         self.expected_value_label = QLabel("Valore atteso")
+        self.required_activity_label = QLabel(tr("profile.required_activity"))
 
         form.addRow(self._section_title("Criterio di correzione"), QLabel())
         form.addRow("Tipo regola", self.rule_kind_combo)
         form.addRow(self.formula_mode_label, self.formula_mode_combo)
         form.addRow(self.expected_formula_label, self.expected_formula_edit)
         form.addRow(self.expected_value_label, self.expected_value_edit)
+        form.addRow(self.required_activity_label, self.required_activity_edit)
         return section
 
     def _build_scoring_section(self) -> QFrame:
@@ -255,6 +262,7 @@ class ProfileRuleDialog(QDialog):
         self.weight_edit.setText(format_decimal_for_ui(rule.weight))
         self.enabled_check.setChecked(rule.enabled)
         self.teacher_note_edit.setPlainText(rule.teacher_note)
+        self.required_activity_edit.setPlainText(rule.required_activity)
 
         if rule.tolerance is not None:
             tolerance_index = self.tolerance_mode_combo.findData(rule.tolerance.mode)
@@ -356,6 +364,7 @@ class ProfileRuleDialog(QDialog):
         expected_formula = self.expected_formula_edit.text().strip() or None
         expected_value_text = self.expected_value_edit.text().strip()
         teacher_note = self.teacher_note_edit.toPlainText().strip()
+        required_activity = self.required_activity_edit.toPlainText().strip()
         rule_kind = self.rule_kind_combo.currentData()
         weight = self._parse_positive_weight(self.weight_edit.text())
 
@@ -402,6 +411,7 @@ class ProfileRuleDialog(QDialog):
             enabled=self.enabled_check.isChecked(),
             tolerance=tolerance,
             teacher_note=teacher_note,
+            required_activity=required_activity,
         )
 
     def _build_tolerance(self, rule_kind: str) -> ToleranceConfig | None:

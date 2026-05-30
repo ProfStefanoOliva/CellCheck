@@ -6,7 +6,8 @@ from PySide6.QtWidgets import QApplication
 
 from cellcheck.ui import AppState, MainWindow
 from cellcheck.ui.color_picker import choose_color_for_line_edit
-from cellcheck.ui.dialogs import LanguageDialog
+from cellcheck.ui.dialogs import EvaluationTableDialog, LanguageDialog
+from cellcheck.ui.evaluation_table import build_evaluation_table_text
 from cellcheck.ui.i18n import available_languages, set_current_language, tr
 from cellcheck.ui.localization import install_qt_italian_translations
 from cellcheck.ui.main_window import build_about_text
@@ -32,6 +33,8 @@ def test_ui_package_imports() -> None:
     assert ProjectNavigator is not None
     assert ReportFilterBar is not None
     assert choose_color_for_line_edit is not None
+    assert EvaluationTableDialog is not None
+    assert build_evaluation_table_text is not None
     assert install_qt_italian_translations is not None
     assert LanguageDialog is not None
     assert available_languages is not None
