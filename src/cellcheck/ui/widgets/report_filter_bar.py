@@ -84,11 +84,12 @@ class ReportFilterBar(QWidget):
         """Return the current free-text filter."""
         return self.search_edit.text()
 
-    def clear_filters(self) -> None:
+    def clear_filters(self, emit_signal: bool = True) -> None:
         """Reset all filters to their default state."""
         self.status_combo.setCurrentIndex(0)
         self.search_edit.clear()
-        self.filters_changed.emit()
+        if emit_signal:
+            self.filters_changed.emit()
 
     def matches(self, result: CellCorrectionResult) -> bool:
         """Return True if the given result satisfies the active filters."""

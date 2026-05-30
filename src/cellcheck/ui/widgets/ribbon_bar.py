@@ -21,6 +21,7 @@ class RibbonBar(QFrame):
 
     SERVICE_BUTTON_KEYS = {"language.button", "?"}
 
+    new_requested = Signal()
     dashboard_requested = Signal()
     profile_import_requested = Signal()
     correction_requested = Signal()
@@ -54,6 +55,7 @@ class RibbonBar(QFrame):
         outer_layout.addLayout(button_row)
 
         buttons = [
+            ("ribbon.new", self.new_requested),
             ("ribbon.dashboard", self.dashboard_requested),
             ("ribbon.profile", self.profile_import_requested),
             ("ribbon.correction", self.correction_requested),
@@ -89,3 +91,5 @@ class RibbonBar(QFrame):
         self.title_label.setText(tr("ribbon.title"))
         for button, label_key in self._buttons:
             button.setText(label_key if label_key == "?" else tr(label_key))
+            if label_key == "ribbon.new":
+                button.setToolTip(tr("new_workspace.tooltip"))

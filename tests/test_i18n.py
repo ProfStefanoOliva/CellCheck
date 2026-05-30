@@ -85,5 +85,10 @@ def test_dashboard_about_and_help_keys_exist_in_primary_language() -> None:
         "help.subtitle",
         "help.topic.what",
         "help.section.what",
+        "ribbon.new",
+        "new_workspace.title",
+        "new_workspace.tooltip",
+        "new_workspace.confirm_title",
+        "new_workspace.confirm_message",
     ]:
         assert key in TRANSLATIONS["it"]
