@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
 
 from cellcheck.core import ProfileImporter
 from cellcheck.models import ProfileImportResult
+from cellcheck.ui.color_picker import choose_color_for_line_edit
 from cellcheck.ui.profile_generation import (
     generate_profile_from_workbooks,
     validate_profile_generation_inputs,
@@ -69,7 +70,7 @@ class GenerateProfileDialog(QDialog):
         form.addRow("Modello risolto", self._build_file_selector(
             self.solution_workbook_edit, "Seleziona modello risolto"
         ))
-        form.addRow("Colore target", self.target_color_edit)
+        form.addRow("Colore target", self._build_color_selector(self.target_color_edit))
         form.addRow("Nome profilo", self.exercise_name_edit)
         form.addRow("Punteggio massimo personalizzato", self.max_grade_edit)
         layout.addLayout(form)
@@ -106,6 +107,20 @@ class GenerateProfileDialog(QDialog):
         button = QPushButton("Sfoglia")
         button.setMinimumHeight(38)
         button.clicked.connect(lambda: self._choose_excel_file(line_edit, title))
+        layout.addWidget(button)
+        return layout
+
+    def _build_color_selector(self, line_edit: QLineEdit) -> QHBoxLayout:
+        """Create a color input row with manual edit plus graphical picker."""
+        layout = QHBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(10)
+        line_edit.setMinimumHeight(38)
+        layout.addWidget(line_edit)
+
+        button = QPushButton("Scegli...")
+        button.setMinimumHeight(38)
+        button.clicked.connect(lambda: choose_color_for_line_edit(line_edit, self))
         layout.addWidget(button)
         return layout
 

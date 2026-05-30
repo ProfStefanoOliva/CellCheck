@@ -1,4 +1,6 @@
 from cellcheck.ui import AppState, MainWindow
+from cellcheck.ui.color_picker import choose_color_for_line_edit
+from cellcheck.ui.localization import install_qt_italian_translations
 from cellcheck.ui.main_window import build_about_text
 from cellcheck.ui.pages import (
     CorrectionPage,
@@ -20,6 +22,8 @@ def test_ui_package_imports() -> None:
     assert SettingsPage is not None
     assert RibbonBar is not None
     assert ProjectNavigator is not None
+    assert choose_color_for_line_edit is not None
+    assert install_qt_italian_translations is not None
 
 
 def test_about_text_contains_essential_legal_notices() -> None:
