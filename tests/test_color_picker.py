@@ -11,6 +11,7 @@ from cellcheck.ui.color_picker import (
     normalize_color_for_display,
     resolve_initial_qcolor,
 )
+from cellcheck.ui.i18n import set_current_language, tr
 from cellcheck.ui.localization import install_qt_italian_translations
 
 
@@ -75,3 +76,8 @@ def test_choose_color_for_line_edit_uses_selected_color_when_confirmed() -> None
 
     assert changed is True
     assert line_edit.text() == "#00FF00"
+
+
+def test_color_dialog_title_follows_gui_translation_keys() -> None:
+    set_current_language("it", persist=False)
+    assert tr("color_dialog.title") == "Seleziona colore"

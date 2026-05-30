@@ -22,6 +22,7 @@ from cellcheck.models import (
 )
 from cellcheck.reporting import export_text_correction_report
 from cellcheck.ui.app_state import AppState
+from cellcheck.ui.i18n import tr
 from cellcheck.ui.widgets import (
     ReportDetailsPanel,
     ReportFilterBar,
@@ -46,40 +47,35 @@ class ReportPage(QWidget):
         layout.setContentsMargins(24, 24, 24, 24)
         layout.setSpacing(12)
 
-        title = QLabel("Report")
-        title.setObjectName("pageTitle")
-        layout.addWidget(title)
+        self.title_label = QLabel()
+        self.title_label.setObjectName("pageTitle")
+        layout.addWidget(self.title_label)
 
-        subtitle = QLabel(
-            "Esplora il CorrectionReport corrente, filtra i risultati e rettifica manualmente qualsiasi riga del report."
-        )
-        subtitle.setObjectName("pageSubtitle")
-        subtitle.setWordWrap(True)
-        layout.addWidget(subtitle)
+        self.subtitle_label = QLabel()
+        self.subtitle_label.setObjectName("pageSubtitle")
+        self.subtitle_label.setWordWrap(True)
+        layout.addWidget(self.subtitle_label)
 
-        manual_review_note = QLabel(
-            "Le regole di tipo revisione manuale continuano a richiedere obbligatoriamente il passaggio umano. "
-            "In piu, ogni esito automatico puo essere rettificato dal docente dalla pagina Report."
-        )
-        manual_review_note.setObjectName("warningText")
-        manual_review_note.setWordWrap(True)
-        layout.addWidget(manual_review_note)
+        self.manual_review_note_label = QLabel()
+        self.manual_review_note_label.setObjectName("warningText")
+        self.manual_review_note_label.setWordWrap(True)
+        layout.addWidget(self.manual_review_note_label)
 
         command_row = QHBoxLayout()
         command_row.setContentsMargins(0, 0, 0, 0)
         command_row.setSpacing(10)
 
-        self.load_report_button = QPushButton("Carica report .ccreport")
+        self.load_report_button = QPushButton()
         self.load_report_button.setMinimumHeight(38)
         self.load_report_button.clicked.connect(self._load_report)
         command_row.addWidget(self.load_report_button)
 
-        self.save_report_button = QPushButton("Salva report .ccreport")
+        self.save_report_button = QPushButton()
         self.save_report_button.setMinimumHeight(38)
         self.save_report_button.clicked.connect(self._save_report)
         command_row.addWidget(self.save_report_button)
 
-        self.export_report_button = QPushButton("Esporta report .txt")
+        self.export_report_button = QPushButton()
         self.export_report_button.setMinimumHeight(38)
         self.export_report_button.clicked.connect(self._export_report_txt)
         command_row.addWidget(self.export_report_button)
@@ -109,6 +105,20 @@ class ReportPage(QWidget):
         splitter.setStretchFactor(1, 2)
         splitter.setSizes([760, 420])
         layout.addWidget(splitter, 1)
+        self.retranslate_ui()
+
+    def retranslate_ui(self) -> None:
+        """Refresh report page labels after a GUI language change."""
+        self.title_label.setText(tr("report.title"))
+        self.subtitle_label.setText(tr("report.subtitle"))
+        self.manual_review_note_label.setText(tr("report.manual_note"))
+        self.load_report_button.setText(tr("report.load"))
+        self.save_report_button.setText(tr("report.save"))
+        self.export_report_button.setText(tr("report.export"))
+        self.summary_widget.retranslate_ui()
+        self.filter_bar.retranslate_ui()
+        self.table.retranslate_ui()
+        self.details_panel.retranslate_ui()
 
     def refresh_from_state(self) -> None:
         """Refresh summary and table from the current report."""

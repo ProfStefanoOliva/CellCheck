@@ -13,9 +13,13 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from cellcheck.ui.i18n import tr
+
 
 class RibbonBar(QFrame):
     """Top action bar with large, readable navigation buttons."""
+
+    SERVICE_BUTTON_KEYS = {"language.button", "?"}
 
     dashboard_requested = Signal()
     profile_import_requested = Signal()
@@ -24,6 +28,7 @@ class RibbonBar(QFrame):
     settings_requested = Signal()
     help_requested = Signal()
     about_requested = Signal()
+    language_requested = Signal()
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -37,11 +42,11 @@ class RibbonBar(QFrame):
         outer_layout.setContentsMargins(14, 8, 14, 8)
         outer_layout.setSpacing(5)
 
-        title = QLabel("CellCheck Workspace")
-        title.setObjectName("ribbonTitle")
-        title.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-        title.setMaximumHeight(22)
-        outer_layout.addWidget(title, 0, Qt.AlignLeft)
+        self.title_label = QLabel()
+        self.title_label.setObjectName("ribbonTitle")
+        self.title_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        self.title_label.setMaximumHeight(22)
+        outer_layout.addWidget(self.title_label, 0, Qt.AlignLeft)
 
         button_row = QHBoxLayout()
         button_row.setSpacing(8)
@@ -49,21 +54,38 @@ class RibbonBar(QFrame):
         outer_layout.addLayout(button_row)
 
         buttons = [
-            ("Dashboard", self.dashboard_requested),
-            ("Profilo", self.profile_import_requested),
-            ("Correggi", self.correction_requested),
-            ("Report", self.report_requested),
-            ("Impostazioni", self.settings_requested),
-            ("Help", self.help_requested),
+            ("ribbon.dashboard", self.dashboard_requested),
+            ("ribbon.profile", self.profile_import_requested),
+            ("ribbon.correction", self.correction_requested),
+            ("ribbon.report", self.report_requested),
+            ("ribbon.settings", self.settings_requested),
+            ("ribbon.help", self.help_requested),
+            ("language.button", self.language_requested),
             ("?", self.about_requested),
         ]
 
-        for label, signal in buttons:
+        self._buttons: list[tuple[QToolButton, str]] = []
+        for label_key, signal in buttons:
             button = QToolButton()
-            button.setText(label)
+            button.setText(label_key if label_key == "?" else tr(label_key))
             button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
-            button.setMinimumSize(118, 48)
             button.setMaximumHeight(52)
-            button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+            if label_key in self.SERVICE_BUTTON_KEYS:
+                button.setObjectName("ribbonServiceButton")
+                button.setMinimumSize(44, 44)
+                button.setMaximumWidth(52)
+                button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+            else:
+                button.setMinimumSize(118, 48)
+                button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
             button.clicked.connect(signal.emit)
             button_row.addWidget(button)
+            self._buttons.append((button, label_key))
+
+        self.retranslate_ui()
+
+    def retranslate_ui(self) -> None:
+        """Refresh ribbon labels after a GUI language change."""
+        self.title_label.setText(tr("ribbon.title"))
+        for button, label_key in self._buttons:
+            button.setText(label_key if label_key == "?" else tr(label_key))

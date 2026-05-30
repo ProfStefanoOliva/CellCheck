@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
 )
 
 from cellcheck.models import CellCorrectionResult, ResultStatus
+from cellcheck.ui.i18n import tr
 from cellcheck.ui.theme import ERROR_RED, SUCCESS_GREEN, TEXT_SECONDARY, WARNING_ORANGE
 
 
@@ -37,18 +38,6 @@ class ReportTable(QTableWidget):
         self.setObjectName("reportTable")
         self._row_result_indices: list[int] = []
 
-        self.setHorizontalHeaderLabels(
-            [
-                "Foglio",
-                "Cella",
-                "Stato",
-                "Punteggio",
-                "Peso",
-                "Tipo regola",
-                "Messaggio",
-                "Commento docente",
-            ]
-        )
         self.setAlternatingRowColors(True)
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.setSelectionMode(QAbstractItemView.SingleSelection)
@@ -57,6 +46,7 @@ class ReportTable(QTableWidget):
         self.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.horizontalHeader().setStretchLastSection(True)
         self.itemSelectionChanged.connect(self._emit_selection)
+        self.retranslate_ui()
 
     def load_results(
         self,
@@ -139,6 +129,21 @@ class ReportTable(QTableWidget):
             item = self.item(selected_rows[0].row(), 0)
             if item is not None:
                 self.result_selected.emit(int(item.data(Qt.UserRole)))
+
+    def retranslate_ui(self) -> None:
+        """Refresh table headers after a GUI language change."""
+        self.setHorizontalHeaderLabels(
+            [
+                tr("report.table.sheet"),
+                tr("report.table.cell"),
+                tr("report.table.status"),
+                tr("report.table.score"),
+                tr("report.table.weight"),
+                tr("report.table.rule_type"),
+                tr("report.table.message"),
+                tr("report.table.comment"),
+            ]
+        )
 
     @staticmethod
     def _status_color(status: ResultStatus) -> QColor:

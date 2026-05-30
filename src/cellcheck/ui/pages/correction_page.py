@@ -26,6 +26,7 @@ from cellcheck.models import CorrectionProfile
 from cellcheck.storage import load_profile
 from cellcheck.ui.app_state import AppState
 from cellcheck.ui.color_picker import choose_color_for_line_edit
+from cellcheck.ui.i18n import tr
 from cellcheck.ui.profile_generation import (
     generate_profile_from_workbooks,
     parse_max_grade_text,
@@ -69,6 +70,8 @@ class CorrectionPage(QWidget):
         self.engine = CorrectionEngine()
         self.importer = ProfileImporter()
         self.active_profile: CorrectionProfile | None = self.state.current_profile
+        self._browse_buttons: list[QPushButton] = []
+        self._color_buttons: list[QPushButton] = []
 
         outer_layout = QVBoxLayout(self)
         outer_layout.setContentsMargins(0, 0, 0, 0)
@@ -86,16 +89,14 @@ class CorrectionPage(QWidget):
         layout.setContentsMargins(24, 24, 24, 24)
         layout.setSpacing(16)
 
-        title = QLabel("Correzione guidata")
-        title.setObjectName("pageTitle")
-        title.setWordWrap(True)
-        layout.addWidget(title)
+        self.title_label = QLabel()
+        self.title_label.setObjectName("pageTitle")
+        self.title_label.setWordWrap(True)
+        layout.addWidget(self.title_label)
 
-        description = QLabel(
-            "Segui il flusso: modello vuoto -> modello risolto -> profilo di correzione -> elaborato studente -> correzione -> report."
-        )
-        description.setWordWrap(True)
-        layout.addWidget(description)
+        self.description_label = QLabel()
+        self.description_label.setWordWrap(True)
+        layout.addWidget(self.description_label)
 
         self.workflow_status_label = QLabel()
         self.workflow_status_label.setWordWrap(True)
@@ -107,14 +108,10 @@ class CorrectionPage(QWidget):
         layout.addWidget(self._build_correction_step_card())
         layout.addWidget(self._build_report_step_card())
 
-        notes = QLabel(
-            "CellCheck non modifica i workbook originali.\n"
-            "I file .xlsm vengono letti senza eseguire macro.\n"
-            "Il report e un supporto alla valutazione e deve essere verificato dal docente."
-        )
-        notes.setObjectName("warningText")
-        notes.setWordWrap(True)
-        layout.addWidget(notes)
+        self.notes_label = QLabel()
+        self.notes_label.setObjectName("warningText")
+        self.notes_label.setWordWrap(True)
+        layout.addWidget(self.notes_label)
 
         self.summary_text = QTextEdit()
         self.summary_text.setReadOnly(True)
@@ -142,6 +139,7 @@ class CorrectionPage(QWidget):
         self.exercise_name_edit.textChanged.connect(self._sync_state_from_inputs)
         self.max_grade_edit.textChanged.connect(self._sync_state_from_inputs)
 
+        self.retranslate_ui()
         self.refresh_from_state()
 
     def refresh_from_state(self) -> None:
@@ -170,15 +168,16 @@ class CorrectionPage(QWidget):
         layout.setHorizontalSpacing(14)
         layout.setVerticalSpacing(12)
 
-        step_title = QLabel("Step 1-2: Modelli di riferimento")
-        step_title.setObjectName("pageSubtitle")
-        step_title.setWordWrap(True)
-        layout.addWidget(step_title, 0, 0, 1, 2)
+        self.reference_step_title = QLabel()
+        self.reference_step_title.setObjectName("pageSubtitle")
+        self.reference_step_title.setWordWrap(True)
+        layout.addWidget(self.reference_step_title, 0, 0, 1, 2)
 
         self.empty_workbook_edit = QLineEdit()
         self.solution_workbook_edit = QLineEdit()
 
-        layout.addWidget(QLabel("Step 1: Modello vuoto"), 1, 0)
+        self.empty_workbook_label = QLabel()
+        layout.addWidget(self.empty_workbook_label, 1, 0)
         layout.addLayout(
             self._build_file_selector(
                 self.empty_workbook_edit,
@@ -189,7 +188,8 @@ class CorrectionPage(QWidget):
             1,
         )
 
-        layout.addWidget(QLabel("Step 2: Modello risolto"), 2, 0)
+        self.solution_workbook_label = QLabel()
+        layout.addWidget(self.solution_workbook_label, 2, 0)
         layout.addLayout(
             self._build_file_selector(
                 self.solution_workbook_edit,
@@ -216,40 +216,43 @@ class CorrectionPage(QWidget):
         layout.setHorizontalSpacing(14)
         layout.setVerticalSpacing(12)
 
-        step_title = QLabel("Step 3: Profilo di correzione")
-        step_title.setObjectName("pageSubtitle")
-        step_title.setWordWrap(True)
-        layout.addWidget(step_title, 0, 0, 1, 2)
+        self.profile_step_title = QLabel()
+        self.profile_step_title.setObjectName("pageSubtitle")
+        self.profile_step_title.setWordWrap(True)
+        layout.addWidget(self.profile_step_title, 0, 0, 1, 2)
 
         self.color_edit = QLineEdit()
         self.exercise_name_edit = QLineEdit()
         self.max_grade_edit = QLineEdit()
-        self.max_grade_edit.setPlaceholderText("es. 100")
+        self.max_grade_edit.setPlaceholderText(tr("correction.max_grade.placeholder"))
         self.max_grade_edit.setMinimumHeight(38)
 
-        layout.addWidget(QLabel("Colore target"), 1, 0)
+        self.target_color_label = QLabel()
+        layout.addWidget(self.target_color_label, 1, 0)
         layout.addLayout(self._build_color_selector(self.color_edit), 1, 1)
 
-        layout.addWidget(QLabel("Nome esercizio"), 2, 0)
+        self.exercise_name_label = QLabel()
+        layout.addWidget(self.exercise_name_label, 2, 0)
         layout.addWidget(self.exercise_name_edit, 2, 1)
 
-        layout.addWidget(QLabel("Punteggio massimo personalizzato"), 3, 0)
+        self.max_grade_label = QLabel()
+        layout.addWidget(self.max_grade_label, 3, 0)
         layout.addWidget(self.max_grade_edit, 3, 1)
 
         button_row = QHBoxLayout()
         button_row.setSpacing(10)
 
-        self.import_profile_button = QPushButton("Importa profilo .ccal")
+        self.import_profile_button = QPushButton()
         self.import_profile_button.setMinimumHeight(38)
         self.import_profile_button.clicked.connect(self._import_profile)
         button_row.addWidget(self.import_profile_button)
 
-        self.generate_profile_button = QPushButton("Genera profilo")
+        self.generate_profile_button = QPushButton()
         self.generate_profile_button.setMinimumHeight(38)
         self.generate_profile_button.clicked.connect(self._generate_profile)
         button_row.addWidget(self.generate_profile_button)
 
-        self.save_profile_button = QPushButton("Salva profilo .ccal")
+        self.save_profile_button = QPushButton()
         self.save_profile_button.setMinimumHeight(38)
         self.save_profile_button.clicked.connect(self._save_profile)
         button_row.addWidget(self.save_profile_button)
@@ -272,14 +275,15 @@ class CorrectionPage(QWidget):
         layout.setHorizontalSpacing(14)
         layout.setVerticalSpacing(12)
 
-        step_title = QLabel("Step 4: Elaborato studente")
-        step_title.setObjectName("pageSubtitle")
-        step_title.setWordWrap(True)
-        layout.addWidget(step_title, 0, 0, 1, 2)
+        self.student_step_title = QLabel()
+        self.student_step_title.setObjectName("pageSubtitle")
+        self.student_step_title.setWordWrap(True)
+        layout.addWidget(self.student_step_title, 0, 0, 1, 2)
 
         self.student_workbook_edit = QLineEdit()
 
-        layout.addWidget(QLabel("Elaborato studente"), 1, 0)
+        self.student_workbook_label = QLabel()
+        layout.addWidget(self.student_workbook_label, 1, 0)
         layout.addLayout(
             self._build_file_selector(
                 self.student_workbook_edit,
@@ -305,20 +309,20 @@ class CorrectionPage(QWidget):
         layout.setContentsMargins(16, 16, 16, 16)
         layout.setSpacing(12)
 
-        step_title = QLabel("Step 5: Correzione")
-        step_title.setObjectName("pageSubtitle")
-        step_title.setWordWrap(True)
-        layout.addWidget(step_title)
+        self.run_step_title = QLabel()
+        self.run_step_title.setObjectName("pageSubtitle")
+        self.run_step_title.setWordWrap(True)
+        layout.addWidget(self.run_step_title)
 
         button_row = QHBoxLayout()
         button_row.setSpacing(10)
 
-        self.run_button = QPushButton("Esegui correzione")
+        self.run_button = QPushButton()
         self.run_button.setMinimumHeight(38)
         self.run_button.clicked.connect(self._run_correction)
         button_row.addWidget(self.run_button)
 
-        self.show_report_button = QPushButton("Mostra report")
+        self.show_report_button = QPushButton()
         self.show_report_button.setMinimumHeight(38)
         self.show_report_button.clicked.connect(self._show_report)
         button_row.addWidget(self.show_report_button)
@@ -341,15 +345,15 @@ class CorrectionPage(QWidget):
         layout.setContentsMargins(16, 16, 16, 16)
         layout.setSpacing(12)
 
-        step_title = QLabel("Step 6: Report")
-        step_title.setObjectName("pageSubtitle")
-        step_title.setWordWrap(True)
-        layout.addWidget(step_title)
+        self.report_step_title = QLabel()
+        self.report_step_title.setObjectName("pageSubtitle")
+        self.report_step_title.setWordWrap(True)
+        layout.addWidget(self.report_step_title)
 
         button_row = QHBoxLayout()
         button_row.setSpacing(10)
 
-        self.save_report_button = QPushButton("Salva report .ccreport")
+        self.save_report_button = QPushButton()
         self.save_report_button.setMinimumHeight(38)
         self.save_report_button.clicked.connect(self._save_report)
         button_row.addWidget(self.save_report_button)
@@ -566,13 +570,14 @@ class CorrectionPage(QWidget):
         line_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         layout.addWidget(line_edit)
 
-        button = QPushButton("Sfoglia")
+        button = QPushButton(tr("common.browse"))
         button.setToolTip(button_label)
         button.setMinimumHeight(38)
         button.setMinimumWidth(110)
         button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         button.clicked.connect(handler)
         layout.addWidget(button)
+        self._browse_buttons.append(button)
         return layout
 
     def _build_color_selector(self, line_edit: QLineEdit) -> QHBoxLayout:
@@ -584,13 +589,42 @@ class CorrectionPage(QWidget):
         line_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         layout.addWidget(line_edit)
 
-        button = QPushButton("Scegli...")
+        button = QPushButton(tr("common.choose"))
         button.setMinimumHeight(38)
         button.setMinimumWidth(110)
         button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         button.clicked.connect(lambda: choose_color_for_line_edit(line_edit, self))
         layout.addWidget(button)
+        self._color_buttons.append(button)
         return layout
+
+    def retranslate_ui(self) -> None:
+        """Refresh the guided correction page labels after a GUI language change."""
+        self.title_label.setText(tr("correction.title"))
+        self.description_label.setText(tr("correction.description"))
+        self.notes_label.setText(tr("correction.notes"))
+        self.reference_step_title.setText(tr("correction.step.reference"))
+        self.empty_workbook_label.setText(tr("correction.step.empty"))
+        self.solution_workbook_label.setText(tr("correction.step.solution"))
+        self.profile_step_title.setText(tr("correction.step.profile"))
+        self.target_color_label.setText(tr("correction.target_color"))
+        self.exercise_name_label.setText(tr("correction.exercise_name"))
+        self.max_grade_label.setText(tr("correction.max_grade"))
+        self.import_profile_button.setText(tr("correction.import_profile"))
+        self.generate_profile_button.setText(tr("correction.generate_profile"))
+        self.save_profile_button.setText(tr("correction.save_profile"))
+        self.student_step_title.setText(tr("correction.step.student"))
+        self.student_workbook_label.setText(tr("correction.student_file"))
+        self.run_step_title.setText(tr("correction.step.run"))
+        self.run_button.setText(tr("correction.run"))
+        self.show_report_button.setText(tr("correction.show_report"))
+        self.report_step_title.setText(tr("correction.step.report"))
+        self.save_report_button.setText(tr("correction.save_report"))
+        self.max_grade_edit.setPlaceholderText(tr("correction.max_grade.placeholder"))
+        for button in self._browse_buttons:
+            button.setText(tr("common.browse"))
+        for button in self._color_buttons:
+            button.setText(tr("common.choose"))
 
     def _refresh_workflow_status(self) -> None:
         """Update workflow-wide and workbook-step statuses."""

@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
 )
 
 from cellcheck.models import CellCorrectionResult, ResultStatus, RuleType
+from cellcheck.ui.i18n import tr
 
 SELECTED_DECISION_STYLE = """
 QPushButton:checked {
@@ -44,9 +45,9 @@ class ReportDetailsPanel(QWidget):
         root_layout.setContentsMargins(0, 0, 0, 0)
         root_layout.setSpacing(10)
 
-        title = QLabel("Dettagli risultato")
-        title.setObjectName("pageSubtitle")
-        root_layout.addWidget(title)
+        self.title_label = QLabel()
+        self.title_label.setObjectName("pageSubtitle")
+        root_layout.addWidget(self.title_label)
 
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
@@ -65,41 +66,42 @@ class ReportDetailsPanel(QWidget):
         content_layout.addLayout(form_layout)
 
         self._fields: dict[str, QLabel] = {}
+        self._field_labels: dict[str, QLabel] = {}
         field_names = [
-            ("Rule ID", "rule_id"),
-            ("Foglio", "sheet_name"),
-            ("Cella", "cell"),
-            ("Range", "range_ref"),
-            ("Tipo regola", "rule_type"),
-            ("Stato", "status"),
-            ("Formula attesa", "expected_formula"),
-            ("Formula studente", "student_formula"),
-            ("Valore atteso", "expected_value"),
-            ("Valore studente", "student_value"),
-            ("Peso", "weight"),
-            ("Punteggio", "score_awarded"),
-            ("Messaggio", "message"),
+            ("details.rule_id", "rule_id"),
+            ("details.sheet", "sheet_name"),
+            ("details.cell", "cell"),
+            ("details.range", "range_ref"),
+            ("details.rule_type", "rule_type"),
+            ("details.status", "status"),
+            ("details.expected_formula", "expected_formula"),
+            ("details.student_formula", "student_formula"),
+            ("details.expected_value", "expected_value"),
+            ("details.student_value", "student_value"),
+            ("details.weight", "weight"),
+            ("details.score_awarded", "score_awarded"),
+            ("details.message", "message"),
         ]
 
-        for label_text, key in field_names:
+        for label_key, key in field_names:
             value_label = QLabel("-")
             value_label.setWordWrap(True)
             value_label.setObjectName("detailsValue")
-            form_layout.addRow(QLabel(label_text), value_label)
+            caption = QLabel(tr(label_key))
+            form_layout.addRow(caption, value_label)
             self._fields[key] = value_label
+            self._field_labels[key] = caption
 
         self.manual_review_widget = QWidget()
         manual_layout = QVBoxLayout(self.manual_review_widget)
         manual_layout.setContentsMargins(0, 0, 0, 0)
         manual_layout.setSpacing(10)
 
-        self.manual_review_title = QLabel("Revisione manuale del docente")
+        self.manual_review_title = QLabel()
         self.manual_review_title.setObjectName("pageSubtitle")
         manual_layout.addWidget(self.manual_review_title)
 
-        self.manual_review_note = QLabel(
-            "Questa voce puo essere rivista dal docente. Scegli come trattarla, assegna il punteggio se necessario e annota la motivazione."
-        )
+        self.manual_review_note = QLabel()
         self.manual_review_note.setObjectName("warningText")
         self.manual_review_note.setWordWrap(True)
         manual_layout.addWidget(self.manual_review_note)
@@ -107,8 +109,9 @@ class ReportDetailsPanel(QWidget):
         decision_row = QHBoxLayout()
         decision_row.setContentsMargins(0, 0, 0, 0)
         decision_row.setSpacing(8)
-        decision_row.addWidget(QLabel("Decisione:"))
-        self.selected_decision_label = QLabel("Lascia zero")
+        self.decision_label = QLabel()
+        decision_row.addWidget(self.decision_label)
+        self.selected_decision_label = QLabel()
         self.selected_decision_label.setObjectName("detailsValue")
         self.selected_decision_label.setWordWrap(True)
         decision_row.addWidget(self.selected_decision_label, 1)
@@ -124,14 +127,14 @@ class ReportDetailsPanel(QWidget):
         self.decision_button_group.setExclusive(True)
         self.decision_buttons: dict[str, QPushButton] = {}
         decisions = [
-            ("Lascia zero", "leave_zero"),
-            ("Accetta", "accept"),
-            ("Parziale", "partial"),
-            ("Malus", "malus"),
-            ("Solo nota", "note_only"),
+            ("details.leave_zero", "leave_zero"),
+            ("details.accept", "accept"),
+            ("details.partial", "partial"),
+            ("details.malus", "malus"),
+            ("details.note_only", "note_only"),
         ]
-        for index, (label_text, decision_key) in enumerate(decisions):
-            button = QPushButton(label_text)
+        for index, (label_key, decision_key) in enumerate(decisions):
+            button = QPushButton(tr(label_key))
             button.setCheckable(True)
             button.setMinimumHeight(34)
             button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
@@ -153,28 +156,29 @@ class ReportDetailsPanel(QWidget):
         score_row = QHBoxLayout()
         score_row.setContentsMargins(0, 0, 0, 0)
         score_row.setSpacing(8)
-        score_row.addWidget(QLabel("Punteggio manuale"))
+        self.manual_score_label = QLabel()
+        score_row.addWidget(self.manual_score_label)
         self.manual_score_edit = QLineEdit()
-        self.manual_score_edit.setPlaceholderText("campo numerico libero")
+        self.manual_score_edit.setPlaceholderText(tr("details.manual_score.placeholder"))
         self.manual_score_edit.setMinimumHeight(36)
         score_row.addWidget(self.manual_score_edit, 1)
         manual_layout.addLayout(score_row)
 
-        comment_label = QLabel("Commento docente / motivazione")
-        manual_layout.addWidget(comment_label)
+        self.comment_label = QLabel()
+        manual_layout.addWidget(self.comment_label)
 
         self.comment_edit = QTextEdit()
         self.comment_edit.setObjectName("detailsCommentEdit")
-        self.comment_edit.setPlaceholderText("Inserisci la motivazione della revisione manuale...")
+        self.comment_edit.setPlaceholderText(tr("details.comment.placeholder"))
         self.comment_edit.setMinimumHeight(150)
         manual_layout.addWidget(self.comment_edit)
 
-        self.apply_review_button = QPushButton("Aggiorna revisione")
+        self.apply_review_button = QPushButton()
         self.apply_review_button.setMinimumHeight(38)
         self.apply_review_button.clicked.connect(self._apply_manual_review)
         manual_layout.addWidget(self.apply_review_button)
 
-        self.help_button = QPushButton("Come gestire la revisione manuale")
+        self.help_button = QPushButton()
         self.help_button.setMinimumHeight(36)
         self.help_button.clicked.connect(self._show_manual_review_help)
         manual_layout.addWidget(self.help_button)
@@ -183,9 +187,7 @@ class ReportDetailsPanel(QWidget):
         self.manual_review_feedback_label.setWordWrap(True)
         manual_layout.addWidget(self.manual_review_feedback_label)
 
-        self.persistence_note_label = QLabel(
-            "La revisione e applicata al report corrente. Salva il report per conservarla."
-        )
+        self.persistence_note_label = QLabel()
         self.persistence_note_label.setObjectName("warningText")
         self.persistence_note_label.setWordWrap(True)
         manual_layout.addWidget(self.persistence_note_label)
@@ -193,6 +195,47 @@ class ReportDetailsPanel(QWidget):
         self.manual_review_widget.hide()
         content_layout.addWidget(self.manual_review_widget)
         content_layout.addStretch(1)
+        self.retranslate_ui()
+
+    def retranslate_ui(self) -> None:
+        """Refresh report details captions after a GUI language change."""
+        self.title_label.setText(tr("details.title"))
+        field_label_map = {
+            "rule_id": "details.rule_id",
+            "sheet_name": "details.sheet",
+            "cell": "details.cell",
+            "range_ref": "details.range",
+            "rule_type": "details.rule_type",
+            "status": "details.status",
+            "expected_formula": "details.expected_formula",
+            "student_formula": "details.student_formula",
+            "expected_value": "details.expected_value",
+            "student_value": "details.student_value",
+            "weight": "details.weight",
+            "score_awarded": "details.score_awarded",
+            "message": "details.message",
+        }
+        for key, label_key in field_label_map.items():
+            self._field_labels[key].setText(tr(label_key))
+        self.decision_label.setText(tr("details.decision"))
+        self.manual_score_label.setText(tr("details.manual_score"))
+        self.manual_score_edit.setPlaceholderText(tr("details.manual_score.placeholder"))
+        self.comment_label.setText(tr("details.comment"))
+        self.comment_edit.setPlaceholderText(tr("details.comment.placeholder"))
+        self.help_button.setText(tr("details.help"))
+        self.persistence_note_label.setText(tr("details.persistence"))
+        if self._current_result is None:
+            self.manual_review_title.setText(tr("details.manual_title"))
+            self.manual_review_note.setText(tr("details.manual_note"))
+            self.apply_review_button.setText(tr("details.apply_review"))
+            self.selected_decision_label.setText(tr("details.leave_zero"))
+        else:
+            self.manual_review_title.setText(self._manual_review_title(self._current_result))
+            self.manual_review_note.setText(self._manual_review_note_text(self._current_result))
+            self.apply_review_button.setText(self._apply_button_text(self._current_result))
+            selected = self._selected_decision()
+            if selected is not None:
+                self._apply_decision_selection(selected)
 
     def refresh(self, result: CellCorrectionResult | None) -> None:
         """Refresh the details panel from a selected result."""
@@ -325,11 +368,9 @@ class ReportDetailsPanel(QWidget):
             self.comment_edit.clear()
         self.manual_review_feedback_label.setText("")
         self.persistence_note_label.hide()
-        self.manual_review_title.setText("Revisione manuale del docente")
-        self.manual_review_note.setText(
-            "Questa voce puo essere rivista dal docente. Scegli come trattarla, assegna il punteggio se necessario e annota la motivazione."
-        )
-        self.apply_review_button.setText("Aggiorna revisione")
+        self.manual_review_title.setText(tr("details.manual_title"))
+        self.manual_review_note.setText(tr("details.manual_note"))
+        self.apply_review_button.setText(tr("details.apply_review"))
         self._clear_decision_selection()
         self._set_manual_score_for_decision(None)
         self.selected_decision_label.setText("-")
@@ -380,11 +421,11 @@ class ReportDetailsPanel(QWidget):
             button.setChecked(True)
 
         decision_labels = {
-            "leave_zero": "Lascia zero",
-            "accept": "Accetta",
-            "partial": "Parziale",
-            "malus": "Malus",
-            "note_only": "Solo nota",
+            "leave_zero": tr("details.leave_zero"),
+            "accept": tr("details.accept"),
+            "partial": tr("details.partial"),
+            "malus": tr("details.malus"),
+            "note_only": tr("details.note_only"),
         }
         self.selected_decision_label.setText(decision_labels.get(decision, "-"))
 

@@ -9,6 +9,7 @@ from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QColorDialog, QLineEdit, QWidget
 
 from cellcheck.core import parse_color_input
+from cellcheck.ui.i18n import tr
 
 DEFAULT_PICKER_COLOR = "#D9D9D9"
 
@@ -63,6 +64,6 @@ def _default_dialog_getter(initial_color: QColor, parent: QWidget | None) -> QCo
     return QColorDialog.getColor(
         initial_color,
         parent,
-        "Seleziona colore",
+        tr("color_dialog.title"),
         options,
     )

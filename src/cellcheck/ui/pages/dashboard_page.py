@@ -10,6 +10,7 @@ from cellcheck import __version__
 from cellcheck.ui.app_state import AppState
 from cellcheck.ui.branding import get_square_logo_path
 from cellcheck.ui.dialogs import ManualTestsDialog
+from cellcheck.ui.i18n import tr
 
 
 class DashboardPage(QWidget):
@@ -29,42 +30,46 @@ class DashboardPage(QWidget):
         layout.setContentsMargins(24, 24, 24, 24)
         layout.setSpacing(14)
 
-        title = QLabel("CellCheck")
-        title.setObjectName("pageTitle")
-        layout.addWidget(title)
+        self.title_label = QLabel("CellCheck")
+        self.title_label.setObjectName("pageTitle")
+        layout.addWidget(self.title_label)
 
-        version = QLabel(f"Versione {__version__}")
-        version.setObjectName("pageSubtitle")
-        layout.addWidget(version)
+        self.version_label = QLabel()
+        self.version_label.setObjectName("pageSubtitle")
+        layout.addWidget(self.version_label)
 
-        description = QLabel(
-            "Correzione guidata di esercizi su fogli di calcolo con profili, report e supporto prudente per workbook Excel."
-        )
-        description.setWordWrap(True)
-        layout.addWidget(description)
+        self.description_label = QLabel()
+        self.description_label.setWordWrap(True)
+        layout.addWidget(self.description_label)
 
-        status = QLabel(
-            "Stato funzionale 0.13.0: GUI PySide6 con importazione profilo, correzione, viewer report, branding integrato e flusso manuale per workbook sintetici."
-        )
-        status.setWordWrap(True)
-        layout.addWidget(status)
+        self.status_label = QLabel()
+        self.status_label.setWordWrap(True)
+        layout.addWidget(self.status_label)
 
-        warning = QLabel(
-            "Avviso prudente: i file .xlsm sono supportati in lettura senza esecuzione macro."
-        )
-        warning.setObjectName("warningText")
-        warning.setWordWrap(True)
-        layout.addWidget(warning)
+        self.warning_label = QLabel()
+        self.warning_label.setObjectName("warningText")
+        self.warning_label.setWordWrap(True)
+        layout.addWidget(self.warning_label)
 
-        manual_tests_button = QPushButton("Apri strumenti test manuali")
-        manual_tests_button.clicked.connect(self._open_manual_tests_dialog)
-        layout.addWidget(manual_tests_button, 0, Qt.AlignLeft)
+        self.manual_tests_button = QPushButton()
+        self.manual_tests_button.clicked.connect(self._open_manual_tests_dialog)
+        layout.addWidget(self.manual_tests_button, 0, Qt.AlignLeft)
 
         layout.addStretch(1)
+        self.retranslate_ui()
 
     def refresh_from_state(self) -> None:
         """Refresh dashboard decorations when the working state changes."""
         self.update()
+
+    def retranslate_ui(self) -> None:
+        """Refresh dashboard labels after a GUI language change."""
+        self.title_label.setText(tr("app.name"))
+        self.version_label.setText(tr("dashboard.version", version=__version__))
+        self.description_label.setText(tr("dashboard.description"))
+        self.status_label.setText(tr("dashboard.status"))
+        self.warning_label.setText(tr("dashboard.warning"))
+        self.manual_tests_button.setText(tr("dashboard.manual_tests"))
 
     def paintEvent(self, event) -> None:
         """Draw a subtle watermark behind the introductory dashboard content."""
