@@ -25,6 +25,7 @@ from cellcheck.core import CorrectionEngine, ProfileImporter
 from cellcheck.models import CorrectionProfile
 from cellcheck.storage import load_profile
 from cellcheck.ui.app_state import AppState
+from cellcheck.ui.color_picker import choose_color_for_line_edit
 from cellcheck.ui.profile_generation import (
     generate_profile_from_workbooks,
     parse_max_grade_text,
@@ -227,7 +228,7 @@ class CorrectionPage(QWidget):
         self.max_grade_edit.setMinimumHeight(38)
 
         layout.addWidget(QLabel("Colore target"), 1, 0)
-        layout.addWidget(self.color_edit, 1, 1)
+        layout.addLayout(self._build_color_selector(self.color_edit), 1, 1)
 
         layout.addWidget(QLabel("Nome esercizio"), 2, 0)
         layout.addWidget(self.exercise_name_edit, 2, 1)
@@ -571,6 +572,23 @@ class CorrectionPage(QWidget):
         button.setMinimumWidth(110)
         button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         button.clicked.connect(handler)
+        layout.addWidget(button)
+        return layout
+
+    def _build_color_selector(self, line_edit: QLineEdit) -> QHBoxLayout:
+        """Create a color input row with manual edit plus graphical picker."""
+        layout = QHBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(10)
+        line_edit.setMinimumHeight(38)
+        line_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        layout.addWidget(line_edit)
+
+        button = QPushButton("Scegli...")
+        button.setMinimumHeight(38)
+        button.setMinimumWidth(110)
+        button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        button.clicked.connect(lambda: choose_color_for_line_edit(line_edit, self))
         layout.addWidget(button)
         return layout
 
