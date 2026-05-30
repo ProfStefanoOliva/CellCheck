@@ -13,6 +13,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from cellcheck.ui.i18n import tr
+
 
 class HelpPage(QWidget):
     """Navigable in-app help for the main CellCheck workflows."""
@@ -23,15 +25,13 @@ class HelpPage(QWidget):
         layout.setContentsMargins(24, 24, 24, 24)
         layout.setSpacing(12)
 
-        title = QLabel("Help")
-        title.setObjectName("pageTitle")
-        layout.addWidget(title)
+        self.title_label = QLabel()
+        self.title_label.setObjectName("pageTitle")
+        layout.addWidget(self.title_label)
 
-        subtitle = QLabel(
-            "Guida in linea per i flussi principali di CellCheck. Seleziona un argomento per visualizzare istruzioni sintetiche e operative."
-        )
-        subtitle.setWordWrap(True)
-        layout.addWidget(subtitle)
+        self.subtitle_label = QLabel()
+        self.subtitle_label.setWordWrap(True)
+        layout.addWidget(self.subtitle_label)
 
         content_row = QHBoxLayout()
         content_row.setSpacing(12)
@@ -44,41 +44,54 @@ class HelpPage(QWidget):
         self.content_stack = QStackedWidget()
         content_row.addWidget(self.content_stack, 1)
 
-        sections = [
-            ("Cos'e CellCheck", self._section_cos_e()),
-            ("Flusso consigliato", self._section_flusso()),
-            ("Gestione profili", self._section_profili()),
-            ("Correzione guidata", self._section_correzione()),
-            ("Report e revisione manuale", self._section_report()),
-            ("Differenza tra .ccal e .ccreport", self._section_estensioni()),
-            ("Sicurezza dei file .xlsm", self._section_xlsm()),
-            ("Dati sensibili e file studenti", self._section_dati()),
-            ("Limiti attuali", self._section_limiti()),
+        self._section_pages: list[tuple[QLabel, QTextBrowser, str, str]] = []
+        section_defs = [
+            ("help.topic.what", "help.section.what"),
+            ("help.topic.workflow", "help.section.workflow"),
+            ("help.topic.profiles", "help.section.profiles"),
+            ("help.topic.guided", "help.section.guided"),
+            ("help.topic.report", "help.section.report"),
+            ("help.topic.extensions", "help.section.extensions"),
+            ("help.topic.xlsm", "help.section.xlsm"),
+            ("help.topic.data", "help.section.data"),
+            ("help.topic.limits", "help.section.limits"),
         ]
 
-        for title_text, body in sections:
-            self.topic_list.addItem(QListWidgetItem(title_text))
-            self.content_stack.addWidget(self._build_section_widget(title_text, body))
+        for title_key, body_key in section_defs:
+            self.topic_list.addItem(QListWidgetItem(""))
+            header, text, page = self._build_section_widget()
+            self.content_stack.addWidget(page)
+            self._section_pages.append((header, text, title_key, body_key))
 
         self.topic_list.currentRowChanged.connect(self.content_stack.setCurrentIndex)
         self.topic_list.setCurrentRow(0)
+        self.retranslate_ui()
 
-    def _build_section_widget(self, title: str, body: str) -> QWidget:
+    def _build_section_widget(self) -> tuple[QLabel, QTextBrowser, QWidget]:
         """Create one scroll-free readable help section."""
         page = QWidget()
         layout = QVBoxLayout(page)
         layout.setContentsMargins(16, 16, 16, 16)
         layout.setSpacing(10)
 
-        header = QLabel(title)
+        header = QLabel()
         header.setObjectName("pageSubtitle")
         layout.addWidget(header)
 
         text = QTextBrowser()
         text.setOpenExternalLinks(False)
-        text.setMarkdown(body)
         layout.addWidget(text, 1)
-        return page
+        return header, text, page
+
+    def retranslate_ui(self) -> None:
+        """Refresh help labels and topics after a GUI language change."""
+        self.title_label.setText(tr("help.title"))
+        self.subtitle_label.setText(tr("help.subtitle"))
+        for index, (header, text, title_key, body_key) in enumerate(self._section_pages):
+            title_text = tr(title_key)
+            self.topic_list.item(index).setText(title_text)
+            header.setText(title_text)
+            text.setMarkdown(tr(body_key))
 
     @staticmethod
     def _section_cos_e() -> str:

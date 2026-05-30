@@ -1,4 +1,4 @@
-"""Qt translation helpers for the Italian CellCheck UI."""
+"""Qt translation helpers for the CellCheck GUI."""
 
 from __future__ import annotations
 
@@ -7,25 +7,47 @@ from pathlib import Path
 from PySide6.QtCore import QLibraryInfo, QLocale, QTranslator
 from PySide6.QtWidgets import QApplication
 
-QT_TRANSLATION_CANDIDATES = ("qtbase_it", "qt_it")
+from cellcheck.ui.i18n import normalize_language_code
+
+QT_TRANSLATION_BASE_NAMES = ("qtbase", "qt")
+LANGUAGE_LOCALES = {
+    "it": QLocale(QLocale.Italian, QLocale.Italy),
+    "en": QLocale(QLocale.English, QLocale.UnitedStates),
+    "fr": QLocale(QLocale.French, QLocale.France),
+    "es": QLocale(QLocale.Spanish, QLocale.Spain),
+    "pt": QLocale(QLocale.Portuguese, QLocale.Portugal),
+    "zh": QLocale(QLocale.Chinese, QLocale.China),
+    "ja": QLocale(QLocale.Japanese, QLocale.Japan),
+}
 
 
-def install_qt_italian_translations(app: QApplication) -> list[QTranslator]:
-    """Install available Italian Qt translations and keep them alive on the app."""
+def install_qt_translations(
+    app: QApplication | None,
+    language_code: str,
+) -> list[QTranslator]:
+    """Install available Qt translations for the selected UI language."""
+    if app is None:
+        return []
+    normalized = normalize_language_code(language_code)
+    _remove_installed_translators(app)
     installed: list[QTranslator] = []
     search_paths = _translation_search_paths()
 
-    for base_name in QT_TRANSLATION_CANDIDATES:
+    for base_name in _candidate_base_names(normalized):
         translator = QTranslator(app)
         if _load_translator(translator, base_name, search_paths):
             app.installTranslator(translator)
             installed.append(translator)
 
-    if installed:
-        app.setProperty("_cellcheck_qt_translators", installed)
-        QLocale.setDefault(QLocale(QLocale.Italian, QLocale.Italy))
+    app.setProperty("_cellcheck_qt_translators", installed)
+    QLocale.setDefault(LANGUAGE_LOCALES.get(normalized, LANGUAGE_LOCALES["it"]))
 
     return installed
+
+
+def install_qt_italian_translations(app: QApplication) -> list[QTranslator]:
+    """Backward-compatible wrapper for the previous Italian-only helper."""
+    return install_qt_translations(app, "it")
 
 
 def _translation_search_paths() -> list[str]:
@@ -54,6 +76,18 @@ def _translation_search_paths() -> list[str]:
     return unique_paths
 
 
+def _candidate_base_names(language_code: str) -> list[str]:
+    """Return Qt translation file base names for one supported language."""
+    locale_name = LANGUAGE_LOCALES.get(language_code, LANGUAGE_LOCALES["it"]).name()
+    candidates: list[str] = []
+    for stem in QT_TRANSLATION_BASE_NAMES:
+        for suffix in (locale_name, language_code):
+            candidate = f"{stem}_{suffix}"
+            if candidate not in candidates:
+                candidates.append(candidate)
+    return candidates
+
+
 def _load_translator(
     translator: QTranslator,
     base_name: str,
@@ -64,3 +98,13 @@ def _load_translator(
         if translator.load(base_name, search_path):
             return True
     return False
+
+
+def _remove_installed_translators(app: QApplication) -> None:
+    """Remove previously installed translators before switching language."""
+    previous = app.property("_cellcheck_qt_translators") or []
+    for translator in previous:
+        try:
+            app.removeTranslator(translator)
+        except Exception:
+            continue

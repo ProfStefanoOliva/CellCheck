@@ -25,7 +25,7 @@ In fasi successive CellCheck dovra:
 
 ## Stato attuale
 
-Stato corrente: `Excel-like color picker for correction profiles v0.29.0`.
+Stato corrente: `Multilingual GUI foundation v0.30.0`.
 
 La Fase 26 documenta l'esito positivo della validazione su macchina pulita del bundle locale precedente e prepara il progetto alla prima pubblicazione pubblica controllata. La pubblicazione resta comunque manuale e separata: il progetto non promette supporto operativo, garanzie o disponibilita continuativa del binario.
 
@@ -46,6 +46,8 @@ Nella pagina `Report`, ogni riga del report puo ora essere rettificata manualmen
 Nella generazione automatica del profilo da workbook, il colore target delle celle viene normalizzato in forma stabile e il software cerca solo le celle con quel background. Sono gestiti in modo robusto i casi RGB/ARGB e, quando openpyxl e il workbook lo consentono senza ambiguita, anche colori indexed o theme. I colori tema non risolvibili in modo affidabile vengono ignorati prudenzialmente invece di produrre falsi positivi.
 
 Nei punti della GUI in cui il docente imposta il colore target, il valore puo ora essere digitato manualmente oppure scelto tramite selettore grafico. Il colore confermato dal dialog viene riportato nel campo in formato `#RRGGBB`, coerente con la normalizzazione interna.
+
+La GUI supporta ora una prima gestione multilingua con selezione lingua dal pulsante `🌍` nella Dashboard/ribbon principale. L'italiano resta la lingua primaria e anche il fallback prudente quando una stringa non e ancora stata tradotta. Le lingue disponibili sono Italiano, English, Français, Español, Português, 中文 e 日本語.
 
 La GUI usa ora un tema scuro proprietario CellCheck, centralizzato e pensato come base riutilizzabile per gli altri software desktop dell'autore.
 

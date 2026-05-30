@@ -28,6 +28,7 @@ from cellcheck.models import (
 )
 from cellcheck.ui.app_state import AppState
 from cellcheck.ui.dialogs import GenerateProfileDialog, ProfileRuleDialog
+from cellcheck.ui.i18n import tr
 from cellcheck.ui.number_format import format_decimal_for_ui
 
 
@@ -53,15 +54,13 @@ class ProfilePage(QWidget):
         root_layout.setContentsMargins(24, 24, 24, 24)
         root_layout.setSpacing(16)
 
-        title = QLabel("Profilo")
-        title.setObjectName("pageTitle")
-        root_layout.addWidget(title)
+        self.title_label = QLabel()
+        self.title_label.setObjectName("pageTitle")
+        root_layout.addWidget(self.title_label)
 
-        description = QLabel(
-            "Visualizza e modifica il profilo di correzione corrente. Le regole qui salvate vengono riutilizzate dalla Correzione guidata."
-        )
-        description.setWordWrap(True)
-        root_layout.addWidget(description)
+        self.description_label = QLabel()
+        self.description_label.setWordWrap(True)
+        root_layout.addWidget(self.description_label)
 
         actions_card = QFrame()
         actions_card.setObjectName("reportSummaryWidget")
@@ -70,31 +69,31 @@ class ProfilePage(QWidget):
         actions_layout.setHorizontalSpacing(10)
         actions_layout.setVerticalSpacing(10)
 
-        self.new_profile_button = QPushButton("Nuovo profilo")
+        self.new_profile_button = QPushButton()
         self.new_profile_button.clicked.connect(self._create_new_profile)
         actions_layout.addWidget(self.new_profile_button, 0, 0)
 
-        self.generate_profile_button = QPushButton("Genera profilo")
+        self.generate_profile_button = QPushButton()
         self.generate_profile_button.clicked.connect(self._generate_profile_from_workbooks)
         actions_layout.addWidget(self.generate_profile_button, 0, 1)
 
-        self.import_profile_button = QPushButton("Importa profilo .ccal")
+        self.import_profile_button = QPushButton()
         self.import_profile_button.clicked.connect(self._import_profile)
         actions_layout.addWidget(self.import_profile_button, 0, 2)
 
-        self.save_profile_button = QPushButton("Salva profilo .ccal")
+        self.save_profile_button = QPushButton()
         self.save_profile_button.clicked.connect(self._save_profile)
         actions_layout.addWidget(self.save_profile_button, 0, 3)
 
-        self.add_rule_button = QPushButton("Aggiungi regola")
+        self.add_rule_button = QPushButton()
         self.add_rule_button.clicked.connect(self._add_rule)
         actions_layout.addWidget(self.add_rule_button, 1, 0)
 
-        self.edit_rule_button = QPushButton("Modifica regola")
+        self.edit_rule_button = QPushButton()
         self.edit_rule_button.clicked.connect(self._edit_rule)
         actions_layout.addWidget(self.edit_rule_button, 1, 1)
 
-        self.delete_rule_button = QPushButton("Elimina regola")
+        self.delete_rule_button = QPushButton()
         self.delete_rule_button.clicked.connect(self._delete_rule)
         actions_layout.addWidget(self.delete_rule_button, 1, 2)
 
@@ -108,27 +107,12 @@ class ProfilePage(QWidget):
         self.summary_label.setWordWrap(True)
         root_layout.addWidget(self.summary_label)
 
-        self.weights_help_label = QLabel(
-            "Il peso indica il valore relativo della regola. Il voto finale viene calcolato come: (punteggio ottenuto / somma dei pesi) × punteggio massimo. La colonna 'Quota voto' mostra quanto vale ogni regola sulla scala finale scelta."
-        )
+        self.weights_help_label = QLabel()
         self.weights_help_label.setWordWrap(True)
         root_layout.addWidget(self.weights_help_label)
 
         self.rules_table = QTableWidget(0, 9)
         self.rules_table.setObjectName("reportTable")
-        self.rules_table.setHorizontalHeaderLabels(
-            [
-                "ID",
-                "Foglio",
-                "Cella / range",
-                "Tipo regola",
-                "Peso",
-                "Quota voto",
-                "Atteso / formula",
-                "Modalita",
-                "Nota docente",
-            ]
-        )
         self.rules_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.rules_table.setSelectionMode(QTableWidget.SingleSelection)
         self.rules_table.setEditTriggers(QTableWidget.NoEditTriggers)
@@ -141,7 +125,34 @@ class ProfilePage(QWidget):
         )
         root_layout.addWidget(self.rules_table, 1)
 
+        self.retranslate_ui()
         self.refresh_from_state()
+
+    def retranslate_ui(self) -> None:
+        """Refresh the main profile page labels after a GUI language change."""
+        self.title_label.setText(tr("profile.title"))
+        self.description_label.setText(tr("profile.description"))
+        self.new_profile_button.setText(tr("profile.new"))
+        self.generate_profile_button.setText(tr("profile.generate"))
+        self.import_profile_button.setText(tr("profile.import"))
+        self.save_profile_button.setText(tr("profile.save"))
+        self.add_rule_button.setText(tr("profile.add_rule"))
+        self.edit_rule_button.setText(tr("profile.edit_rule"))
+        self.delete_rule_button.setText(tr("profile.delete_rule"))
+        self.weights_help_label.setText(tr("profile.weights_help"))
+        self.rules_table.setHorizontalHeaderLabels(
+            [
+                tr("profile.table.id"),
+                tr("profile.table.sheet"),
+                tr("profile.table.cell"),
+                tr("profile.table.rule_type"),
+                tr("profile.table.weight"),
+                tr("profile.table.quota"),
+                tr("profile.table.expected"),
+                tr("profile.table.mode"),
+                tr("profile.table.note"),
+            ]
+        )
 
     def refresh_from_state(self) -> None:
         """Refresh status labels and table from the current shared profile."""

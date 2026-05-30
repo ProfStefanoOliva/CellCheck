@@ -6,6 +6,7 @@ from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QLineEdit, QPushButton, QWidget
 
 from cellcheck.models import CellCorrectionResult, ResultStatus
+from cellcheck.ui.i18n import tr
 
 
 def matches_report_result(
@@ -57,23 +58,23 @@ class ReportFilterBar(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(10)
 
-        layout.addWidget(QLabel("Stato"))
+        self.status_label = QLabel()
+        layout.addWidget(self.status_label)
         self.status_combo = QComboBox()
-        for label, value in self.STATUS_ITEMS:
-            self.status_combo.addItem(label, value)
         layout.addWidget(self.status_combo)
 
-        layout.addWidget(QLabel("Ricerca"))
+        self.search_label = QLabel()
+        layout.addWidget(self.search_label)
         self.search_edit = QLineEdit()
-        self.search_edit.setPlaceholderText("Foglio, cella, messaggio, commento...")
         layout.addWidget(self.search_edit, 1)
 
-        self.clear_button = QPushButton("Pulisci filtri")
+        self.clear_button = QPushButton()
         layout.addWidget(self.clear_button)
 
-        self.status_combo.currentIndexChanged.connect(self.filters_changed.emit)
-        self.search_edit.textChanged.connect(self.filters_changed.emit)
+        self.status_combo.currentIndexChanged.connect(self._emit_filters_changed)
+        self.search_edit.textChanged.connect(self._emit_filters_changed)
         self.clear_button.clicked.connect(self.clear_filters)
+        self.retranslate_ui()
 
     def current_status_filter(self) -> str:
         """Return the currently selected status filter value."""
@@ -96,3 +97,31 @@ class ReportFilterBar(QWidget):
             self.current_status_filter(),
             self.current_search_text(),
         )
+
+    def retranslate_ui(self) -> None:
+        """Refresh filter labels and status choices after a GUI language change."""
+        self.status_label.setText(tr("report.filter.status"))
+        self.search_label.setText(tr("report.filter.search"))
+        self.search_edit.setPlaceholderText(tr("report.filter.placeholder"))
+        self.clear_button.setText(tr("report.filter.clear"))
+        current_value = self.current_status_filter()
+        was_blocked = self.status_combo.blockSignals(True)
+        self.status_combo.clear()
+        items = [
+            (tr("report.filter.all"), ""),
+            (tr("report.summary.passed"), ResultStatus.PASSED.value),
+            (tr("report.summary.failed"), ResultStatus.FAILED.value),
+            (tr("report.summary.warnings"), ResultStatus.WARNING.value),
+            (tr("report.summary.manual_review"), ResultStatus.MANUAL_REVIEW.value),
+            (tr("report.summary.skipped"), ResultStatus.SKIPPED.value),
+            (tr("report.summary.errors"), ResultStatus.ERROR.value),
+        ]
+        for label, value in items:
+            self.status_combo.addItem(label, value)
+        index = self.status_combo.findData(current_value)
+        self.status_combo.setCurrentIndex(index if index >= 0 else 0)
+        self.status_combo.blockSignals(was_blocked)
+
+    def _emit_filters_changed(self, *_args: object) -> None:
+        """Relay Qt widget changes to the parameterless filters_changed signal."""
+        self.filters_changed.emit()

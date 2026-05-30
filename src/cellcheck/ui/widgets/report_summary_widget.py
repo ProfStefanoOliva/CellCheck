@@ -5,6 +5,7 @@ from __future__ import annotations
 from PySide6.QtWidgets import QGridLayout, QLabel, QWidget
 
 from cellcheck.models import CorrectionReport
+from cellcheck.ui.i18n import tr
 
 
 class ReportSummaryWidget(QWidget):
@@ -14,6 +15,7 @@ class ReportSummaryWidget(QWidget):
         super().__init__(parent)
         self.setObjectName("reportSummaryWidget")
         self._value_labels: dict[str, QLabel] = {}
+        self._caption_labels: dict[str, QLabel] = {}
 
         layout = QGridLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -21,28 +23,45 @@ class ReportSummaryWidget(QWidget):
         layout.setVerticalSpacing(10)
 
         fields = [
-            ("Voto finale", "final_grade"),
-            ("Totale regole", "total_rules"),
-            ("Passed", "passed"),
-            ("Failed", "failed"),
-            ("Warning", "warnings"),
-            ("Manual review", "manual_review"),
-            ("Skipped", "skipped"),
-            ("Errors", "errors"),
-            ("Peso totale", "total_weight"),
-            ("Peso assegnato", "awarded_weight"),
+            ("report.summary.final_grade", "final_grade"),
+            ("report.summary.total_rules", "total_rules"),
+            ("report.summary.passed", "passed"),
+            ("report.summary.failed", "failed"),
+            ("report.summary.warnings", "warnings"),
+            ("report.summary.manual_review", "manual_review"),
+            ("report.summary.skipped", "skipped"),
+            ("report.summary.errors", "errors"),
+            ("report.summary.total_weight", "total_weight"),
+            ("report.summary.awarded_weight", "awarded_weight"),
         ]
 
-        for index, (label_text, key) in enumerate(fields):
+        for index, (label_key, key) in enumerate(fields):
             row = index // 2
             col = (index % 2) * 2
-            label = QLabel(label_text)
+            label = QLabel(tr(label_key))
             label.setObjectName("summaryLabel")
             value = QLabel("-")
             value.setObjectName("summaryValue")
             layout.addWidget(label, row, col)
             layout.addWidget(value, row, col + 1)
             self._value_labels[key] = value
+            self._caption_labels[key] = label
+
+    def retranslate_ui(self) -> None:
+        """Refresh summary captions after a GUI language change."""
+        for key, label_key in {
+            "final_grade": "report.summary.final_grade",
+            "total_rules": "report.summary.total_rules",
+            "passed": "report.summary.passed",
+            "failed": "report.summary.failed",
+            "warnings": "report.summary.warnings",
+            "manual_review": "report.summary.manual_review",
+            "skipped": "report.summary.skipped",
+            "errors": "report.summary.errors",
+            "total_weight": "report.summary.total_weight",
+            "awarded_weight": "report.summary.awarded_weight",
+        }.items():
+            self._caption_labels[key].setText(tr(label_key))
 
     def refresh(self, report: CorrectionReport | None) -> None:
         """Refresh labels from the current report."""

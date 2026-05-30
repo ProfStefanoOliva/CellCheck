@@ -21,6 +21,9 @@ from cellcheck.models import CcalDocumentType
 from cellcheck.storage import load_profile, load_report, read_document_type, save_profile, save_report
 from cellcheck.ui.app_state import AppState
 from cellcheck.ui.branding import get_app_icon_path
+from cellcheck.ui.dialogs import LanguageDialog
+from cellcheck.ui.i18n import current_language, set_current_language, tr
+from cellcheck.ui.localization import install_qt_translations
 from cellcheck.ui.pages import (
     CorrectionPage,
     DashboardPage,
@@ -35,20 +38,20 @@ from cellcheck.ui.widgets import ProjectNavigator, RibbonBar
 def build_about_text(version: str) -> str:
     """Build the About dialog text shown from the ribbon."""
     return (
-        "CellCheck\n\n"
-        "Autore/mantenitore: Stefano Oliva\n"
-        f"Versione corrente: {version}\n"
-        "Repository ufficiale:\n"
+        f"{tr('about.name')}\n\n"
+        f"{tr('about.author')}\n"
+        f"{tr('about.version', version=version)}\n"
+        f"{tr('about.repository')}\n"
         "https://github.com/ProfStefanoOliva/CellCheck\n\n"
-        "Licenza codice:\n"
-        "GNU Affero General Public License v3.0. Vedere il file LICENSE nella root del repository.\n\n"
-        "Garanzia:\n"
-        "Il software e distribuito senza garanzia; CellCheck resta uno strumento di supporto e non sostituisce il giudizio professionale del docente.\n\n"
-        "Brand e identita del prodotto:\n"
-        "La licenza del codice non concede automaticamente diritti sul nome CellCheck, sul logo, sull'icona, sugli screenshot, sul tema visivo o sugli altri asset grafici ufficiali.\n"
-        "Per la governance del brand vedere TRADEMARKS.md e BRAND_GUIDELINES.md.\n\n"
-        "Sicurezza:\n"
-        "I file .xlsm vengono letti senza esecuzione macro."
+        f"{tr('about.license')}\n"
+        f"{tr('about.license_body')}\n\n"
+        f"{tr('about.warranty')}\n"
+        f"{tr('about.warranty_body')}\n\n"
+        f"{tr('about.brand')}\n"
+        f"{tr('about.brand_body')}\n"
+        f"{tr('about.brand_docs')}\n\n"
+        f"{tr('about.security')}\n"
+        f"{tr('about.security_body')}"
     )
 
 
@@ -111,6 +114,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central_widget)
 
         self._connect_signals()
+        self.retranslate_ui()
         self._refresh_state_views()
 
     def _connect_signals(self) -> None:
@@ -125,9 +129,22 @@ class MainWindow(QMainWindow):
         self.ribbon.report_requested.connect(lambda: self.stack.setCurrentWidget(self.report_page))
         self.ribbon.help_requested.connect(lambda: self.stack.setCurrentWidget(self.help_page))
         self.ribbon.about_requested.connect(self._show_about_dialog)
+        self.ribbon.language_requested.connect(self._show_language_dialog)
         self.ribbon.settings_requested.connect(
             lambda: self.stack.setCurrentWidget(self.settings_page)
         )
+
+    def retranslate_ui(self) -> None:
+        """Refresh the main window and all translatable child widgets."""
+        self.setWindowTitle(tr("app.name"))
+        self.ribbon.retranslate_ui()
+        self.navigator.retranslate_ui()
+        self.dashboard_page.retranslate_ui()
+        self.profile_import_page.retranslate_ui()
+        self.correction_page.retranslate_ui()
+        self.report_page.retranslate_ui()
+        self.help_page.retranslate_ui()
+        self.settings_page.retranslate_ui()
 
     def _refresh_state_views(self) -> None:
         """Refresh all state-aware widgets after a core action."""
@@ -141,8 +158,29 @@ class MainWindow(QMainWindow):
         """Show a compact About dialog with project identity and safety notes."""
         QMessageBox.information(
             self,
-            "Informazioni su CellCheck",
+            tr("about.title"),
             build_about_text(__version__),
+        )
+
+    def _show_language_dialog(self) -> None:
+        """Open the GUI language selector and apply the chosen language."""
+        dialog = LanguageDialog(current_language(), self)
+        if dialog.exec() != LanguageDialog.Accepted:
+            return
+
+        selected_language = dialog.selected_language()
+        if selected_language == current_language():
+            return
+
+        set_current_language(selected_language)
+        from PySide6.QtWidgets import QApplication
+
+        install_qt_translations(QApplication.instance(), selected_language)
+        self.retranslate_ui()
+        QMessageBox.information(
+            self,
+            tr("language.updated.title"),
+            tr("language.updated.message"),
         )
 
     def _open_profile_document(self) -> None:

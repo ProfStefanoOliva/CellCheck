@@ -5,6 +5,7 @@ from __future__ import annotations
 from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem, QWidget
 
 from cellcheck.ui.app_state import AppState
+from cellcheck.ui.i18n import tr
 
 
 class ProjectNavigator(QTreeWidget):
@@ -14,33 +15,37 @@ class ProjectNavigator(QTreeWidget):
         super().__init__(parent)
         self.setHeaderHidden(True)
         self.setObjectName("projectNavigator")
-        self.refresh(AppState())
+        self._last_state = AppState()
+        self.refresh(self._last_state)
 
     def refresh(self, state: AppState) -> None:
         """Update navigator items from the current application state."""
+        self._last_state = state
         self.clear()
 
         root_items = [
-            ("Modello vuoto", state.empty_workbook_path or "Non selezionato"),
-            ("Modello risolto", state.solution_workbook_path or "Non selezionato"),
+            (tr("navigator.empty_workbook"), state.empty_workbook_path or tr("navigator.not_selected")),
+            (tr("navigator.solution_workbook"), state.solution_workbook_path or tr("navigator.not_selected")),
             (
-                "Correzione guidata",
-                "Pronta" if state.current_profile is not None or state.student_workbook_path else "Da preparare",
+                tr("navigator.guided_correction"),
+                tr("navigator.ready")
+                if state.current_profile is not None or state.student_workbook_path
+                else tr("navigator.to_prepare"),
             ),
             (
-                "Profilo",
+                tr("navigator.profile"),
                 state.current_profile.exercise_name
                 if state.current_profile is not None
-                else "Nessun profilo",
+                else tr("navigator.no_profile"),
             ),
-            ("File studenti", state.student_workbook_path or "Non selezionato"),
+            (tr("navigator.student_files"), state.student_workbook_path or tr("navigator.not_selected")),
             (
-                "Report",
+                tr("navigator.report"),
                 state.current_report.profile_name
                 if state.current_report is not None
-                else "Nessun report",
+                else tr("navigator.no_report"),
             ),
-            ("Help", "Guida in linea disponibile"),
+            (tr("navigator.help"), tr("navigator.help_available")),
         ]
 
         for title, detail in root_items:
@@ -48,3 +53,7 @@ class ProjectNavigator(QTreeWidget):
             item.addChild(QTreeWidgetItem([detail]))
             self.addTopLevelItem(item)
             item.setExpanded(True)
+
+    def retranslate_ui(self) -> None:
+        """Rebuild navigator labels in the current GUI language."""
+        self.refresh(self._last_state)

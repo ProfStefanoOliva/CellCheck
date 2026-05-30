@@ -8,8 +8,9 @@ from PySide6.QtWidgets import QApplication
 
 from . import __version__
 from .ui.branding import get_app_icon_path
+from .ui.i18n import load_saved_language
 from .ui import MainWindow
-from .ui.localization import install_qt_italian_translations
+from .ui.localization import install_qt_translations
 from .ui.theme import apply_dark_theme
 
 
@@ -36,7 +37,7 @@ def run_gui() -> int:
     """Run the minimal PySide6 desktop shell."""
     _set_windows_app_user_model_id()
     app = QApplication.instance() or QApplication(sys.argv)
-    install_qt_italian_translations(app)
+    install_qt_translations(app, load_saved_language())
     apply_dark_theme(app)
     icon_path = get_app_icon_path()
     if icon_path is not None:

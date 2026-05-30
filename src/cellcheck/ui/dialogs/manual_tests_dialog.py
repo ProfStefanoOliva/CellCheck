@@ -8,6 +8,7 @@ from PySide6.QtCore import QUrl
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import QDialog, QHBoxLayout, QLabel, QPushButton, QVBoxLayout
 
+from cellcheck.ui.i18n import tr
 from cellcheck.utils.manual_test_workbooks import generate_all_workbooks, get_output_dir
 
 
@@ -16,50 +17,41 @@ class ManualTestsDialog(QDialog):
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Test manuali")
         self.resize(720, 360)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(12)
 
-        title = QLabel("Test manuali")
-        title.setObjectName("pageTitle")
-        layout.addWidget(title)
+        self.title_label = QLabel()
+        self.title_label.setObjectName("pageTitle")
+        layout.addWidget(self.title_label)
 
-        description = QLabel(
-            "Genera o rigenera workbook sintetici per verificare manualmente il flusso operativo di CellCheck senza usare dati reali di studenti."
-        )
-        description.setWordWrap(True)
-        layout.addWidget(description)
+        self.description_label = QLabel()
+        self.description_label.setWordWrap(True)
+        layout.addWidget(self.description_label)
 
-        destination_label = QLabel(
-            f"Cartella di destinazione: {self._display_output_dir()}"
-        )
-        destination_label.setWordWrap(True)
-        layout.addWidget(destination_label)
+        self.destination_label = QLabel()
+        self.destination_label.setWordWrap(True)
+        layout.addWidget(self.destination_label)
 
-        synthetic_note = QLabel(
-            "I workbook sono sintetici e non contengono dati reali di studenti."
-        )
-        synthetic_note.setWordWrap(True)
-        layout.addWidget(synthetic_note)
+        self.synthetic_note_label = QLabel()
+        self.synthetic_note_label.setWordWrap(True)
+        layout.addWidget(self.synthetic_note_label)
 
-        macro_note = QLabel(
-            "I file .xlsm sono usati solo per verificare il percorso macro-enabled; nessuna macro viene eseguita."
-        )
-        macro_note.setObjectName("warningText")
-        macro_note.setWordWrap(True)
-        layout.addWidget(macro_note)
+        self.macro_note_label = QLabel()
+        self.macro_note_label.setObjectName("warningText")
+        self.macro_note_label.setWordWrap(True)
+        layout.addWidget(self.macro_note_label)
 
         button_row = QHBoxLayout()
         button_row.setSpacing(10)
 
-        self.generate_button = QPushButton("Genera workbook sintetici")
+        self.generate_button = QPushButton()
         self.generate_button.clicked.connect(self._generate_manual_workbooks)
         button_row.addWidget(self.generate_button)
 
-        self.open_folder_button = QPushButton("Apri cartella workbook generati")
+        self.open_folder_button = QPushButton()
         self.open_folder_button.clicked.connect(self._open_generated_folder)
         button_row.addWidget(self.open_folder_button)
         button_row.addStretch(1)
@@ -71,6 +63,20 @@ class ManualTestsDialog(QDialog):
         layout.addWidget(self.status_label)
 
         layout.addStretch(1)
+        self.retranslate_ui()
+
+    def retranslate_ui(self) -> None:
+        """Refresh the manual tests dialog labels after a GUI language change."""
+        self.setWindowTitle(tr("manual_tests.title"))
+        self.title_label.setText(tr("manual_tests.title"))
+        self.description_label.setText(tr("manual_tests.description"))
+        self.destination_label.setText(
+            tr("manual_tests.destination", path=self._display_output_dir())
+        )
+        self.synthetic_note_label.setText(tr("manual_tests.synthetic"))
+        self.macro_note_label.setText(tr("manual_tests.macro"))
+        self.generate_button.setText(tr("manual_tests.generate"))
+        self.open_folder_button.setText(tr("manual_tests.open_folder"))
 
     def _generate_manual_workbooks(self) -> None:
         """Generate synthetic workbooks for manual testing."""
