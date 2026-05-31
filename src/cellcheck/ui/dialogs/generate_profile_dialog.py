@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
 from cellcheck.core import ProfileImporter
 from cellcheck.models import ProfileImportResult
 from cellcheck.ui.color_picker import choose_color_for_line_edit
+from cellcheck.ui.i18n import tr
 from cellcheck.ui.profile_generation import (
     generate_profile_from_workbooks,
     validate_profile_generation_inputs,
@@ -43,12 +44,12 @@ class GenerateProfileDialog(QDialog):
         super().__init__(parent)
         self.importer = importer or ProfileImporter()
         self._result: ProfileImportResult | None = None
-        self.setWindowTitle("Genera profilo")
+        self.setWindowTitle(tr("correction.generate_profile"))
         self.resize(760, 520)
 
         layout = QVBoxLayout(self)
         description = QLabel(
-            "Genera un profilo di correzione partendo da modello vuoto e modello risolto. I file .xlsm vengono letti senza eseguire macro."
+            tr("generate_profile.description")
         )
         description.setWordWrap(True)
         layout.addWidget(description)
@@ -62,31 +63,31 @@ class GenerateProfileDialog(QDialog):
         self.target_color_edit = QLineEdit(target_color)
         self.exercise_name_edit = QLineEdit(exercise_name)
         self.max_grade_edit = QLineEdit(max_grade_text)
-        self.max_grade_edit.setPlaceholderText("es. 100")
+        self.max_grade_edit.setPlaceholderText(tr("correction.max_grade.placeholder"))
 
-        form.addRow("Modello vuoto", self._build_file_selector(
-            self.empty_workbook_edit, "Seleziona modello vuoto"
+        form.addRow(tr("correction.step.empty"), self._build_file_selector(
+            self.empty_workbook_edit, tr("correction.dialog.select_empty")
         ))
-        form.addRow("Modello risolto", self._build_file_selector(
-            self.solution_workbook_edit, "Seleziona modello risolto"
+        form.addRow(tr("correction.step.solution"), self._build_file_selector(
+            self.solution_workbook_edit, tr("correction.dialog.select_solution")
         ))
-        form.addRow("Colore target", self._build_color_selector(self.target_color_edit))
-        form.addRow("Nome profilo", self.exercise_name_edit)
-        form.addRow("Punteggio massimo personalizzato", self.max_grade_edit)
+        form.addRow(tr("correction.target_color"), self._build_color_selector(self.target_color_edit))
+        form.addRow(tr("generate_profile.profile_name"), self.exercise_name_edit)
+        form.addRow(tr("correction.max_grade"), self.max_grade_edit)
         layout.addLayout(form)
 
         self.status_text = QTextEdit()
         self.status_text.setReadOnly(True)
         self.status_text.setMinimumHeight(150)
         self.status_text.setPlainText(
-            "Nessun profilo generato.\n\nSeleziona i due workbook, imposta colore target e punteggio massimo, poi conferma."
+            tr("generate_profile.initial_status")
         )
         layout.addWidget(self.status_text)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         ok_button = buttons.button(QDialogButtonBox.Ok)
         if ok_button is not None:
-            ok_button.setText("Genera profilo")
+            ok_button.setText(tr("correction.generate_profile"))
         buttons.accepted.connect(self._generate_and_accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
@@ -104,7 +105,7 @@ class GenerateProfileDialog(QDialog):
         line_edit.setMinimumHeight(38)
         layout.addWidget(line_edit)
 
-        button = QPushButton("Sfoglia")
+        button = QPushButton(tr("common.browse"))
         button.setMinimumHeight(38)
         button.clicked.connect(lambda: self._choose_excel_file(line_edit, title))
         layout.addWidget(button)
@@ -118,7 +119,7 @@ class GenerateProfileDialog(QDialog):
         line_edit.setMinimumHeight(38)
         layout.addWidget(line_edit)
 
-        button = QPushButton("Scegli...")
+        button = QPushButton(tr("common.choose"))
         button.setMinimumHeight(38)
         button.clicked.connect(lambda: choose_color_for_line_edit(line_edit, self))
         layout.addWidget(button)
@@ -130,7 +131,7 @@ class GenerateProfileDialog(QDialog):
             self,
             title,
             "",
-            "Excel files (*.xlsx *.xlsm)",
+            tr("common.excel_filter"),
         )
         if path:
             line_edit.setText(path)
@@ -147,8 +148,8 @@ class GenerateProfileDialog(QDialog):
         if blockers:
             QMessageBox.warning(
                 self,
-                "Profilo non generabile",
-                "Per generare il profilo completa questi passaggi:\n"
+                tr("correction.generate_blocked_title"),
+                tr("correction.validation.generate_prefix") + "\n"
                 + "\n".join(f"- {item}" for item in blockers),
             )
             return
@@ -163,17 +164,21 @@ class GenerateProfileDialog(QDialog):
                 importer=self.importer,
             )
         except Exception as exc:
-            QMessageBox.critical(self, "Genera profilo", str(exc))
+            QMessageBox.critical(self, tr("correction.generate_profile"), str(exc))
             return
 
         summary = self._result.summary
         self.status_text.setPlainText(
-            f"Profilo generato con successo.\n"
-            f"Regole generate: {summary.generated_rules_count}\n"
-            f"Fogli analizzati: {', '.join(summary.scanned_sheets) or '-'}\n"
-            f"Formule: {summary.formula_rules_count}\n"
-            f"Numeriche: {summary.numeric_rules_count}\n"
-            f"Testuali: {summary.text_rules_count}\n"
-            f"Manual review: {summary.manual_review_rules_count}"
+            "\n".join(
+                [
+                    tr("correction.generate_success"),
+                    tr("correction.generate.rules", value=summary.generated_rules_count),
+                    tr("correction.generate.sheets", value=", ".join(summary.scanned_sheets) or "-"),
+                    tr("correction.generate.formulas", value=summary.formula_rules_count),
+                    tr("correction.generate.numeric", value=summary.numeric_rules_count),
+                    tr("correction.generate.text", value=summary.text_rules_count),
+                    tr("correction.generate.manual_review", value=summary.manual_review_rules_count),
+                ]
+            )
         )
         self.accept()

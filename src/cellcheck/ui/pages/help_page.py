@@ -1,168 +1,66 @@
-"""Inline help page for the CellCheck GUI."""
+"""Help page content area driven by sidebar navigation."""
 
 from __future__ import annotations
 
-from PySide6.QtWidgets import (
-    QHBoxLayout,
-    QLabel,
-    QListWidget,
-    QListWidgetItem,
-    QStackedWidget,
-    QTextBrowser,
-    QVBoxLayout,
-    QWidget,
-)
+from PySide6.QtWidgets import QLabel, QTextBrowser, QVBoxLayout, QWidget
 
+from cellcheck.ui.help_sections import find_help_section
 from cellcheck.ui.i18n import tr
 
 
 class HelpPage(QWidget):
-    """Navigable in-app help for the main CellCheck workflows."""
+    """Displays the currently selected Help section without internal navigation."""
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self._current_section_id = "intro"
+
         layout = QVBoxLayout(self)
         layout.setContentsMargins(24, 24, 24, 24)
-        layout.setSpacing(12)
+        layout.setSpacing(14)
 
         self.title_label = QLabel()
         self.title_label.setObjectName("pageTitle")
         layout.addWidget(self.title_label)
 
         self.subtitle_label = QLabel()
+        self.subtitle_label.setObjectName("pageSubtitle")
         self.subtitle_label.setWordWrap(True)
         layout.addWidget(self.subtitle_label)
 
-        content_row = QHBoxLayout()
-        content_row.setSpacing(12)
-        layout.addLayout(content_row, 1)
+        self.section_title_label = QLabel()
+        self.section_title_label.setObjectName("pageSubtitle")
+        self.section_title_label.setWordWrap(True)
+        layout.addWidget(self.section_title_label)
 
-        self.topic_list = QListWidget()
-        self.topic_list.setMinimumWidth(260)
-        content_row.addWidget(self.topic_list)
+        self.content_view = QTextBrowser()
+        self.content_view.setOpenExternalLinks(False)
+        self.content_view.setReadOnly(True)
+        layout.addWidget(self.content_view, 1)
 
-        self.content_stack = QStackedWidget()
-        content_row.addWidget(self.content_stack, 1)
-
-        self._section_pages: list[tuple[QLabel, QTextBrowser, str, str]] = []
-        section_defs = [
-            ("help.topic.what", "help.section.what"),
-            ("help.topic.workflow", "help.section.workflow"),
-            ("help.topic.profiles", "help.section.profiles"),
-            ("help.topic.guided", "help.section.guided"),
-            ("help.topic.report", "help.section.report"),
-            ("help.topic.extensions", "help.section.extensions"),
-            ("help.topic.xlsm", "help.section.xlsm"),
-            ("help.topic.data", "help.section.data"),
-            ("help.topic.limits", "help.section.limits"),
-        ]
-
-        for title_key, body_key in section_defs:
-            self.topic_list.addItem(QListWidgetItem(""))
-            header, text, page = self._build_section_widget()
-            self.content_stack.addWidget(page)
-            self._section_pages.append((header, text, title_key, body_key))
-
-        self.topic_list.currentRowChanged.connect(self.content_stack.setCurrentIndex)
-        self.topic_list.setCurrentRow(0)
         self.retranslate_ui()
 
-    def _build_section_widget(self) -> tuple[QLabel, QTextBrowser, QWidget]:
-        """Create one scroll-free readable help section."""
-        page = QWidget()
-        layout = QVBoxLayout(page)
-        layout.setContentsMargins(16, 16, 16, 16)
-        layout.setSpacing(10)
+    def show_section(self, section_id: str | None) -> None:
+        """Display the requested Help section in the main content area."""
+        self._current_section_id = find_help_section(section_id).identifier
+        self._refresh_current_section()
 
-        header = QLabel()
-        header.setObjectName("pageSubtitle")
-        layout.addWidget(header)
-
-        text = QTextBrowser()
-        text.setOpenExternalLinks(False)
-        layout.addWidget(text, 1)
-        return header, text, page
+    def current_section_id(self) -> str:
+        """Return the identifier of the currently visible Help section."""
+        return self._current_section_id
 
     def retranslate_ui(self) -> None:
-        """Refresh help labels and topics after a GUI language change."""
+        """Refresh static and section-dependent labels after language changes."""
         self.title_label.setText(tr("help.title"))
         self.subtitle_label.setText(tr("help.subtitle"))
-        for index, (header, text, title_key, body_key) in enumerate(self._section_pages):
-            title_text = tr(title_key)
-            self.topic_list.item(index).setText(title_text)
-            header.setText(title_text)
-            text.setMarkdown(tr(body_key))
+        self._refresh_current_section()
 
-    @staticmethod
-    def _section_cos_e() -> str:
-        return (
-            "CellCheck e uno strumento di supporto alla correzione guidata e "
-            "personalizzabile di esercizi su fogli di calcolo Excel."
-        )
-
-    @staticmethod
-    def _section_flusso() -> str:
-        return (
-            "1. Creare o importare un profilo nella pagina Profilo.\n"
-            "2. Usare Correzione guidata per selezionare profilo ed elaborato studente.\n"
-            "3. Generare il report.\n"
-            "4. Revisionare manualmente le voci che lo richiedono o rettificare qualsiasi riga automatica dal Report.\n"
-            "5. Salvare il report."
-        )
-
-    @staticmethod
-    def _section_profili() -> str:
-        return (
-            "La pagina Profilo permette di generare, importare, modificare, "
-            "salvare e gestire le regole di correzione.\n\n"
-            "Puoi creare un profilo vuoto, generarlo da modello vuoto e modello "
-            "risolto oppure importare un file `.ccal` gia salvato."
-        )
-
-    @staticmethod
-    def _section_correzione() -> str:
-        return (
-            "La pagina Correzione guidata accompagna il docente attraverso i passaggi "
-            "operativi principali: modelli di riferimento, profilo, elaborato studente, "
-            "correzione e passaggio del report."
-        )
-
-    @staticmethod
-    def _section_report() -> str:
-        return (
-            "La pagina Report consente di filtrare i risultati, leggere i dettagli "
-            "cella per cella, applicare revisioni manuali obbligatorie e rettificare manualmente qualsiasi esito automatico.\n\n"
-            "Le revisioni manuali aggiornano il report corrente, il riepilogo e l'export testuale, ma non modificano i workbook originali."
-        )
-
-    @staticmethod
-    def _section_estensioni() -> str:
-        return (
-            "- `.ccal` = profilo di correzione CellCheck\n"
-            "- `.ccreport` = report di correzione CellCheck\n\n"
-            "Entrambi i formati sono JSON leggibili. Il software controlla comunque "
-            "il `document_type` interno per evitare caricamenti errati."
-        )
-
-    @staticmethod
-    def _section_xlsm() -> str:
-        return (
-            "I file `.xlsm` sono letti in modo prudente. CellCheck non esegue macro.\n\n"
-            "Non vengono usati COM, xlwings, win32com o altre forme di automazione Excel."
-        )
-
-    @staticmethod
-    def _section_dati() -> str:
-        return (
-            "Non usare file reali di studenti in repository pubblici, issue o esempi condivisi.\n\n"
-            "Per test e demo, preferisci i workbook sintetici generati localmente."
-        )
-
-    @staticmethod
-    def _section_limiti() -> str:
-        return (
-            "CellCheck e uno strumento di supporto e non sostituisce il giudizio "
-            "professionale del docente.\n\n"
-            "Le formule non vengono ricalcolate internamente e alcune decisioni "
-            "restano intenzionalmente delegate alla revisione manuale."
-        )
+    def _refresh_current_section(self) -> None:
+        """Update the visible title and body for the current Help section."""
+        section = find_help_section(self._current_section_id)
+        self.section_title_label.setText(section.title)
+        paragraphs = [
+            f"<h2>{section.title}</h2>",
+            *(f"<p>{line}</p>" for line in section.body.split("\n") if line.strip()),
+        ]
+        self.content_view.setHtml("".join(paragraphs))

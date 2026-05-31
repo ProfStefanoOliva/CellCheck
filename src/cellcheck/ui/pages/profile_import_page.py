@@ -164,6 +164,7 @@ class ProfilePage(QWidget):
                 tr("profile.table.note"),
             ]
         )
+        self.refresh_from_state()
 
     def refresh_from_state(self) -> None:
         """Refresh status labels and table from the current shared profile."""
@@ -175,38 +176,40 @@ class ProfilePage(QWidget):
     def _refresh_status(self, profile: CorrectionProfile | None) -> None:
         """Update the profile lifecycle status line."""
         if profile is None:
-            self.status_label.setText("Stato profilo: Nessun profilo caricato")
+            self.status_label.setText(tr("profile.status.line", value=tr("profile.status.none")))
             return
 
         status_text_map = {
-            "new": "Profilo nuovo",
-            "generated": "Profilo generato",
-            "imported": "Profilo importato",
-            "modified": "Profilo modificato",
-            "saved": "Profilo salvato",
+            "new": tr("profile.status.new"),
+            "generated": tr("profile.status.generated"),
+            "imported": tr("profile.status.imported"),
+            "modified": tr("profile.status.modified"),
+            "saved": tr("profile.status.saved"),
         }
-        status_text = status_text_map.get(self.state.profile_status, "Profilo disponibile")
+        status_text = status_text_map.get(self.state.profile_status, tr("profile.status.available"))
         path_text = (
-            f"\nPercorso: {self.state.current_profile_path}"
+            f"\n{tr('profile.status.path', path=self.state.current_profile_path)}"
             if self.state.current_profile_path
             else ""
         )
-        self.status_label.setText(f"Stato profilo: {status_text}{path_text}")
+        self.status_label.setText(tr("profile.status.line", value=status_text) + path_text)
 
     def _refresh_summary(self, profile: CorrectionProfile | None) -> None:
         """Update the compact profile summary block."""
         if profile is None:
-            self.summary_label.setText(
-                "Nessun profilo attivo. Crea un profilo vuoto, generane uno dai workbook oppure importa un file .ccal."
-            )
+            self.summary_label.setText(tr("profile.summary.none"))
             return
 
         rules_count = sum(len(worksheet.rules) for worksheet in profile.worksheets)
         self.summary_label.setText(
-            f"Esercizio: {profile.exercise_name}\n"
-            f"Punteggio massimo: {profile.max_grade}\n"
-            f"Fogli nel profilo: {len(profile.worksheets)}\n"
-            f"Regole totali: {rules_count}"
+            "\n".join(
+                [
+                    tr("profile.summary.exercise", value=profile.exercise_name),
+                    tr("profile.summary.max_grade", value=self._format_number(profile.max_grade)),
+                    tr("profile.summary.worksheets", value=len(profile.worksheets)),
+                    tr("profile.summary.total_rules", value=rules_count),
+                ]
+            )
         )
 
     def _refresh_rules_table(self, profile: CorrectionProfile | None) -> None:
@@ -239,13 +242,13 @@ class ProfilePage(QWidget):
         """Create a new editable profile with safe defaults."""
         if self.state.current_profile is not None:
             message = (
-                "Il profilo corrente contiene modifiche non salvate. Vuoi davvero creare un nuovo profilo?"
+                tr("profile.confirm_replace_dirty")
                 if self.state.profile_dirty
-                else "Esiste gia un profilo corrente. Vuoi davvero sostituirlo con un nuovo profilo?"
+                else tr("profile.confirm_replace")
             )
             answer = QMessageBox.question(
                 self,
-                "Nuovo profilo",
+                tr("profile.new"),
                 message,
                 QMessageBox.Yes | QMessageBox.No,
                 QMessageBox.No,
@@ -254,7 +257,7 @@ class ProfilePage(QWidget):
                 return
 
         profile = CorrectionProfile(
-            exercise_name="Nuovo profilo",
+            exercise_name=tr("profile.default_name"),
             max_grade=self.state.max_grade if self.state.max_grade > 0 else 100.0,
             source_empty_workbook=self.state.empty_workbook_path,
             source_solution_workbook=self.state.solution_workbook_path,
@@ -277,8 +280,8 @@ class ProfilePage(QWidget):
 
         QMessageBox.information(
             self,
-            "Importa profilo .ccal",
-            "L'importazione del profilo non e disponibile in questa configurazione della GUI.",
+            tr("profile.import"),
+            tr("profile.import_unavailable"),
         )
 
     def _generate_profile_from_workbooks(self) -> None:
@@ -287,7 +290,7 @@ class ProfilePage(QWidget):
             empty_workbook_path=self.state.empty_workbook_path or "",
             solution_workbook_path=self.state.solution_workbook_path or "",
             target_color=self.state.target_color,
-            exercise_name=self.state.exercise_name or "Nuovo profilo",
+            exercise_name=self.state.exercise_name or tr("profile.default_name"),
             max_grade_text=self._format_number(self.state.max_grade),
             parent=self,
         )
@@ -323,8 +326,8 @@ class ProfilePage(QWidget):
         if self.state.current_profile is None:
             QMessageBox.information(
                 self,
-                "Nessun profilo di correzione da salvare",
-                "Nessun profilo di correzione da salvare.",
+                tr("profile.save_missing_title"),
+                tr("profile.save_missing_message"),
             )
             return
 
@@ -334,8 +337,8 @@ class ProfilePage(QWidget):
 
         QMessageBox.information(
             self,
-            "Salva profilo .ccal",
-            "Il salvataggio del profilo non e disponibile in questa configurazione della GUI.",
+            tr("profile.save"),
+            tr("profile.save_unavailable"),
         )
 
     def _add_rule(self) -> None:
@@ -344,12 +347,12 @@ class ProfilePage(QWidget):
         if profile is None:
             QMessageBox.information(
                 self,
-                "Aggiungi regola",
-                "Crea o importa prima un profilo di correzione.",
+                tr("profile.add_rule"),
+                tr("profile.rule_requires_profile"),
             )
             return
 
-        dialog = ProfileRuleDialog(self, title="Aggiungi regola")
+        dialog = ProfileRuleDialog(self, title=tr("profile.add_rule"))
         if dialog.exec() != ProfileRuleDialog.Accepted:
             return
 
@@ -377,8 +380,8 @@ class ProfilePage(QWidget):
         if selected is None:
             QMessageBox.information(
                 self,
-                "Modifica regola",
-                "Seleziona una regola da modificare.",
+                tr("profile.edit_rule"),
+                tr("profile.rule_select_edit"),
             )
             return
 
@@ -388,7 +391,7 @@ class ProfilePage(QWidget):
             return
 
         original_rule = profile.worksheets[worksheet_index].rules[rule_index]
-        dialog = ProfileRuleDialog(self, title="Modifica regola", rule=original_rule)
+        dialog = ProfileRuleDialog(self, title=tr("profile.edit_rule"), rule=original_rule)
         if dialog.exec() != ProfileRuleDialog.Accepted:
             return
 
@@ -426,8 +429,8 @@ class ProfilePage(QWidget):
         if selected is None:
             QMessageBox.information(
                 self,
-                "Elimina regola",
-                "Seleziona una regola da eliminare.",
+                tr("profile.delete_rule"),
+                tr("profile.rule_select_delete"),
             )
             return
 
@@ -437,8 +440,8 @@ class ProfilePage(QWidget):
 
         answer = QMessageBox.question(
             self,
-            "Elimina regola",
-            "Confermi l'eliminazione della regola selezionata?",
+            tr("profile.delete_rule"),
+            tr("profile.rule_delete_confirm"),
         )
         if answer != QMessageBox.Yes:
             return
@@ -540,8 +543,8 @@ class ProfilePage(QWidget):
         self.rules_table.selectRow(row)
 
         menu = QMenu(self)
-        edit_action = menu.addAction("Modifica regola")
-        delete_action = menu.addAction("Elimina regola")
+        edit_action = menu.addAction(tr("profile.edit_rule"))
+        delete_action = menu.addAction(tr("profile.delete_rule"))
 
         chosen_action = menu.exec(self.rules_table.viewport().mapToGlobal(position))
         if chosen_action == edit_action:
@@ -583,7 +586,7 @@ class ProfilePage(QWidget):
                 cls._safe_table_text(rule.id),
                 cls._safe_table_text(worksheet_name or rule.sheet_name),
                 cls._safe_table_text(rule.cell or rule.range_ref, fallback="-"),
-                "Regola",
+                tr("profile.rule_type.generic"),
                 cls._safe_table_text(cls._format_weight(rule.weight)),
                 "-",
                 cls._safe_table_text(rule.expected_formula or rule.expected_value, fallback="-"),
@@ -604,36 +607,36 @@ class ProfilePage(QWidget):
     @staticmethod
     def _rule_mode_text(rule: CorrectionRule) -> str:
         """Return a compact mode summary for one rule row."""
-        mode_parts = ["abilitata" if rule.enabled else "disabilitata"]
+        mode_parts = [tr("profile.mode.enabled") if rule.enabled else tr("profile.mode.disabled")]
         if rule.rule_type == RuleType.FORMULA_EXACT:
-            mode_parts.append("Formula esatta")
+            mode_parts.append(tr("profile.mode.formula_exact"))
         elif rule.rule_type == RuleType.FORMULA_NORMALIZED:
-            mode_parts.append("Formula normalizzata")
+            mode_parts.append(tr("profile.mode.formula_normalized"))
         elif rule.rule_type == RuleType.MANUAL_REVIEW:
-            mode_parts.append("Revisione manuale")
+            mode_parts.append(tr("profile.mode.manual_review"))
         if rule.range_ref:
-            mode_parts.append("Range")
+            mode_parts.append(tr("profile.mode.range"))
         if rule.tolerance is not None and rule.tolerance.mode != ToleranceMode.NONE:
             tolerance_parts = [ProfilePage._tolerance_mode_text(rule.tolerance.mode)]
             if rule.tolerance.absolute is not None:
                 tolerance_parts.append(f"abs={ProfilePage._format_number(rule.tolerance.absolute)}")
             if rule.tolerance.relative is not None:
                 tolerance_parts.append(f"rel={ProfilePage._format_number(rule.tolerance.relative)}")
-            mode_parts.append("Tolleranza: " + ", ".join(tolerance_parts))
+            mode_parts.append(tr("profile.mode.tolerance", value=", ".join(tolerance_parts)))
         return " | ".join(mode_parts)
 
     @staticmethod
     def _rule_type_text(rule: CorrectionRule) -> str:
         """Return a user-facing rule type label for the table."""
         type_map = {
-            RuleType.FORMULA_EXACT: "Formula",
-            RuleType.FORMULA_NORMALIZED: "Formula",
-            RuleType.NUMERIC_VALUE: "Valore numerico",
-            RuleType.TEXT_VALUE: "Testo esatto",
-            RuleType.TEXT_NORMALIZED: "Testo normalizzato",
-            RuleType.NON_EMPTY: "Cella non vuota",
-            RuleType.EMPTY: "Cella vuota",
-            RuleType.MANUAL_REVIEW: "Revisione manuale",
+            RuleType.FORMULA_EXACT: tr("profile.rule_type.formula"),
+            RuleType.FORMULA_NORMALIZED: tr("profile.rule_type.formula"),
+            RuleType.NUMERIC_VALUE: tr("profile.rule_type.numeric"),
+            RuleType.TEXT_VALUE: tr("profile.rule_type.text_exact"),
+            RuleType.TEXT_NORMALIZED: tr("profile.rule_type.text_normalized"),
+            RuleType.NON_EMPTY: tr("profile.rule_type.non_empty"),
+            RuleType.EMPTY: tr("profile.rule_type.empty"),
+            RuleType.MANUAL_REVIEW: tr("profile.rule_type.manual_review"),
         }
         return type_map.get(rule.rule_type, rule.rule_type.value)
 
@@ -641,10 +644,10 @@ class ProfilePage(QWidget):
     def _tolerance_mode_text(mode: ToleranceMode) -> str:
         """Return a readable label for one tolerance mode."""
         tolerance_map = {
-            ToleranceMode.NONE: "Nessuna",
-            ToleranceMode.ABSOLUTE: "Assoluta",
-            ToleranceMode.RELATIVE: "Relativa",
-            ToleranceMode.ABSOLUTE_OR_RELATIVE: "Assoluta o relativa",
+            ToleranceMode.NONE: tr("profile.tolerance.none"),
+            ToleranceMode.ABSOLUTE: tr("profile.tolerance.absolute"),
+            ToleranceMode.RELATIVE: tr("profile.tolerance.relative"),
+            ToleranceMode.ABSOLUTE_OR_RELATIVE: tr("profile.tolerance.absolute_or_relative"),
         }
         return tolerance_map.get(mode, mode.value)
 

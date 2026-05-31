@@ -137,6 +137,7 @@ class ReportPage(QWidget):
         self.filter_bar.retranslate_ui()
         self.table.retranslate_ui()
         self.details_panel.retranslate_ui()
+        self.refresh_from_state()
 
     def refresh_from_state(self) -> None:
         """Refresh summary and table from the current report."""
@@ -151,17 +152,13 @@ class ReportPage(QWidget):
         if report is None:
             self.persistence_status_label.setText(tr("report.none_available"))
         elif self.state.report_dirty:
-            self.persistence_status_label.setText(
-                "Le revisioni manuali sono applicate al report corrente. Salva il report .ccreport per conservarle."
-            )
+            self.persistence_status_label.setText(tr("report.persistence.dirty"))
         elif self.state.current_report_path:
             self.persistence_status_label.setText(
-                f"Report corrente caricato da: {self.state.current_report_path}"
+                tr("report.persistence.loaded_from").format(path=self.state.current_report_path)
             )
         else:
-            self.persistence_status_label.setText(
-                "Report corrente disponibile in memoria. Salvalo come .ccreport per conservarlo."
-            )
+            self.persistence_status_label.setText(tr("report.persistence.in_memory"))
         self._apply_filters()
 
     def reset_view_state(self) -> None:
@@ -370,8 +367,8 @@ class ReportPage(QWidget):
 
         QMessageBox.information(
             self,
-            "Carica report",
-            "Il caricamento del report non e disponibile in questa configurazione della GUI.",
+            tr("report.load"),
+            tr("report.load_unavailable"),
         )
 
     def _save_report(self) -> None:
@@ -379,8 +376,8 @@ class ReportPage(QWidget):
         if self.state.current_report is None:
             QMessageBox.information(
                 self,
-                "Nessun report da salvare",
-                "Non esiste ancora un report corrente da salvare.",
+                tr("report.no_current_save_title"),
+                tr("report.no_current_save_message"),
             )
             return
 
@@ -390,8 +387,8 @@ class ReportPage(QWidget):
 
         QMessageBox.information(
             self,
-            "Salva report",
-            "Il salvataggio del report non e disponibile in questa configurazione della GUI.",
+            tr("report.save"),
+            tr("report.save_unavailable"),
         )
 
     def _save_all_reports(self) -> None:
@@ -412,20 +409,20 @@ class ReportPage(QWidget):
         if report is None:
             QMessageBox.information(
                 self,
-                "Nessun report da esportare",
-                "Non esiste ancora un report corrente da esportare.",
+                tr("report.no_current_export_title"),
+                tr("report.no_current_export_message"),
             )
             return
-        suggested_name = "report_correzione.txt"
+        suggested_name = f"{tr('main_window.default_report_name')}.txt"
         report_name = self.state.current_report_display_name()
         if report_name:
             suggested_name = f"{report_name}.txt"
 
         path, _ = QFileDialog.getSaveFileName(
             self,
-            "Esporta report testuale",
+            tr("report.export_dialog_title"),
             suggested_name,
-            "Report testuale CellCheck (*.txt)",
+            tr("report.export_filter"),
         )
         if not path:
             return
@@ -438,13 +435,13 @@ class ReportPage(QWidget):
                 model_file = self.state.current_profile.source_solution_workbook
             export_text_correction_report(report, path, model_file=model_file)
         except Exception as exc:
-            QMessageBox.critical(self, "Esporta report", str(exc))
+            QMessageBox.critical(self, tr("report.export"), str(exc))
             return
 
         QMessageBox.information(
             self,
-            "Esporta report",
-            "Report esportato correttamente in formato testuale UTF-8.",
+            tr("report.export"),
+            tr("report.export_success"),
         )
 
     def _refresh_report_selector(self) -> None:

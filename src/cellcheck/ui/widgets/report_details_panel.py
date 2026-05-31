@@ -21,6 +21,11 @@ from PySide6.QtWidgets import (
 
 from cellcheck.models import CellCorrectionResult, ResultStatus, RuleType
 from cellcheck.ui.i18n import tr
+from cellcheck.ui.report_localization import (
+    localized_result_message,
+    localized_result_status,
+    localized_rule_type,
+)
 
 SELECTED_DECISION_STYLE = """
 QPushButton:checked {
@@ -250,15 +255,15 @@ class ReportDetailsPanel(QWidget):
         self._fields["sheet_name"].setText(result.sheet_name)
         self._fields["cell"].setText(result.cell or "-")
         self._fields["range_ref"].setText(result.range_ref or "-")
-        self._fields["rule_type"].setText(result.rule_type.value)
-        self._fields["status"].setText(result.status.value)
+        self._fields["rule_type"].setText(localized_rule_type(result.rule_type))
+        self._fields["status"].setText(localized_result_status(result.status))
         self._fields["expected_formula"].setText(result.expected_formula or "-")
         self._fields["student_formula"].setText(result.student_formula or "-")
         self._fields["expected_value"].setText(self._stringify(result.expected_value))
         self._fields["student_value"].setText(self._stringify(result.student_value))
         self._fields["weight"].setText(str(result.weight))
         self._fields["score_awarded"].setText(str(result.score_awarded))
-        self._fields["message"].setText(result.message)
+        self._fields["message"].setText(localized_result_message(result.message))
 
         self.manual_review_widget.show()
         self.comment_edit.setPlainText(result.teacher_comment)
@@ -288,8 +293,8 @@ class ReportDetailsPanel(QWidget):
         if decision is None:
             QMessageBox.information(
                 self,
-                "Revisione manuale del docente",
-                "Seleziona prima una decisione di revisione manuale.",
+                tr("details.manual_title"),
+                tr("details.select_decision_first"),
             )
             return
 
@@ -306,15 +311,15 @@ class ReportDetailsPanel(QWidget):
             except ValueError:
                 QMessageBox.warning(
                     self,
-                    "Punteggio parziale non valido",
-                    "Inserisci un punteggio numerico compreso tra 0 e il peso della riga.",
+                    tr("details.partial_score_invalid_title"),
+                    tr("details.partial_score_invalid_message"),
                 )
                 return
             if manual_score < 0 or manual_score > result.weight:
                 QMessageBox.warning(
                     self,
-                    "Punteggio parziale non valido",
-                    f"Il punteggio parziale deve essere compreso tra 0 e {result.weight}.",
+                    tr("details.partial_score_invalid_title"),
+                    tr("details.partial_score_invalid_range").format(weight=result.weight),
                 )
                 return
         elif decision == "malus":
@@ -323,15 +328,15 @@ class ReportDetailsPanel(QWidget):
             except ValueError:
                 QMessageBox.warning(
                     self,
-                    "Malus non valido",
-                    "Inserisci un valore numerico negativo per il malus.",
+                    tr("details.malus_invalid_title"),
+                    tr("details.malus_invalid_message"),
                 )
                 return
             if manual_score >= 0:
                 QMessageBox.warning(
                     self,
-                    "Malus non valido",
-                    "Il malus deve essere un valore negativo.",
+                    tr("details.malus_invalid_title"),
+                    tr("details.malus_negative_required"),
                 )
                 return
         elif decision == "note_only":
@@ -344,21 +349,14 @@ class ReportDetailsPanel(QWidget):
                 "teacher_comment": self.comment_edit.toPlainText(),
             }
         )
-        self.manual_review_feedback_label.setText("Revisione aggiornata nel report corrente.")
+        self.manual_review_feedback_label.setText(tr("details.review_updated"))
 
     def _show_manual_review_help(self) -> None:
         """Show a concise operational guide for manual review cases."""
         QMessageBox.information(
             self,
-            "Come gestire la revisione manuale",
-            "Per la revisione o rettifica docente:\n"
-            "- controlla foglio e cella indicati nel report;\n"
-            "- per le regole manual_review il passaggio umano resta obbligatorio;\n"
-            "- per le righe automatiche puoi confermare l'esito oppure rettificarlo;\n"
-            "- se necessario apri il workbook solo per consultazione;\n"
-            "- non modificare il workbook originale;\n"
-            "- annota la decisione nel commento docente;\n"
-            "- salva il report per conservare la revisione applicata.",
+            tr("details.help"),
+            tr("details.help_body"),
         )
 
     def _clear_manual_review_section(self, keep_values: bool = True) -> None:
@@ -472,35 +470,26 @@ class ReportDetailsPanel(QWidget):
     def _manual_review_title(result: CellCorrectionResult) -> str:
         """Return the section title for the selected row."""
         if result.rule_type == RuleType.MANUAL_REVIEW:
-            return "Revisione manuale obbligatoria"
-        return "Rettifica manuale del docente"
+            return tr("details.required_manual_title")
+        return tr("details.override_title")
 
     @staticmethod
     def _manual_review_note_text(result: CellCorrectionResult) -> str:
         """Return the contextual guidance for the selected row."""
         if result.requires_manual_review:
-            return (
-                "Questa regola e configurata come manual_review e richiede obbligatoriamente una decisione del docente. "
-                "Scegli l'esito, aggiorna il punteggio se necessario e annota la motivazione."
-            )
+            return tr("details.required_manual_note")
         if result.rule_type == RuleType.MANUAL_REVIEW:
-            return (
-                "Questa regola nasce come manual_review. Puoi aggiornare o rifinire la decisione docente gia registrata."
-            )
+            return tr("details.already_reviewed_manual_note")
         if result.was_teacher_reviewed:
-            return (
-                "Questa riga e stata gia rettificata manualmente dal docente. Puoi aggiornare nuovamente esito, punteggio o commento."
-            )
-        return (
-            "Questa riga e stata valutata automaticamente. Puoi confermare l'esito oppure rettificarlo manualmente dal report."
-        )
+            return tr("details.already_overridden_note")
+        return tr("details.automatic_row_note")
 
     @staticmethod
     def _apply_button_text(result: CellCorrectionResult) -> str:
         """Return the action button label for the selected row."""
         if result.rule_type == RuleType.MANUAL_REVIEW:
-            return "Applica revisione manuale"
-        return "Applica rettifica manuale"
+            return tr("details.apply_manual_review")
+        return tr("details.apply_manual_override")
 
     @staticmethod
     def _stringify(value) -> str:
