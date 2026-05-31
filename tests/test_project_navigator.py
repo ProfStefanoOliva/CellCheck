@@ -15,6 +15,7 @@ from cellcheck.models import (
 )
 from cellcheck.models import CorrectionProfile
 from cellcheck.ui.app_state import AppState
+from cellcheck.ui.help_sections import get_help_sections
 from cellcheck.ui.widgets import ProjectNavigator
 
 
@@ -173,8 +174,39 @@ def test_help_item_has_no_placeholder_child_row() -> None:
 
     help_item = navigator.topLevelItem(6)
 
-    assert help_item.childCount() == 0
+    assert help_item.childCount() == len(get_help_sections())
     assert help_item.data(0, Qt.UserRole) == ProjectNavigator.HELP_DESTINATION
+
+
+def test_help_sidebar_children_emit_requested_section() -> None:
+    _app()
+    navigator = ProjectNavigator()
+    navigator.refresh(AppState())
+    calls: list[str] = []
+    navigator.help_section_requested.connect(lambda section_id: calls.append(section_id))
+
+    help_child = navigator.topLevelItem(6).child(0)
+    navigator._handle_item_activation(help_child, 0)
+
+    assert calls == [get_help_sections()[0].identifier]
+
+
+def test_help_section_identifiers_are_unique_and_stable() -> None:
+    identifiers = [section.identifier for section in get_help_sections()]
+
+    assert identifiers == [
+        "intro",
+        "workflow",
+        "profile_rules",
+        "grading_table",
+        "student_files",
+        "report_review",
+        "saving_export",
+        "new_workspace",
+        "safety",
+        "common_problems",
+    ]
+    assert len(identifiers) == len(set(identifiers))
 
 
 def test_student_row_with_report_emits_report_navigation() -> None:

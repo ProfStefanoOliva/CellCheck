@@ -32,3 +32,19 @@ def format_decimal_for_ui(value: float, *, max_decimals: int = 4) -> str:
 
     formatted = f"{value:.{max_decimals}f}".rstrip("0").rstrip(".")
     return formatted.replace(".", ",")
+
+
+def format_decimal_for_text(
+    value: float,
+    *,
+    language_code: str,
+    max_decimals: int = 4,
+) -> str:
+    """Format one numeric value for localized plain-text exports."""
+    if float(value).is_integer():
+        return str(int(value))
+
+    formatted = f"{value:.{max_decimals}f}".rstrip("0").rstrip(".")
+    if language_code == "it":
+        return formatted.replace(".", ",")
+    return formatted

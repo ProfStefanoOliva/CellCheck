@@ -13,6 +13,7 @@ from cellcheck.reporting import (
     export_text_correction_report,
 )
 from cellcheck.storage import load_report, save_report
+from cellcheck.ui.i18n import set_current_language
 
 
 def build_report() -> CorrectionReport:
@@ -66,6 +67,7 @@ def build_report() -> CorrectionReport:
 
 
 def test_text_report_contains_required_sections() -> None:
+    set_current_language("it", persist=False)
     text = build_text_correction_report(
         build_report(),
         model_file="modello_risolto.xlsx",
@@ -80,6 +82,7 @@ def test_text_report_contains_required_sections() -> None:
 
 
 def test_text_report_includes_cells_and_criteria_summary() -> None:
+    set_current_language("it", persist=False)
     text = build_text_correction_report(build_report())
 
     assert "Celle verificate" in text
@@ -90,6 +93,7 @@ def test_text_report_includes_cells_and_criteria_summary() -> None:
 
 
 def test_text_report_export_is_utf8(tmp_path: Path) -> None:
+    set_current_language("it", persist=False)
     path = tmp_path / "report_correzione.txt"
     export_text_correction_report(build_report(), path)
 
@@ -108,6 +112,7 @@ def test_ccreport_json_save_load_remains_unchanged(tmp_path: Path) -> None:
 
 
 def test_text_report_includes_manual_override_and_teacher_comment() -> None:
+    set_current_language("it", persist=False)
     report = build_report().model_copy(
         update={
             "results": [
@@ -139,3 +144,28 @@ def test_text_report_includes_manual_override_and_teacher_comment() -> None:
     assert "Esito automatico originale: Formula corretta." in text
     assert "Commento docente: Parzialmente accettata dal docente." in text
     assert "Richiede revisione manuale: Si" in text
+
+
+def test_text_report_localizes_program_generated_labels_in_english() -> None:
+    set_current_language("en", persist=False)
+    report = build_report().model_copy(
+        update={
+            "results": [
+                build_report().results[0].model_copy(
+                    update={"teacher_comment": "Commento docente invariato."}
+                ),
+                build_report().results[1],
+            ]
+        }
+    )
+
+    text = build_text_correction_report(report, model_file="model_solution.xlsx")
+
+    assert "ASSESSMENT RESULT" in text
+    assert "Student file: studente.xlsx" in text
+    assert "Model file:  model_solution.xlsx" in text
+    assert "Total score:" in text
+    assert "CELL-BY-CELL DETAILS" in text
+    assert "Teacher comment: Commento docente invariato." in text
+    assert "H7:K14" in text
+    assert "4.5 / 4.5" in text

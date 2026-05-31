@@ -31,6 +31,7 @@ class AppState:
     session_report_paths: dict[str, str] = field(default_factory=dict)
     report_dirty_flags: dict[str, bool] = field(default_factory=dict)
     selected_report_student_file: str | None = None
+    selected_help_section_id: str | None = None
     report_dirty: bool = False
     target_color: str = "#D9D9D9"
     exercise_name: str = ""
@@ -53,6 +54,7 @@ class AppState:
         self.session_report_paths = {}
         self.report_dirty_flags = {}
         self.selected_report_student_file = None
+        self.selected_help_section_id = defaults.selected_help_section_id
         self.report_dirty = defaults.report_dirty
         self.target_color = defaults.target_color
         self.exercise_name = defaults.exercise_name

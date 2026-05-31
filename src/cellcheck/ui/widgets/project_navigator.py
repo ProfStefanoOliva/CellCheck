@@ -9,9 +9,9 @@ from PySide6.QtWidgets import QMenu, QTreeWidget, QTreeWidgetItem, QWidget
 from cellcheck.ui.app_state import (
     AppState,
     STUDENT_STATUS_DONE,
-    STUDENT_STATUS_LOADED,
     STUDENT_STATUS_REVIEW,
 )
+from cellcheck.ui.help_sections import first_help_section_id, get_help_sections
 from cellcheck.ui.i18n import tr
 
 
@@ -24,10 +24,12 @@ class ProjectNavigator(QTreeWidget):
     HELP_DESTINATION = "help"
     STUDENT_PATH_ROLE = Qt.UserRole + 1
     REPORT_KEY_ROLE = Qt.UserRole + 2
+    HELP_SECTION_ROLE = Qt.UserRole + 3
 
     guided_correction_requested = Signal()
     student_files_requested = Signal()
     help_requested = Signal()
+    help_section_requested = Signal(str)
     student_report_requested = Signal(str)
     correct_student_requested = Signal(str)
     correct_all_students_requested = Signal()
@@ -101,8 +103,10 @@ class ProjectNavigator(QTreeWidget):
                 item.addChild(child)
             if destination == self.STUDENT_FILES_DESTINATION:
                 self._populate_student_items(item, state)
-            if destination == self.REPORT_DESTINATION:
+            elif destination == self.REPORT_DESTINATION:
                 self._populate_report_items(item, state)
+            elif destination == self.HELP_DESTINATION:
+                self._populate_help_items(item)
             self.addTopLevelItem(item)
             item.setExpanded(detail is not None or item.childCount() > 0)
 
@@ -111,16 +115,21 @@ class ProjectNavigator(QTreeWidget):
         self.refresh(self._last_state)
 
     def _handle_item_activation(self, item: QTreeWidgetItem, _column: int) -> None:
-        """Open guided correction from the navigator when the workflow is ready."""
+        """Route navigation based on the clicked sidebar item."""
         destination = item.data(0, Qt.UserRole)
         student_path = item.data(0, self.STUDENT_PATH_ROLE)
         report_key = item.data(0, self.REPORT_KEY_ROLE)
+        help_section_id = item.data(0, self.HELP_SECTION_ROLE)
+
         if report_key:
             self.student_report_requested.emit(str(report_key))
             return
+        if help_section_id:
+            self.help_section_requested.emit(str(help_section_id))
+            return
         if student_path:
-            if self._last_state.report_for_student(student_path) is not None:
-                self.student_report_requested.emit(student_path)
+            if self._last_state.report_for_student(str(student_path)) is not None:
+                self.student_report_requested.emit(str(student_path))
             else:
                 self.student_files_requested.emit()
             return
@@ -137,20 +146,25 @@ class ProjectNavigator(QTreeWidget):
                     self._last_state.report_storage_key(self._last_state.session_reports[0])
                 )
         elif destination == self.HELP_DESTINATION:
+            default_section = (
+                self._last_state.selected_help_section_id or first_help_section_id()
+            )
             self.help_requested.emit()
+            self.help_section_requested.emit(default_section)
         elif destination == self.STUDENT_FILES_DESTINATION:
             self.student_files_requested.emit()
 
     def _show_context_menu(self, position: QPoint) -> None:
-        """Offer minimal student-file actions without changing the main workflow."""
+        """Offer minimal context-menu actions for student nodes."""
         item = self.itemAt(position)
         if item is None:
             return
 
-        menu = QMenu(self)
         action_specs = self._context_action_specs(item)
         if not action_specs:
             return
+
+        menu = QMenu(self)
         for label_key, enabled, callback in action_specs:
             action = QAction(tr(label_key), self)
             action.setEnabled(enabled)
@@ -165,6 +179,7 @@ class ProjectNavigator(QTreeWidget):
         """Return the minimal context-menu actions available for one navigator item."""
         destination = item.data(0, Qt.UserRole)
         student_path = item.data(0, self.STUDENT_PATH_ROLE)
+
         if destination == self.STUDENT_FILES_DESTINATION and not student_path:
             return [
                 (
@@ -174,6 +189,7 @@ class ProjectNavigator(QTreeWidget):
                 )
             ]
         if student_path:
+            student_path = str(student_path)
             if self._last_state.student_requires_correction(student_path):
                 return [
                     (
@@ -214,6 +230,14 @@ class ProjectNavigator(QTreeWidget):
             child.setData(0, Qt.UserRole, self.REPORT_DESTINATION)
             child.setData(0, self.REPORT_KEY_ROLE, report_key)
             child.setToolTip(0, report.student_file)
+            root_item.addChild(child)
+
+    def _populate_help_items(self, root_item: QTreeWidgetItem) -> None:
+        """Add the shared Help sections as clickable child rows."""
+        for section in get_help_sections():
+            child = QTreeWidgetItem([section.title])
+            child.setData(0, Qt.UserRole, self.HELP_DESTINATION)
+            child.setData(0, self.HELP_SECTION_ROLE, section.identifier)
             root_item.addChild(child)
 
     @staticmethod

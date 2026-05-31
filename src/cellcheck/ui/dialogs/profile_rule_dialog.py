@@ -63,11 +63,11 @@ class ProfileRuleDialog(QDialog):
         self,
         parent: QWidget | None = None,
         *,
-        title: str = "Regola profilo",
+        title: str | None = None,
         rule: CorrectionRule | None = None,
     ) -> None:
         super().__init__(parent)
-        self.setWindowTitle(title)
+        self.setWindowTitle(title or tr("profile.edit_rule"))
         self.resize(760, 700)
         self.setMinimumSize(680, 520)
 
@@ -87,7 +87,7 @@ class ProfileRuleDialog(QDialog):
         scroll_area.setWidget(content)
 
         intro = QLabel(
-            "Configura una regola compatibile con il profilo e con il motore di correzione corrente. Se il contenuto supera lo spazio disponibile, la finestra scorre verticalmente."
+            tr("rule_dialog.intro")
         )
         intro.setWordWrap(True)
         content_layout.addWidget(intro)
@@ -132,14 +132,14 @@ class ProfileRuleDialog(QDialog):
 
         self.sheet_name_edit = QLineEdit()
         self.cell_edit = QLineEdit()
-        self.cell_edit.setPlaceholderText("es. A1")
+        self.cell_edit.setPlaceholderText(tr("rule_dialog.placeholder.cell"))
         self.range_edit = QLineEdit()
-        self.range_edit.setPlaceholderText("es. A1:B3")
+        self.range_edit.setPlaceholderText(tr("rule_dialog.placeholder.range"))
 
-        form.addRow(self._section_title("Identificazione cella"), QLabel())
-        form.addRow("Foglio", self.sheet_name_edit)
-        form.addRow("Cella", self.cell_edit)
-        form.addRow("Range", self.range_edit)
+        form.addRow(self._section_title(tr("rule_dialog.section.identification")), QLabel())
+        form.addRow(tr("details.sheet"), self.sheet_name_edit)
+        form.addRow(tr("details.cell"), self.cell_edit)
+        form.addRow(tr("details.range"), self.range_edit)
         return section
 
     def _build_rule_logic_section(self) -> QFrame:
@@ -151,33 +151,33 @@ class ProfileRuleDialog(QDialog):
         form.setSpacing(12)
 
         self.rule_kind_combo = QComboBox()
-        self.rule_kind_combo.addItem("Formula", RULE_KIND_FORMULA)
-        self.rule_kind_combo.addItem("Valore numerico", RULE_KIND_NUMERIC)
-        self.rule_kind_combo.addItem("Testo esatto", RULE_KIND_TEXT_EXACT)
-        self.rule_kind_combo.addItem("Testo normalizzato", RULE_KIND_TEXT_NORMALIZED)
-        self.rule_kind_combo.addItem("Cella non vuota", RULE_KIND_NON_EMPTY)
-        self.rule_kind_combo.addItem("Cella vuota", RULE_KIND_EMPTY)
-        self.rule_kind_combo.addItem("Revisione manuale", RULE_KIND_MANUAL_REVIEW)
+        self.rule_kind_combo.addItem(tr("profile.rule_type.formula"), RULE_KIND_FORMULA)
+        self.rule_kind_combo.addItem(tr("profile.rule_type.numeric"), RULE_KIND_NUMERIC)
+        self.rule_kind_combo.addItem(tr("profile.rule_type.text_exact"), RULE_KIND_TEXT_EXACT)
+        self.rule_kind_combo.addItem(tr("profile.rule_type.text_normalized"), RULE_KIND_TEXT_NORMALIZED)
+        self.rule_kind_combo.addItem(tr("profile.rule_type.non_empty"), RULE_KIND_NON_EMPTY)
+        self.rule_kind_combo.addItem(tr("profile.rule_type.empty"), RULE_KIND_EMPTY)
+        self.rule_kind_combo.addItem(tr("profile.rule_type.manual_review"), RULE_KIND_MANUAL_REVIEW)
 
         self.formula_mode_combo = QComboBox()
-        self.formula_mode_combo.addItem("Formula esatta", RuleType.FORMULA_EXACT)
-        self.formula_mode_combo.addItem("Formula normalizzata", RuleType.FORMULA_NORMALIZED)
-        self.formula_mode_combo.addItem("Revisione manuale", RuleType.MANUAL_REVIEW)
+        self.formula_mode_combo.addItem(tr("profile.mode.formula_exact"), RuleType.FORMULA_EXACT)
+        self.formula_mode_combo.addItem(tr("profile.mode.formula_normalized"), RuleType.FORMULA_NORMALIZED)
+        self.formula_mode_combo.addItem(tr("profile.mode.manual_review"), RuleType.MANUAL_REVIEW)
 
         self.expected_formula_edit = QLineEdit()
-        self.expected_formula_edit.setPlaceholderText("es. =$A$1+$B$1")
+        self.expected_formula_edit.setPlaceholderText(tr("rule_dialog.placeholder.formula"))
         self.expected_value_edit = QLineEdit()
-        self.expected_value_edit.setPlaceholderText("Valore o testo atteso")
+        self.expected_value_edit.setPlaceholderText(tr("rule_dialog.placeholder.expected"))
         self.required_activity_edit = QTextEdit()
         self.required_activity_edit.setMinimumHeight(90)
         self.required_activity_edit.setPlaceholderText(tr("profile.required_activity.placeholder"))
-        self.formula_mode_label = QLabel("Modalita confronto formula")
-        self.expected_formula_label = QLabel("Formula attesa")
-        self.expected_value_label = QLabel("Valore atteso")
+        self.formula_mode_label = QLabel(tr("rule_dialog.formula_mode"))
+        self.expected_formula_label = QLabel(tr("details.expected_formula"))
+        self.expected_value_label = QLabel(tr("details.expected_value"))
         self.required_activity_label = QLabel(tr("profile.required_activity"))
 
-        form.addRow(self._section_title("Criterio di correzione"), QLabel())
-        form.addRow("Tipo regola", self.rule_kind_combo)
+        form.addRow(self._section_title(tr("rule_dialog.section.criteria")), QLabel())
+        form.addRow(tr("details.rule_type"), self.rule_kind_combo)
         form.addRow(self.formula_mode_label, self.formula_mode_combo)
         form.addRow(self.expected_formula_label, self.expected_formula_edit)
         form.addRow(self.expected_value_label, self.expected_value_edit)
@@ -194,34 +194,34 @@ class ProfileRuleDialog(QDialog):
         grid.setVerticalSpacing(12)
 
         self.weight_edit = QLineEdit()
-        self.weight_edit.setPlaceholderText("es. 1")
+        self.weight_edit.setPlaceholderText(tr("rule_dialog.placeholder.weight"))
         self.weight_edit.setText("1")
         self.weight_edit.setMinimumHeight(38)
-        self.enabled_check = QCheckBox("Regola abilitata")
+        self.enabled_check = QCheckBox(tr("rule_dialog.enabled"))
         self.enabled_check.setChecked(True)
 
         self.tolerance_mode_combo = QComboBox()
-        self.tolerance_mode_combo.addItem("Nessuna", ToleranceMode.NONE)
-        self.tolerance_mode_combo.addItem("Assoluta", ToleranceMode.ABSOLUTE)
-        self.tolerance_mode_combo.addItem("Relativa", ToleranceMode.RELATIVE)
+        self.tolerance_mode_combo.addItem(tr("profile.tolerance.none"), ToleranceMode.NONE)
+        self.tolerance_mode_combo.addItem(tr("profile.tolerance.absolute"), ToleranceMode.ABSOLUTE)
+        self.tolerance_mode_combo.addItem(tr("profile.tolerance.relative"), ToleranceMode.RELATIVE)
         self.tolerance_mode_combo.addItem(
-            "Assoluta o relativa",
+            tr("profile.tolerance.absolute_or_relative"),
             ToleranceMode.ABSOLUTE_OR_RELATIVE,
         )
         self.tolerance_absolute_edit = QLineEdit()
-        self.tolerance_absolute_edit.setPlaceholderText("es. 0.5")
+        self.tolerance_absolute_edit.setPlaceholderText(tr("rule_dialog.placeholder.absolute_tolerance"))
         self.tolerance_relative_edit = QLineEdit()
-        self.tolerance_relative_edit.setPlaceholderText("es. 0.05")
+        self.tolerance_relative_edit.setPlaceholderText(tr("rule_dialog.placeholder.relative_tolerance"))
 
-        grid.addWidget(self._section_title("Punteggio e opzioni avanzate"), 0, 0, 1, 2)
-        grid.addWidget(QLabel("Peso"), 1, 0)
+        grid.addWidget(self._section_title(tr("rule_dialog.section.scoring")), 0, 0, 1, 2)
+        grid.addWidget(QLabel(tr("profile.table.weight")), 1, 0)
         grid.addWidget(self.weight_edit, 1, 1)
         grid.addWidget(self.enabled_check, 2, 0, 1, 2)
-        grid.addWidget(QLabel("Modalita tolleranza"), 3, 0)
+        grid.addWidget(QLabel(tr("rule_dialog.tolerance_mode")), 3, 0)
         grid.addWidget(self.tolerance_mode_combo, 3, 1)
-        grid.addWidget(QLabel("Tolleranza assoluta"), 4, 0)
+        grid.addWidget(QLabel(tr("rule_dialog.absolute_tolerance")), 4, 0)
         grid.addWidget(self.tolerance_absolute_edit, 4, 1)
-        grid.addWidget(QLabel("Tolleranza relativa"), 5, 0)
+        grid.addWidget(QLabel(tr("rule_dialog.relative_tolerance")), 5, 0)
         grid.addWidget(self.tolerance_relative_edit, 5, 1)
         return section
 
@@ -236,11 +236,11 @@ class ProfileRuleDialog(QDialog):
         self.teacher_note_edit = QTextEdit()
         self.teacher_note_edit.setMinimumHeight(120)
         self.teacher_note_edit.setPlaceholderText(
-            "Inserisci una nota o descrizione utile per il profilo. Questa nota non coincide con il commento docente del report."
+            tr("rule_dialog.note_placeholder")
         )
 
-        form.addRow(self._section_title("Nota / messaggio"), QLabel())
-        form.addRow("Nota docente", self.teacher_note_edit)
+        form.addRow(self._section_title(tr("rule_dialog.section.note")), QLabel())
+        form.addRow(tr("profile.table.note"), self.teacher_note_edit)
         return section
 
     def _populate_from_rule(self, rule: CorrectionRule) -> None:
@@ -318,26 +318,26 @@ class ProfileRuleDialog(QDialog):
         messages: list[str] = []
         if self.range_edit.text().strip():
             messages.append(
-                "I range sono accettati nel profilo, ma il motore li invia ancora a revisione manuale in questa versione."
+                tr("rule_dialog.info.range")
             )
         if effective_rule_type == RuleType.FORMULA_EXACT:
             messages.append(
-                "Formula esatta: differenze formali come riferimenti assoluti, relativi o struttura scritta restano rilevanti."
+                tr("rule_dialog.info.formula_exact")
             )
         if effective_rule_type == RuleType.FORMULA_NORMALIZED:
             messages.append(
-                "Formula normalizzata: il confronto ignora spazi, maiuscole/minuscole e simboli '$' nei riferimenti."
+                tr("rule_dialog.info.formula_normalized")
             )
         if effective_rule_type == RuleType.MANUAL_REVIEW:
             messages.append(
-                "Revisione manuale: la regola non decide automaticamente l'esito e richiede intervento del docente."
+                tr("rule_dialog.info.manual_review")
             )
         if numeric_rule:
             messages.append(
-                "La tolleranza numerica e disponibile solo per regole numeric_value e deve restare non negativa."
+                tr("rule_dialog.info.numeric_tolerance")
             )
 
-        self.rule_info_label.setText("\n".join(messages) or "Regola pronta per la validazione.")
+        self.rule_info_label.setText("\n".join(messages) or tr("rule_dialog.info.ready"))
 
     def _accept_with_validation(self) -> None:
         """Accept the dialog only when required fields are coherent."""
@@ -346,11 +346,11 @@ class ProfileRuleDialog(QDialog):
         except ValueError as exc:
             error_text = str(exc)
             if "peso" in error_text.lower():
-                title = "Peso non valido"
-            elif "numero valido" in error_text.lower():
-                title = "Valore numerico non valido"
+                title = tr("rule_dialog.error.invalid_weight_title")
+            elif "numero valido" in error_text.lower() or "numeric" in error_text.lower():
+                title = tr("rule_dialog.error.invalid_number_title")
             else:
-                title = "Regola non valida"
+                title = tr("rule_dialog.error.invalid_rule_title")
             QMessageBox.warning(self, title, str(exc))
             return
         self.accept()
@@ -369,31 +369,31 @@ class ProfileRuleDialog(QDialog):
         weight = self._parse_positive_weight(self.weight_edit.text())
 
         if not sheet_name:
-            raise ValueError("Inserisci il nome del foglio.")
+            raise ValueError(tr("rule_dialog.error.sheet_required"))
         if not cell and not range_ref:
-            raise ValueError("Inserisci una cella oppure un range.")
+            raise ValueError(tr("rule_dialog.error.target_required"))
         if cell and range_ref:
-            raise ValueError("Compila una cella oppure un range, non entrambi.")
+            raise ValueError(tr("rule_dialog.error.target_exclusive"))
         if cell and not CELL_REF_RE.fullmatch(cell):
-            raise ValueError("La cella deve avere un riferimento Excel plausibile, ad esempio A1 o C10.")
+            raise ValueError(tr("rule_dialog.error.cell_invalid"))
         if range_ref and not RANGE_REF_RE.fullmatch(range_ref):
-            raise ValueError("Il range deve avere un formato plausibile, ad esempio A1:B3.")
+            raise ValueError(tr("rule_dialog.error.range_invalid"))
         expected_value: str | int | float | bool | None = None
         tolerance = self._build_tolerance(rule_kind)
 
         if rule_kind == RULE_KIND_FORMULA:
             if not expected_formula:
-                raise ValueError("Inserisci la formula attesa per questa regola.")
+                raise ValueError(tr("rule_dialog.error.formula_required"))
             if not expected_formula.startswith("="):
-                raise ValueError("La formula attesa deve iniziare con '='.")
+                raise ValueError(tr("rule_dialog.error.formula_equals"))
         elif rule_kind == RULE_KIND_NUMERIC:
             if not expected_value_text:
-                raise ValueError("Inserisci il valore numerico atteso.")
+                raise ValueError(tr("rule_dialog.error.numeric_required"))
             expected_value = self._parse_numeric_value(expected_value_text)
             expected_formula = None
         elif rule_kind in {RULE_KIND_TEXT_EXACT, RULE_KIND_TEXT_NORMALIZED}:
             if not expected_value_text:
-                raise ValueError("Inserisci il testo atteso.")
+                raise ValueError(tr("rule_dialog.error.text_required"))
             expected_value = expected_value_text
             expected_formula = None
         elif rule_kind in {RULE_KIND_NON_EMPTY, RULE_KIND_EMPTY, RULE_KIND_MANUAL_REVIEW}:
@@ -425,11 +425,11 @@ class ProfileRuleDialog(QDialog):
 
         absolute = self._parse_optional_non_negative(
             self.tolerance_absolute_edit.text().strip(),
-            "tolleranza assoluta",
+            tr("rule_dialog.label.absolute_tolerance"),
         )
         relative = self._parse_optional_non_negative(
             self.tolerance_relative_edit.text().strip(),
-            "tolleranza relativa",
+            tr("rule_dialog.label.relative_tolerance"),
         )
 
         try:
@@ -497,7 +497,7 @@ class ProfileRuleDialog(QDialog):
         except ValueError as exc:
             raise ValueError(str(exc)) from exc
         if value < 0:
-            raise ValueError(f"La {label} deve essere un numero non negativo.")
+            raise ValueError(tr("rule_dialog.error.non_negative", label=label))
         return value
 
     @staticmethod
@@ -506,9 +506,9 @@ class ProfileRuleDialog(QDialog):
         try:
             value = parse_decimal_input(raw_value)
         except ValueError as exc:
-            raise ValueError("Il peso deve essere un numero positivo.") from exc
+            raise ValueError(tr("rule_dialog.error.weight_positive")) from exc
         if value <= 0:
-            raise ValueError("Il peso deve essere un numero positivo.")
+            raise ValueError(tr("rule_dialog.error.weight_positive"))
         return value
 
     @staticmethod

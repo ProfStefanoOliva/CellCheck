@@ -13,6 +13,7 @@ from cellcheck.models import (
     WorkbookFormat,
 )
 from cellcheck.ui import AppState
+from cellcheck.ui.i18n import set_current_language
 from cellcheck.ui.pages import ReportPage
 from cellcheck.ui.widgets import ReportDetailsPanel
 
@@ -86,15 +87,19 @@ def _build_report() -> CorrectionReport:
 
 def test_report_details_panel_exposes_manual_override_for_automatic_rows() -> None:
     _qapp()
-    panel = ReportDetailsPanel()
-    result = _build_report().results[0]
+    previous_language = set_current_language("it", persist=False)
+    try:
+        panel = ReportDetailsPanel()
+        result = _build_report().results[0]
 
-    panel.refresh(result)
+        panel.refresh(result)
 
-    assert panel.manual_review_widget.isHidden() is False
-    assert panel.manual_review_title.text() == "Rettifica manuale del docente"
-    assert "valutata automaticamente" in panel.manual_review_note.text()
-    assert panel.apply_review_button.text() == "Applica rettifica manuale"
+        assert panel.manual_review_widget.isHidden() is False
+        assert panel.manual_review_title.text() == "Rettifica manuale del docente"
+        assert "valutata automaticamente" in panel.manual_review_note.text()
+        assert panel.apply_review_button.text() == "Applica rettifica manuale"
+    finally:
+        set_current_language(previous_language, persist=False)
 
 
 def test_report_page_can_override_automatic_passed_row_and_recalculate_summary() -> None:

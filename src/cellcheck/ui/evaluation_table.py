@@ -6,8 +6,8 @@ import re
 from pathlib import Path
 
 from cellcheck.models import CorrectionProfile, CorrectionRule
-from cellcheck.ui.i18n import tr
-from cellcheck.ui.number_format import format_decimal_for_ui
+from cellcheck.ui.i18n import current_language, tr
+from cellcheck.ui.number_format import format_decimal_for_text
 
 INVALID_WINDOWS_FILENAME_CHARS_RE = re.compile(r'[<>:"/\\|?*]+')
 def build_evaluation_table_text(profile: CorrectionProfile) -> str:
@@ -17,7 +17,7 @@ def build_evaluation_table_text(profile: CorrectionProfile) -> str:
         tr("evaluation_table.heading"),
         "",
         f"{tr('evaluation_table.exercise')}: {profile.exercise_name}",
-        f"{tr('evaluation_table.total_points')}: {format_decimal_for_ui(profile.max_grade, max_decimals=4)}",
+        f"{tr('evaluation_table.total_points')}: {format_decimal_for_text(profile.max_grade, language_code=current_language(), max_decimals=4)}",
         "",
     ]
 
@@ -56,7 +56,7 @@ def quota_points_text(rule_weight: float, total_weight: float, max_grade: float 
     if max_grade is None or total_weight <= 0:
         return "-"
     quota = (rule_weight / total_weight) * max_grade
-    return format_decimal_for_ui(quota, max_decimals=4)
+    return format_decimal_for_text(quota, language_code=current_language(), max_decimals=4)
 
 
 def total_profile_weight(profile: CorrectionProfile) -> float:

@@ -14,6 +14,11 @@ from PySide6.QtWidgets import (
 
 from cellcheck.models import CellCorrectionResult, ResultStatus
 from cellcheck.ui.i18n import tr
+from cellcheck.ui.report_localization import (
+    localized_result_message,
+    localized_result_status,
+    localized_rule_type,
+)
 from cellcheck.ui.theme import ERROR_RED, SUCCESS_GREEN, TEXT_SECONDARY, WARNING_ORANGE
 
 
@@ -63,11 +68,11 @@ class ReportTable(QTableWidget):
             values = [
                 result.sheet_name,
                 result.cell or result.range_ref or "-",
-                result.status.value,
+                localized_result_status(result.status),
                 str(result.score_awarded),
                 str(result.weight),
-                result.rule_type.value,
-                result.message,
+                localized_rule_type(result.rule_type),
+                localized_result_message(result.message),
                 result.teacher_comment,
             ]
             for column_index, value in enumerate(values):
@@ -100,7 +105,7 @@ class ReportTable(QTableWidget):
 
         status_item = self.item(visible_row, 2)
         if status_item is not None:
-            status_item.setText(result.status.value)
+            status_item.setText(localized_result_status(result.status))
             status_item.setForeground(self._status_color(result.status))
 
         score_item = self.item(visible_row, 3)
@@ -109,7 +114,7 @@ class ReportTable(QTableWidget):
 
         message_item = self.item(visible_row, 6)
         if message_item is not None:
-            message_item.setText(result.message)
+            message_item.setText(localized_result_message(result.message))
 
         comment_item = self.item(visible_row, 7)
         if comment_item is not None:

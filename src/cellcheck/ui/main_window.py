@@ -24,6 +24,7 @@ from cellcheck.ui.app_state import AppState
 from cellcheck.ui.branding import get_app_icon_path
 from cellcheck.ui.dialogs import LanguageDialog
 from cellcheck.ui.i18n import current_language, set_current_language, tr
+from cellcheck.ui.help_sections import first_help_section_id
 from cellcheck.ui.localization import install_qt_translations
 from cellcheck.ui.pages import (
     CorrectionPage,
@@ -117,6 +118,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central_widget)
 
         self._connect_signals()
+        self._hide_redundant_help_button()
         self.retranslate_ui()
         self._refresh_state_views()
 
@@ -129,13 +131,14 @@ class MainWindow(QMainWindow):
         self.navigator.student_report_requested.connect(self._show_report_for_student)
         self.navigator.correct_student_requested.connect(self._correct_single_student_from_sidebar)
         self.navigator.correct_all_students_requested.connect(self._correct_all_students_from_sidebar)
-        self.navigator.help_requested.connect(self._show_help_page)
+        self.navigator.help_requested.connect(lambda: self._show_help_section(None))
+        self.navigator.help_section_requested.connect(self._show_help_section)
         self.ribbon.profile_import_requested.connect(
             lambda: self.stack.setCurrentWidget(self.profile_import_page)
         )
         self.ribbon.correction_requested.connect(self._show_guided_correction_page)
         self.ribbon.report_requested.connect(lambda: self.stack.setCurrentWidget(self.report_page))
-        self.ribbon.help_requested.connect(self._show_help_page)
+        self.ribbon.help_requested.connect(lambda: self._show_help_section(None))
         self.ribbon.about_requested.connect(self._show_about_dialog)
         self.ribbon.language_requested.connect(self._show_language_dialog)
         self.ribbon.settings_requested.connect(
@@ -154,6 +157,13 @@ class MainWindow(QMainWindow):
     def _show_help_page(self) -> None:
         """Navigate to the integrated help page."""
         self.stack.setCurrentWidget(self.help_page)
+
+    def _show_help_section(self, section_id: str | None) -> None:
+        """Navigate to Help and display the requested section."""
+        target_section = section_id or self.state.selected_help_section_id or first_help_section_id()
+        self.state.selected_help_section_id = target_section
+        self.help_page.show_section(target_section)
+        self._show_help_page()
 
     def _show_report_for_student(self, student_file: str) -> None:
         """Navigate to the report page selecting the report for the given student."""
@@ -190,6 +200,14 @@ class MainWindow(QMainWindow):
         self.profile_import_page.refresh_from_state()
         self.correction_page.refresh_from_state()
         self.report_page.refresh_from_state()
+        self.help_page.show_section(self.state.selected_help_section_id or first_help_section_id())
+
+    def _hide_redundant_help_button(self) -> None:
+        """Hide the old top Help command now that Help lives in the sidebar."""
+        for button, key in getattr(self.ribbon, "_buttons", []):
+            if key == "ribbon.help":
+                button.hide()
+                button.setEnabled(False)
 
     def _show_about_dialog(self) -> None:
         """Show a compact About dialog with project identity and safety notes."""
@@ -242,9 +260,9 @@ class MainWindow(QMainWindow):
         """Open only a correction profile into the GUI state."""
         path, _ = QFileDialog.getOpenFileName(
             self,
-            "Apri profilo .ccal",
+            tr("main_window.open_profile.title"),
             "",
-            "Profilo di correzione CellCheck (*.ccal)",
+            tr("main_window.open_profile.filter"),
         )
         if not path:
             return
@@ -254,10 +272,10 @@ class MainWindow(QMainWindow):
             if document_type == CcalDocumentType.CORRECTION_REPORT:
                 if Path(path).suffix.lower() == ".ccreport":
                     raise ValueError(
-                        "Il file selezionato e un report di correzione, non un profilo. Per aprire un report usa il comando Carica report."
+                        tr("main_window.open_profile.report_selected")
                     )
                 raise ValueError(
-                    "Il file selezionato contiene un report di correzione, non un profilo."
+                    tr("main_window.open_profile.report_content")
                 )
 
             self.state.current_profile = load_profile(path)
@@ -270,7 +288,7 @@ class MainWindow(QMainWindow):
             self.state.exercise_name = self.state.current_profile.exercise_name
             self.state.max_grade = self.state.current_profile.max_grade
         except Exception as exc:
-            QMessageBox.critical(self, "File non compatibile", str(exc))
+            QMessageBox.critical(self, tr("main_window.incompatible_file_title"), str(exc))
             return
 
         self._refresh_state_views()
@@ -288,16 +306,16 @@ class MainWindow(QMainWindow):
         if self.state.current_profile is None:
             QMessageBox.information(
                 self,
-                "Nessun profilo di correzione da salvare",
-                "Nessun profilo di correzione da salvare.",
+                tr("profile.save_missing_title"),
+                tr("profile.save_missing_message"),
             )
             return
 
         path, _ = QFileDialog.getSaveFileName(
             self,
-            "Salva profilo di correzione",
+            tr("profile.save"),
             "",
-            "Profilo di correzione CellCheck (*.ccal)",
+            tr("profile.file_filter"),
         )
         if not path:
             return
@@ -311,23 +329,23 @@ class MainWindow(QMainWindow):
             self.state.profile_dirty = False
             self.state.profile_status = "saved"
         except Exception as exc:
-            QMessageBox.critical(self, "Salva profilo di correzione", str(exc))
+            QMessageBox.critical(self, tr("profile.save"), str(exc))
             return
 
         self._refresh_state_views()
         QMessageBox.information(
             self,
-            "Salva profilo di correzione",
-            "Profilo salvato con successo.",
+            tr("profile.save"),
+            tr("main_window.save_profile.success"),
         )
 
     def _load_report_document(self) -> None:
         """Open a correction report into the report page."""
         path, _ = QFileDialog.getOpenFileName(
             self,
-            "Carica report .ccreport",
+            tr("main_window.load_report.title"),
             "",
-            "Report di correzione CellCheck (*.ccreport);;Report legacy CellCheck (*.ccal)",
+            tr("main_window.load_report.filter"),
         )
         if not path:
             return
@@ -337,15 +355,15 @@ class MainWindow(QMainWindow):
             if document_type != CcalDocumentType.CORRECTION_REPORT:
                 if document_type == CcalDocumentType.CORRECTION_PROFILE:
                     raise ValueError(
-                        "Il file selezionato e un profilo di correzione, non un report."
+                        tr("main_window.load_report.profile_selected")
                     )
-                raise ValueError("Il file selezionato non e un report di correzione valido.")
+                raise ValueError(tr("main_window.load_report.invalid"))
             report = load_report(path)
             self.state.add_or_replace_report(report, report_path=path, dirty=False, select=True)
             self.state.set_student_workbook_paths(self.state.student_workbook_paths)
             self.state.max_grade = report.max_grade
         except Exception as exc:
-            QMessageBox.critical(self, "File non compatibile", str(exc))
+            QMessageBox.critical(self, tr("main_window.incompatible_file_title"), str(exc))
             return
 
         self._refresh_state_views()
@@ -356,21 +374,21 @@ class MainWindow(QMainWindow):
         if self.state.current_report is None:
             QMessageBox.information(
                 self,
-                "Nessun report da salvare",
-                "Nessun report da salvare.",
+                tr("report.no_current_save_title"),
+                tr("report.no_current_save_message"),
             )
             return
 
-        suggested_name = "report.ccreport"
+        suggested_name = f"{tr('main_window.default_report_name')}.ccreport"
         report_name = self.state.current_report_display_name()
         if report_name:
             suggested_name = f"{report_name}.ccreport"
 
         path, _ = QFileDialog.getSaveFileName(
             self,
-            "Salva report",
+            tr("report.save"),
             suggested_name,
-            "Report di correzione CellCheck (*.ccreport)",
+            tr("main_window.load_report.filter").split(";;")[0],
         )
         if not path:
             return
@@ -388,11 +406,15 @@ class MainWindow(QMainWindow):
                     select=True,
                 )
         except Exception as exc:
-            QMessageBox.critical(self, "Salva report", str(exc))
+            QMessageBox.critical(self, tr("report.save"), str(exc))
             return
 
         self._refresh_state_views()
-        QMessageBox.information(self, "Salva report", "Report salvato con successo.")
+        QMessageBox.information(
+            self,
+            tr("report.save"),
+            tr("main_window.save_report.success"),
+        )
 
     def _save_all_reports(self) -> None:
         """Save every in-session report as .ccreport and .txt into one target folder."""
@@ -441,7 +463,7 @@ class MainWindow(QMainWindow):
     @staticmethod
     def _unique_output_stem(base_name: str, used_names: set[str]) -> str:
         """Return a predictable unique file stem inside one batch save folder."""
-        normalized_base = base_name or "report"
+        normalized_base = base_name or tr("main_window.default_report_name")
         candidate = normalized_base
         suffix = 2
         while candidate.casefold() in used_names:

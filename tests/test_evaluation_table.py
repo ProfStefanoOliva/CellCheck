@@ -120,6 +120,42 @@ def test_evaluation_table_includes_total_points_and_rule_points() -> None:
     assert "Punti: 7,5" in text
 
 
+def test_evaluation_table_localizes_generated_labels_in_english() -> None:
+    set_current_language("en", persist=False)
+    rules = [
+        CorrectionRule(
+            id="rule-1",
+            sheet_name="Foglio1",
+            cell="C3",
+            rule_type=RuleType.NON_EMPTY,
+            weight=1.0,
+            teacher_note="Nota tecnica da non esporre.",
+            required_activity="Inserire il totale delle vendite annuali.",
+        ),
+        CorrectionRule(
+            id="rule-2",
+            sheet_name="Foglio1",
+            cell="D4",
+            rule_type=RuleType.NON_EMPTY,
+            weight=3.0,
+            teacher_note="Altra nota tecnica da non esporre.",
+            required_activity="Compilare il riepilogo richiesto.",
+        ),
+    ]
+
+    text = build_evaluation_table_text(_build_profile(rules, exercise_name="Compito Finale"))
+
+    assert "Preliminary evaluation table" in text
+    assert "Exercise: Compito Finale" in text
+    assert "Total task points: 10" in text
+    assert "Sheet: Foglio1" in text
+    assert "Cell / range: C3" in text
+    assert "Required task: Inserire il totale delle vendite annuali." in text
+    assert "Points: 2.5" in text
+    assert "Points: 7.5" in text
+    assert "Nota tecnica da non esporre." not in text
+
+
 def test_suggested_filename_prefers_profile_name_and_sanitizes_it() -> None:
     profile = _build_profile([], exercise_name='Progetto: Excel/2026?')
 
