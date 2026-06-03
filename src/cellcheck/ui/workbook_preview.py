@@ -23,13 +23,21 @@ from PySide6.QtWidgets import (
 
 from cellcheck.core import WorkbookReader
 from cellcheck.ui.i18n import tr
-from cellcheck.ui.workbook_preview_highlights import excel_column_label
+from cellcheck.ui.workbook_preview_highlights import expand_excel_reference
+from cellcheck.ui.workbook_preview_navigation import (
+    PreviewNavigationTarget,
+    excel_column_label,
+    parse_preview_reference,
+    resolve_target_sheet_name,
+)
 
 DEFAULT_PREVIEW_ROW_LIMIT = 200
 DEFAULT_PREVIEW_COLUMN_LIMIT = 50
 
 HIGHLIGHT_FILL = QColor("#5a4a19")
 HIGHLIGHT_TEXT = QColor("#fff4c7")
+REPORT_TARGET_FILL = QColor("#8f1d1d")
+REPORT_TARGET_TEXT = QColor("#fff7f7")
 
 
 def workbook_basename(path: str | Path) -> str:
@@ -52,6 +60,8 @@ class PreviewCellData:
     formula_text: str
     has_formula: bool
     is_highlighted: bool
+    is_report_target: bool
+    visual_role: str
 
 
 @dataclass(frozen=True)
@@ -86,6 +96,9 @@ class WorkbookPreviewDataSource:
         self.row_limit = row_limit
         self.column_limit = column_limit
         self.highlighted_cells_by_sheet = highlighted_cells_by_sheet or {}
+        self.report_target_sheet_name: str | None = None
+        self.report_target_reference: str | None = None
+        self.report_target_cells_by_sheet: dict[str, set[str]] = {}
         self._formula_reader = WorkbookReader(self.path, data_only=False)
         self._value_reader = WorkbookReader(self.path, data_only=True)
         self._workbook_info = self._formula_reader.get_workbook_info()
@@ -160,6 +173,8 @@ class WorkbookPreviewDataSource:
         else:
             formula_text = formula_snapshot.formula or tr("workbook_preview.no_formula")
 
+        is_highlighted = cell_ref in self.highlighted_cells_by_sheet.get(sheet_name, set())
+        is_report_target = cell_ref in self.report_target_cells_by_sheet.get(sheet_name, set())
         preview_cell = PreviewCellData(
             sheet_name=sheet_name,
             cell_ref=cell_ref,
@@ -168,7 +183,9 @@ class WorkbookPreviewDataSource:
             value_text=value_text,
             formula_text=formula_text,
             has_formula=has_formula,
-            is_highlighted=cell_ref in self.highlighted_cells_by_sheet.get(sheet_name, set()),
+            is_highlighted=is_highlighted,
+            is_report_target=is_report_target,
+            visual_role=self._visual_role(is_highlighted, is_report_target),
         )
         self._cell_cache[cache_key] = preview_cell
         return preview_cell
@@ -176,6 +193,30 @@ class WorkbookPreviewDataSource:
     def has_highlighted_cells(self) -> bool:
         """Return True when at least one profile-controlled cell should be highlighted."""
         return any(cells for cells in self.highlighted_cells_by_sheet.values())
+
+    def has_report_target(self) -> bool:
+        """Return True when at least one report-target cell is active."""
+        return any(cells for cells in self.report_target_cells_by_sheet.values())
+
+    def set_report_target(self, sheet_name: str, reference: str, first_cell: str) -> None:
+        """Persist the report-target cells so they remain visible after navigation."""
+        expanded_cells = expand_excel_reference(reference)
+        if not expanded_cells:
+            expanded_cells = {first_cell}
+        self.report_target_sheet_name = sheet_name
+        self.report_target_reference = reference
+        self.report_target_cells_by_sheet = {sheet_name: expanded_cells}
+        self._sheet_cache.clear()
+        self._cell_cache.clear()
+
+    @staticmethod
+    def _visual_role(is_highlighted: bool, is_report_target: bool) -> str:
+        """Return the visual state for one preview cell."""
+        if is_report_target:
+            return "report_target"
+        if is_highlighted:
+            return "profile_highlight"
+        return "default"
 
     def close(self) -> None:
         """Release workbook file handles held by the preview data source."""
@@ -211,6 +252,7 @@ class WorkbookPreviewWindow(QMainWindow):
             column_limit=column_limit,
             highlighted_cells_by_sheet=highlighted_cells_by_sheet,
         )
+        self._current_navigation_target: PreviewNavigationTarget | None = None
 
         self.resize(980, 720)
 
@@ -338,12 +380,7 @@ class WorkbookPreviewWindow(QMainWindow):
         for label_text, field in zip(labels, fields):
             self._info_layout.addRow(f"{label_text}:", field)
 
-        if self._data_source.has_highlighted_cells():
-            self.highlight_legend_label.setText(tr("workbook_preview.highlighted_cells_legend"))
-            self.highlight_legend_label.setVisible(True)
-        else:
-            self.highlight_legend_label.setText(tr("workbook_preview.no_profile_cells"))
-            self.highlight_legend_label.setVisible(False)
+        self._refresh_legend_label()
 
         self._refresh_notice_label()
         self._update_selected_cell_info()
@@ -364,6 +401,60 @@ class WorkbookPreviewWindow(QMainWindow):
         self.sheet_combo.setCurrentIndex(current_index)
         self.sheet_combo.blockSignals(False)
         self._load_current_sheet(self.sheet_combo.currentText())
+
+    def navigate_to_reference(self, sheet_name: str | None, reference: str | None) -> bool:
+        """Switch to one sheet and select the requested cell or range anchor."""
+        if not reference:
+            QMessageBox.information(
+                self,
+                tr("workbook_preview.invalid_reference_title"),
+                tr("workbook_preview.invalid_cell_reference"),
+            )
+            return False
+
+        try:
+            target = parse_preview_reference(reference)
+        except Exception:
+            title_key = (
+                "workbook_preview.invalid_range_title"
+                if ":" in str(reference)
+                else "workbook_preview.invalid_reference_title"
+            )
+            body_key = (
+                "workbook_preview.invalid_range_reference"
+                if ":" in str(reference)
+                else "workbook_preview.invalid_cell_reference"
+            )
+            QMessageBox.information(self, tr(title_key), tr(body_key))
+            return False
+
+        target_sheet = resolve_target_sheet_name(
+            self._data_source.sheet_names,
+            sheet_name,
+            self.sheet_combo.currentText() or self._data_source.active_sheet_name,
+        )
+        if not target_sheet:
+            QMessageBox.information(
+                self,
+                tr("workbook_preview.sheet_not_found_title"),
+                tr("workbook_preview.sheet_not_found_message"),
+            )
+            return False
+        sheet_index = self.sheet_combo.findText(target_sheet)
+        self._current_navigation_target = target
+        self._data_source.set_report_target(target_sheet, target.reference, target.first_cell)
+        self.sheet_combo.setCurrentIndex(sheet_index)
+        if self.sheet_combo.currentText() == target_sheet:
+            self._load_current_sheet(target_sheet)
+        target_item = self.table.item(target.first_row - 1, target.first_column - 1)
+        if target_item is not None:
+            self.table.setCurrentItem(target_item)
+            self.table.scrollToItem(target_item, QTableWidget.PositionAtCenter)
+        else:
+            self.table.setCurrentCell(target.first_row - 1, target.first_column - 1)
+        self.raise_()
+        self.activateWindow()
+        return True
 
     def _load_current_sheet(self, sheet_name: str) -> None:
         """Load one worksheet into the central table."""
@@ -392,7 +483,10 @@ class WorkbookPreviewWindow(QMainWindow):
                 item = QTableWidgetItem(cell_data.display_value)
                 item.setFlags(item.flags() & ~Qt.ItemIsEditable)
                 item.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-                if cell_data.is_highlighted:
+                if cell_data.visual_role == "report_target":
+                    item.setBackground(QBrush(REPORT_TARGET_FILL))
+                    item.setForeground(QBrush(REPORT_TARGET_TEXT))
+                elif cell_data.visual_role == "profile_highlight":
                     item.setBackground(QBrush(HIGHLIGHT_FILL))
                     item.setForeground(QBrush(HIGHLIGHT_TEXT))
                 self.table.setItem(row_index, column_index, item)
@@ -444,3 +538,21 @@ class WorkbookPreviewWindow(QMainWindow):
         self.info_cell_value.setText(cell_data.cell_ref)
         self.info_value_value.setText(cell_data.value_text)
         self.info_formula_value.setText(cell_data.formula_text)
+
+    def _refresh_legend_label(self) -> None:
+        """Refresh the legend distinguishing profile highlights from report targets."""
+        legend_lines: list[str] = []
+        if self._data_source.has_highlighted_cells():
+            legend_lines.append(tr("workbook_preview.highlighted_cells_legend"))
+        if self._data_source.has_report_target():
+            if self._current_navigation_target is not None and self._current_navigation_target.is_range:
+                legend_lines.append(tr("workbook_preview.report_target_range_legend"))
+            else:
+                legend_lines.append(tr("workbook_preview.report_target_cell_legend"))
+
+        if legend_lines:
+            self.highlight_legend_label.setText("\n".join(legend_lines))
+            self.highlight_legend_label.setVisible(True)
+        else:
+            self.highlight_legend_label.setText(tr("workbook_preview.no_profile_cells"))
+            self.highlight_legend_label.setVisible(False)

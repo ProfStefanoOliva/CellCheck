@@ -169,6 +169,7 @@ def test_report_page_renders_localized_labels_in_english_and_chinese() -> None:
         assert "CorrectionReport" in page.subtitle_label.text()
         assert page.report_selector_label.text() == "Select report"
         assert page.preview_student_button.text() == "Student preview"
+        assert page.preview_result_button.text() == "Open cell in preview"
         assert page.filter_bar.status_label.text() == "Status"
         assert page.filter_bar.search_label.text() == "Search"
         assert page.details_panel.title_label.text() == "Result details"
@@ -180,6 +181,7 @@ def test_report_page_renders_localized_labels_in_english_and_chinese() -> None:
         assert "查看当前 CorrectionReport" in page.subtitle_label.text()
         assert page.report_selector_label.text() == "选择报告"
         assert page.preview_student_button.text() == "学生文件预览"
+        assert page.preview_result_button.text() == "在预览中打开单元格"
         assert page.filter_bar.status_label.text() == "状态"
         assert page.filter_bar.search_label.text() == "搜索"
         assert page.details_panel.title_label.text() == "结果详情"
@@ -193,6 +195,7 @@ def test_report_page_renders_localized_labels_in_english_and_chinese() -> None:
         assert "Esplora il CorrectionReport corrente" in page.subtitle_label.text()
         assert page.report_selector_label.text() == "Seleziona report"
         assert page.preview_student_button.text() == "Anteprima elaborato"
+        assert page.preview_result_button.text() == "Apri cella in anteprima"
         assert page.filter_bar.status_label.text() == "Stato"
         assert page.details_panel.title_label.text() == "Dettagli risultato"
     finally:

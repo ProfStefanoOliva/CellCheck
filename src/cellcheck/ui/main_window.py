@@ -271,7 +271,12 @@ class MainWindow(QMainWindow):
         self._refresh_state_views()
         self.stack.setCurrentWidget(self.dashboard_page)
 
-    def _open_workbook_preview(self, workbook_path: str) -> None:
+    def _open_workbook_preview(
+        self,
+        workbook_path: str,
+        sheet_name: str | None = None,
+        reference: str | None = None,
+    ) -> None:
         """Open or raise a non-modal workbook preview window for the given file."""
         if not workbook_path:
             WorkbookPreviewWindow.open_or_warn(workbook_path, self)
@@ -280,6 +285,8 @@ class MainWindow(QMainWindow):
         storage_key = self.state.normalize_session_path(workbook_path)
         existing_window = self._workbook_preview_windows.get(storage_key)
         if existing_window is not None:
+            if sheet_name or reference:
+                existing_window.navigate_to_reference(sheet_name, reference)
             existing_window.raise_()
             existing_window.activateWindow()
             return
@@ -297,6 +304,8 @@ class MainWindow(QMainWindow):
             lambda _obj=None, key=storage_key: self._workbook_preview_windows.pop(key, None)
         )
         preview_window.show()
+        if sheet_name or reference:
+            preview_window.navigate_to_reference(sheet_name, reference)
         preview_window.raise_()
         preview_window.activateWindow()
 

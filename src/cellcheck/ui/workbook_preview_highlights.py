@@ -8,6 +8,8 @@ from typing import Any
 
 from openpyxl.utils.cell import range_boundaries
 
+from cellcheck.ui.workbook_preview_navigation import excel_column_label
+
 MAX_HIGHLIGHTED_RANGE_CELLS = 5000
 
 
@@ -49,19 +51,6 @@ def expand_excel_reference(reference: str, *, max_cells: int = MAX_HIGHLIGHTED_R
         for row_index in range(min_row, max_row + 1):
             expanded.add(f"{column_label}{row_index}")
     return expanded
-
-
-def excel_column_label(index: int) -> str:
-    """Convert a 1-based column index to Excel-style letters."""
-    if index <= 0:
-        raise ValueError("Excel columns are 1-based.")
-
-    label = ""
-    current = index
-    while current > 0:
-        current, remainder = divmod(current - 1, 26)
-        label = chr(ord("A") + remainder) + label
-    return label
 
 
 def _worksheet_name(worksheet: object) -> str | None:
