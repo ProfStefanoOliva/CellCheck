@@ -26,6 +26,7 @@ class ReportTable(QTableWidget):
     """Displays correction results in a filterable tabular form."""
 
     result_selected = Signal(int)
+    result_activated = Signal(int)
 
     COLUMN_KEYS = [
         "sheet_name",
@@ -51,6 +52,7 @@ class ReportTable(QTableWidget):
         self.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.horizontalHeader().setStretchLastSection(True)
         self.itemSelectionChanged.connect(self._emit_selection)
+        self.itemDoubleClicked.connect(self._emit_activation)
         self.retranslate_ui()
 
     def load_results(
@@ -134,6 +136,11 @@ class ReportTable(QTableWidget):
             item = self.item(selected_rows[0].row(), 0)
             if item is not None:
                 self.result_selected.emit(int(item.data(Qt.UserRole)))
+
+    def _emit_activation(self, item: QTableWidgetItem) -> None:
+        """Notify listeners when one report row is activated by double click."""
+        if item is not None:
+            self.result_activated.emit(int(item.data(Qt.UserRole)))
 
     def retranslate_ui(self) -> None:
         """Refresh table headers after a GUI language change."""

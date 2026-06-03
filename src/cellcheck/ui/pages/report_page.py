@@ -22,6 +22,7 @@ from cellcheck.models import (
 from cellcheck.reporting import export_text_correction_report
 from cellcheck.ui.app_state import AppState
 from cellcheck.ui.i18n import tr
+from cellcheck.ui.report_preview_navigation import build_report_preview_target
 from cellcheck.ui.widgets import (
     ReportDetailsPanel,
     ReportFilterBar,
@@ -102,6 +103,11 @@ class ReportPage(QWidget):
         self.preview_student_button.clicked.connect(self._preview_current_report_workbook)
         command_row.addWidget(self.preview_student_button)
 
+        self.preview_result_button = QPushButton()
+        self.preview_result_button.setMinimumHeight(38)
+        self.preview_result_button.clicked.connect(self._preview_selected_report_result)
+        command_row.addWidget(self.preview_result_button)
+
         self.save_all_reports_button = QPushButton()
         self.save_all_reports_button.setMinimumHeight(38)
         self.save_all_reports_button.clicked.connect(self._save_all_reports)
@@ -123,6 +129,7 @@ class ReportPage(QWidget):
         splitter = QSplitter()
         self.table = ReportTable()
         self.table.result_selected.connect(self._handle_table_selection)
+        self.table.result_activated.connect(self._open_selected_report_result_from_table)
         self.details_panel = ReportDetailsPanel()
         self.details_panel.manual_review_applied.connect(self._apply_manual_review)
 
@@ -144,6 +151,7 @@ class ReportPage(QWidget):
         self.save_report_button.setText(tr("report.save"))
         self.export_report_button.setText(tr("report.export"))
         self.preview_student_button.setText(tr("workbook_preview.student_action"))
+        self.preview_result_button.setText(tr("workbook_preview.open_cell_in_preview"))
         self.save_all_reports_button.setText(tr("report.save_all"))
         self.summary_widget.retranslate_ui()
         self.filter_bar.retranslate_ui()
@@ -174,6 +182,7 @@ class ReportPage(QWidget):
         else:
             self.persistence_status_label.setText(tr("report.persistence.in_memory"))
         self.preview_student_button.setEnabled(bool(self._current_report_workbook_path()))
+        self.preview_result_button.setEnabled(self._current_result_preview_target() is not None)
         self._apply_filters()
 
     def reset_view_state(self) -> None:
@@ -185,6 +194,7 @@ class ReportPage(QWidget):
         self.report_selector_combo.clear()
         self.report_selector_combo.blockSignals(False)
         self.preview_student_button.setEnabled(False)
+        self.preview_result_button.setEnabled(False)
         self.filter_bar.clear_filters(emit_signal=False)
         self.table.load_results([], [])
         self.details_panel.refresh(None)
@@ -200,6 +210,7 @@ class ReportPage(QWidget):
             self._selected_result_index = None
             self.table.load_results([], [])
             self.details_panel.refresh(None)
+            self.preview_result_button.setEnabled(False)
             return
 
         self._filtered_indices = [
@@ -224,21 +235,25 @@ class ReportPage(QWidget):
         else:
             self._selected_result_index = None
             self.details_panel.refresh(None)
+        self.preview_result_button.setEnabled(self._current_result_preview_target() is not None)
 
     def _handle_table_selection(self, result_index: int) -> None:
         """Show details for the selected report result."""
         if self.state.current_report is None:
             self._selected_result_index = None
             self.details_panel.refresh(None)
+            self.preview_result_button.setEnabled(False)
             return
 
         if 0 <= result_index < len(self.state.current_report.results):
             self._selected_result_index = result_index
             self.details_panel.refresh(self.state.current_report.results[result_index])
+            self.preview_result_button.setEnabled(self._current_result_preview_target() is not None)
             return
 
         self._selected_result_index = None
         self.details_panel.refresh(None)
+        self.preview_result_button.setEnabled(False)
 
     def _apply_manual_review(self, payload: object) -> None:
         """Apply a teacher-driven manual review decision to the selected result."""
@@ -520,3 +535,42 @@ class ReportPage(QWidget):
 
         self.state.set_current_student_workbook(workbook_path)
         self.on_preview_workbook_requested(workbook_path)
+
+    def _current_result_preview_target(self):
+        """Return the workbook-preview target for the selected report row."""
+        report = self.state.current_report
+        if report is None or self._selected_result_index is None:
+            return None
+        if not (0 <= self._selected_result_index < len(report.results)):
+            return None
+        try:
+            return build_report_preview_target(report, report.results[self._selected_result_index])
+        except Exception:
+            return None
+
+    def _preview_selected_report_result(self) -> None:
+        """Open the workbook preview positioning it on the selected report cell or range."""
+        target = self._current_result_preview_target()
+        if target is None:
+            QMessageBox.information(
+                self,
+                tr("workbook_preview.invalid_reference_title"),
+                tr("workbook_preview.no_report_row_selected"),
+            )
+            return
+
+        if self.on_preview_workbook_requested is None:
+            QMessageBox.information(
+                self,
+                tr("workbook_preview.student_unavailable_title"),
+                tr("workbook_preview.report_student_unavailable"),
+            )
+            return
+
+        self.state.set_current_student_workbook(target.workbook_path)
+        self.on_preview_workbook_requested(target.workbook_path, target.sheet_name, target.reference)
+
+    def _open_selected_report_result_from_table(self, result_index: int) -> None:
+        """Handle report-row double click using the same preview navigation as the toolbar."""
+        self._handle_table_selection(result_index)
+        self._preview_selected_report_result()

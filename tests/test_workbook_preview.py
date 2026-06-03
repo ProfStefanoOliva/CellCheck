@@ -2,6 +2,7 @@ from pathlib import Path
 
 from types import SimpleNamespace
 
+import pytest
 from openpyxl import Workbook, load_workbook
 
 from cellcheck.ui.i18n import TRANSLATIONS, available_languages, current_language, set_current_language
@@ -9,6 +10,11 @@ from cellcheck.ui.workbook_preview import (
     WorkbookPreviewDataSource,
     WorkbookPreviewWindow,
     workbook_basename,
+)
+from cellcheck.ui.workbook_preview_navigation import (
+    first_cell_from_reference,
+    parse_preview_reference,
+    resolve_target_sheet_name,
 )
 from cellcheck.ui.workbook_preview_highlights import (
     build_highlighted_cells_map,
@@ -50,6 +56,54 @@ def test_expand_excel_reference_parses_column_beyond_z() -> None:
 
 def test_expand_excel_reference_parses_range() -> None:
     assert expand_excel_reference("A1:B2") == {"A1", "A2", "B1", "B2"}
+
+
+def test_parse_preview_reference_parses_single_cell_b7() -> None:
+    target = parse_preview_reference("B7")
+    assert target.reference == "B7"
+    assert target.first_cell == "B7"
+    assert target.first_row == 7
+    assert target.first_column == 2
+    assert target.is_range is False
+
+
+def test_parse_preview_reference_parses_column_beyond_z() -> None:
+    target = parse_preview_reference("AA12")
+    assert target.reference == "AA12"
+    assert target.first_cell == "AA12"
+    assert target.first_row == 12
+    assert target.first_column == 27
+
+
+def test_parse_preview_reference_parses_range_h7_k14() -> None:
+    target = parse_preview_reference("H7:K14")
+    assert target.reference == "H7:K14"
+    assert target.first_cell == "H7"
+    assert target.first_row == 7
+    assert target.first_column == 8
+    assert target.is_range is True
+
+
+def test_first_cell_from_reference_returns_range_anchor() -> None:
+    assert first_cell_from_reference("H7:K14") == "H7"
+
+
+def test_parse_preview_reference_rejects_invalid_cell() -> None:
+    with pytest.raises(Exception):
+        parse_preview_reference("INVALID!")
+
+
+def test_parse_preview_reference_rejects_invalid_range() -> None:
+    with pytest.raises(Exception):
+        parse_preview_reference("A1::B2")
+
+
+def test_resolve_target_sheet_name_returns_requested_sheet() -> None:
+    assert resolve_target_sheet_name(["Input", "Summary"], "Summary", "Input") == "Summary"
+
+
+def test_resolve_target_sheet_name_returns_none_for_missing_sheet() -> None:
+    assert resolve_target_sheet_name(["Input", "Summary"], "Missing", "Input") is None
 
 
 def test_workbook_basename_extracts_filename_from_windows_path() -> None:
@@ -144,7 +198,47 @@ def test_preview_data_source_marks_highlighted_cells(tmp_path: Path) -> None:
         highlighted_cell = source.get_cell_data("Input", 2, 2)
         normal_cell = source.get_cell_data("Input", 1, 1)
         assert highlighted_cell.is_highlighted is True
+        assert highlighted_cell.is_report_target is False
+        assert highlighted_cell.visual_role == "profile_highlight"
         assert normal_cell.is_highlighted is False
+        assert normal_cell.visual_role == "default"
+    finally:
+        source.close()
+
+
+def test_preview_data_source_marks_report_target_cells_distinctly(tmp_path: Path) -> None:
+    path = create_preview_workbook(tmp_path / "preview.xlsx")
+    source = WorkbookPreviewDataSource(path, highlighted_cells_by_sheet={"Input": {"B2"}})
+    try:
+        source.set_report_target("Input", "C3", "C3")
+        target_cell = source.get_cell_data("Input", 3, 3)
+        assert target_cell.is_highlighted is False
+        assert target_cell.is_report_target is True
+        assert target_cell.visual_role == "report_target"
+    finally:
+        source.close()
+
+
+def test_report_target_precedes_profile_highlight_when_both_apply(tmp_path: Path) -> None:
+    path = create_preview_workbook(tmp_path / "preview.xlsx")
+    source = WorkbookPreviewDataSource(path, highlighted_cells_by_sheet={"Input": {"B2"}})
+    try:
+        source.set_report_target("Input", "B2", "B2")
+        target_cell = source.get_cell_data("Input", 2, 2)
+        assert target_cell.is_highlighted is True
+        assert target_cell.is_report_target is True
+        assert target_cell.visual_role == "report_target"
+    finally:
+        source.close()
+
+
+def test_report_target_persists_after_navigation_state_update(tmp_path: Path) -> None:
+    path = create_preview_workbook(tmp_path / "preview.xlsx")
+    source = WorkbookPreviewDataSource(path)
+    try:
+        source.set_report_target("Input", "H7:K14", "H7")
+        assert source.has_report_target() is True
+        assert "H7" in source.report_target_cells_by_sheet["Input"]
     finally:
         source.close()
 
@@ -182,8 +276,18 @@ def test_preview_translation_keys_exist_for_all_languages() -> None:
         "workbook_preview.student_unavailable_title",
         "workbook_preview.no_student_selected",
         "workbook_preview.report_student_unavailable",
+        "workbook_preview.open_cell_in_preview",
+        "workbook_preview.no_report_row_selected",
+        "workbook_preview.sheet_not_found_title",
+        "workbook_preview.sheet_not_found_message",
+        "workbook_preview.invalid_reference_title",
+        "workbook_preview.invalid_cell_reference",
+        "workbook_preview.invalid_range_title",
+        "workbook_preview.invalid_range_reference",
         "workbook_preview.highlighted_cells",
         "workbook_preview.highlighted_cells_legend",
+        "workbook_preview.report_target_cell_legend",
+        "workbook_preview.report_target_range_legend",
         "workbook_preview.no_profile_cells",
         "workbook_preview.sheet_too_large",
     ]
