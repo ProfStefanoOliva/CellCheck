@@ -59,6 +59,7 @@ class CorrectionPage(QWidget):
         on_show_report_requested=None,
         on_save_profile_requested=None,
         on_save_report_requested=None,
+        on_preview_workbook_requested=None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -67,10 +68,12 @@ class CorrectionPage(QWidget):
         self.on_show_report_requested = on_show_report_requested
         self.on_save_profile_requested = on_save_profile_requested
         self.on_save_report_requested = on_save_report_requested
+        self.on_preview_workbook_requested = on_preview_workbook_requested
         self.engine = CorrectionEngine()
         self.importer = ProfileImporter()
         self.active_profile: CorrectionProfile | None = self.state.current_profile
         self._browse_buttons: list[QPushButton] = []
+        self._preview_buttons: list[tuple[QPushButton, str]] = []
         self._color_buttons: list[QPushButton] = []
         self._student_display_text = ""
 
@@ -184,6 +187,7 @@ class CorrectionPage(QWidget):
                 self.empty_workbook_edit,
                 self._choose_empty_workbook,
                 "Seleziona modello vuoto",
+                lambda: self._preview_workbook_path(self.empty_workbook_edit.text()),
             ),
             1,
             1,
@@ -196,6 +200,7 @@ class CorrectionPage(QWidget):
                 self.solution_workbook_edit,
                 self._choose_solution_workbook,
                 "Seleziona modello risolto",
+                lambda: self._preview_workbook_path(self.solution_workbook_edit.text()),
             ),
             2,
             1,
@@ -291,6 +296,8 @@ class CorrectionPage(QWidget):
                 self.student_workbook_edit,
                 self._choose_student_workbook,
                 "Seleziona elaborato studente",
+                self._preview_current_student_workbook,
+                "workbook_preview.student_action",
             ),
             1,
             1,
@@ -375,6 +382,7 @@ class CorrectionPage(QWidget):
             return
         merged_paths = [*self.state.student_workbook_paths, *paths]
         self.state.set_student_workbook_paths(merged_paths)
+        self.state.set_current_student_workbook(paths[0])
         self._set_student_display_text(self._student_workbook_display_text())
         self._refresh_workflow_status()
         self._refresh_report_summary()
@@ -665,6 +673,8 @@ class CorrectionPage(QWidget):
         line_edit: QLineEdit,
         handler,
         button_label: str,
+        preview_handler=None,
+        preview_label_key: str = "workbook_preview.action",
     ) -> QHBoxLayout:
         """Create a line edit and browse button pair."""
         layout = QHBoxLayout()
@@ -682,6 +692,15 @@ class CorrectionPage(QWidget):
         button.clicked.connect(handler)
         layout.addWidget(button)
         self._browse_buttons.append(button)
+
+        if preview_handler is not None:
+            preview_button = QPushButton(tr(preview_label_key))
+            preview_button.setMinimumHeight(38)
+            preview_button.setMinimumWidth(140)
+            preview_button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+            preview_button.clicked.connect(preview_handler)
+            layout.addWidget(preview_button)
+            self._preview_buttons.append((preview_button, preview_label_key))
         return layout
 
     def _build_color_selector(self, line_edit: QLineEdit) -> QHBoxLayout:
@@ -731,6 +750,8 @@ class CorrectionPage(QWidget):
             self._browse_buttons[0].setToolTip(tr("correction.dialog.select_empty"))
             self._browse_buttons[1].setToolTip(tr("correction.dialog.select_solution"))
             self._browse_buttons[2].setToolTip(tr("correction.dialog.select_student"))
+        for button, label_key in self._preview_buttons:
+            button.setText(tr(label_key))
         for button in self._color_buttons:
             button.setText(tr("common.choose"))
         self._refresh_action_buttons()
@@ -905,6 +926,38 @@ class CorrectionPage(QWidget):
         self.show_report_button.setToolTip(tr("correction.tooltip.show_report"))
         self.save_report_button.setEnabled(True)
         self.save_report_button.setToolTip(tr("correction.tooltip.save_report"))
+        if len(self._preview_buttons) >= 2:
+            self._preview_buttons[0][0].setEnabled(bool(self.empty_workbook_edit.text().strip()))
+            self._preview_buttons[1][0].setEnabled(bool(self.solution_workbook_edit.text().strip()))
+        if len(self._preview_buttons) >= 3:
+            self._preview_buttons[2][0].setEnabled(bool(self._current_student_preview_path()))
+
+    def _preview_workbook_path(self, workbook_path: str) -> None:
+        """Delegate workbook preview opening to the main window callback when available."""
+        if self.on_preview_workbook_requested is None:
+            QMessageBox.information(
+                self,
+                tr("workbook_preview.file_unavailable_title"),
+                tr("workbook_preview.file_unavailable_message"),
+            )
+            return
+        self.on_preview_workbook_requested(workbook_path)
+
+    def _preview_current_student_workbook(self) -> None:
+        """Open the preview for the current student workbook already loaded in session."""
+        student_path = self._current_student_preview_path()
+        if not student_path:
+            QMessageBox.information(
+                self,
+                tr("workbook_preview.student_unavailable_title"),
+                tr("workbook_preview.no_student_selected"),
+            )
+            return
+        self._preview_workbook_path(student_path)
+
+    def _current_student_preview_path(self) -> str | None:
+        """Return the student workbook path that should be previewed from this page."""
+        return self.state.current_student_workbook_path()
 
     def _validation_message_for_profile_generation(self) -> str | None:
         """Return a blocking message when profile generation cannot start."""

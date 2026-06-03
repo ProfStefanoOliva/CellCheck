@@ -159,6 +159,39 @@ class AppState:
         self.student_workbook_paths = normalized
         self.student_workbook_path = normalized[0] if normalized else None
 
+    def set_current_student_workbook(self, student_path: str | None) -> None:
+        """Remember the most relevant student workbook for sidebar or page actions."""
+        if not student_path:
+            self.student_workbook_path = None
+            return
+
+        target_key = self.student_storage_key(student_path)
+        for existing_path in self.student_workbook_paths:
+            if self.student_storage_key(existing_path) == target_key:
+                self.student_workbook_path = existing_path
+                return
+
+        self.student_workbook_path = student_path
+
+    def current_student_workbook_path(self) -> str | None:
+        """Return the best current student workbook path for UI actions."""
+        if self.student_workbook_path:
+            target_key = self.student_storage_key(self.student_workbook_path)
+            for existing_path in self.student_workbook_paths:
+                if self.student_storage_key(existing_path) == target_key:
+                    return existing_path
+        if self.selected_report_student_file:
+            target_key = self.student_storage_key(self.selected_report_student_file)
+            for existing_path in self.student_workbook_paths:
+                if self.student_storage_key(existing_path) == target_key:
+                    return existing_path
+        if self.current_report is not None and self.current_report.student_file:
+            target_key = self.student_storage_key(self.current_report.student_file)
+            for existing_path in self.student_workbook_paths:
+                if self.student_storage_key(existing_path) == target_key:
+                    return existing_path
+        return self.student_workbook_paths[0] if self.student_workbook_paths else None
+
     def display_student_workbook_names(self) -> list[str]:
         """Return only file names for the selected student workbooks."""
         return [self.student_file_name(path) for path in self.student_workbook_paths]

@@ -15,6 +15,7 @@ from .branding import (
 __all__ = [
     "AppState",
     "MainWindow",
+    "WorkbookPreviewWindow",
     "get_app_icon_path",
     "get_branding_dir",
     "get_governance_file_path",
@@ -30,4 +31,8 @@ def __getattr__(name: str):
         from .main_window import MainWindow
 
         return MainWindow
+    if name == "WorkbookPreviewWindow":
+        from .workbook_preview import WorkbookPreviewWindow
+
+        return WorkbookPreviewWindow
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
