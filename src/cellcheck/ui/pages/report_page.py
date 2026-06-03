@@ -33,13 +33,19 @@ from cellcheck.ui.widgets import (
 class ReportPage(QWidget):
     """Displays, filters and annotates the current report."""
 
-    def __init__(self, state: AppState, parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        state: AppState,
+        on_preview_workbook_requested=None,
+        parent: QWidget | None = None,
+    ) -> None:
         super().__init__(parent)
         self.state = state
         self.on_load_report_requested = None
         self.on_save_report_requested = None
         self.on_save_all_reports_requested = None
         self.on_state_changed = None
+        self.on_preview_workbook_requested = on_preview_workbook_requested
         self._filtered_indices: list[int] = []
         self._filtered_results: list[CellCorrectionResult] = []
         self._selected_result_index: int | None = None
@@ -91,6 +97,11 @@ class ReportPage(QWidget):
         self.export_report_button.clicked.connect(self._export_report_txt)
         command_row.addWidget(self.export_report_button)
 
+        self.preview_student_button = QPushButton()
+        self.preview_student_button.setMinimumHeight(38)
+        self.preview_student_button.clicked.connect(self._preview_current_report_workbook)
+        command_row.addWidget(self.preview_student_button)
+
         self.save_all_reports_button = QPushButton()
         self.save_all_reports_button.setMinimumHeight(38)
         self.save_all_reports_button.clicked.connect(self._save_all_reports)
@@ -132,6 +143,7 @@ class ReportPage(QWidget):
         self.load_report_button.setText(tr("report.load"))
         self.save_report_button.setText(tr("report.save"))
         self.export_report_button.setText(tr("report.export"))
+        self.preview_student_button.setText(tr("workbook_preview.student_action"))
         self.save_all_reports_button.setText(tr("report.save_all"))
         self.summary_widget.retranslate_ui()
         self.filter_bar.retranslate_ui()
@@ -143,6 +155,8 @@ class ReportPage(QWidget):
         """Refresh summary and table from the current report."""
         self._refresh_report_selector()
         report = self.state.current_report
+        if report is not None and report.student_file:
+            self.state.set_current_student_workbook(report.student_file)
         report_name = self.state.current_report_display_name()
         if report_name:
             self.subtitle_label.setText(f"{tr('report.subtitle')}\n{report_name}")
@@ -159,6 +173,7 @@ class ReportPage(QWidget):
             )
         else:
             self.persistence_status_label.setText(tr("report.persistence.in_memory"))
+        self.preview_student_button.setEnabled(bool(self._current_report_workbook_path()))
         self._apply_filters()
 
     def reset_view_state(self) -> None:
@@ -169,6 +184,7 @@ class ReportPage(QWidget):
         self.report_selector_combo.blockSignals(True)
         self.report_selector_combo.clear()
         self.report_selector_combo.blockSignals(False)
+        self.preview_student_button.setEnabled(False)
         self.filter_bar.clear_filters(emit_signal=False)
         self.table.load_results([], [])
         self.details_panel.refresh(None)
@@ -470,7 +486,37 @@ class ReportPage(QWidget):
             return
         student_file = self.report_selector_combo.itemData(index)
         if isinstance(student_file, str) and self.state.select_report_by_student_file(student_file):
+            self.state.set_current_student_workbook(student_file)
             if self.on_state_changed is not None:
                 self.on_state_changed()
             else:
                 self.refresh_from_state()
+
+    def _current_report_workbook_path(self) -> str | None:
+        """Return the workbook path associated with the currently selected report."""
+        report = self.state.current_report
+        if report is None or not report.student_file:
+            return None
+        return report.student_file
+
+    def _preview_current_report_workbook(self) -> None:
+        """Open the workbook preview for the report currently selected in the combo."""
+        workbook_path = self._current_report_workbook_path()
+        if not workbook_path:
+            QMessageBox.information(
+                self,
+                tr("workbook_preview.student_unavailable_title"),
+                tr("workbook_preview.report_student_unavailable"),
+            )
+            return
+
+        if self.on_preview_workbook_requested is None:
+            QMessageBox.information(
+                self,
+                tr("workbook_preview.student_unavailable_title"),
+                tr("workbook_preview.report_student_unavailable"),
+            )
+            return
+
+        self.state.set_current_student_workbook(workbook_path)
+        self.on_preview_workbook_requested(workbook_path)

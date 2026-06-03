@@ -116,7 +116,10 @@ def test_context_menu_for_pending_student_offers_only_correct() -> None:
     student_child = navigator.topLevelItem(4).child(0)
     actions = navigator._context_action_specs(student_child)
 
-    assert [key for key, _enabled, _callback in actions] == ["navigator.correct"]
+    assert [key for key, _enabled, _callback in actions] == [
+        "navigator.preview_workbook",
+        "navigator.correct",
+    ]
 
 
 def test_context_menu_for_corrected_student_offers_only_view_report() -> None:
@@ -130,7 +133,27 @@ def test_context_menu_for_corrected_student_offers_only_view_report() -> None:
     student_child = navigator.topLevelItem(4).child(0)
     actions = navigator._context_action_specs(student_child)
 
-    assert [key for key, _enabled, _callback in actions] == ["navigator.view_report"]
+    assert [key for key, _enabled, _callback in actions] == [
+        "navigator.preview_workbook",
+        "navigator.view_report",
+    ]
+
+
+def test_context_menu_preview_action_emits_student_path_for_pending_student() -> None:
+    _app()
+    navigator = ProjectNavigator()
+    state = AppState()
+    student_path = "C:/classi/Rossi/Studente_01.xlsx"
+    state.set_student_workbook_paths([student_path])
+    navigator.refresh(state)
+    calls: list[str] = []
+    navigator.preview_workbook_requested.connect(lambda path: calls.append(path))
+
+    student_child = navigator.topLevelItem(4).child(0)
+    actions = navigator._context_action_specs(student_child)
+    actions[0][2]()
+
+    assert calls == [student_path]
 
 
 def test_context_menu_for_student_root_offers_correct_all() -> None:
@@ -150,6 +173,31 @@ def test_context_menu_for_student_root_offers_correct_all() -> None:
 
     assert [key for key, _enabled, _callback in actions] == ["navigator.correct_all"]
     assert actions[0][1] is True
+
+
+def test_context_menu_for_empty_workbook_offers_preview_when_path_exists() -> None:
+    _app()
+    navigator = ProjectNavigator()
+    state = AppState(empty_workbook_path="C:/classi/blank.xlsx")
+    navigator.refresh(state)
+
+    empty_root = navigator.topLevelItem(0)
+    actions = navigator._context_action_specs(empty_root)
+
+    assert [key for key, _enabled, _callback in actions] == ["navigator.preview_workbook"]
+    assert actions[0][1] is True
+
+
+def test_context_menu_for_empty_workbook_disables_preview_when_path_is_missing() -> None:
+    _app()
+    navigator = ProjectNavigator()
+    navigator.refresh(AppState())
+
+    empty_root = navigator.topLevelItem(0)
+    actions = navigator._context_action_specs(empty_root)
+
+    assert [key for key, _enabled, _callback in actions] == ["navigator.preview_workbook"]
+    assert actions[0][1] is False
 
 
 def test_context_menu_for_student_root_disables_correct_all_when_nothing_is_pending() -> None:
@@ -223,6 +271,22 @@ def test_student_row_with_report_emits_report_navigation() -> None:
     navigator._handle_item_activation(student_child, 0)
 
     assert calls == ["C:/classi/Rossi/Studente_01.xlsx"]
+
+
+def test_student_row_activation_remembers_current_student_file() -> None:
+    _app()
+    navigator = ProjectNavigator()
+    state = AppState()
+    student_path = "C:/classi/Rossi/Studente_01.xlsx"
+    state.set_student_workbook_paths([student_path])
+    navigator.refresh(state)
+    calls: list[str] = []
+    navigator.student_workbook_requested.connect(lambda path: calls.append(path))
+
+    student_child = navigator.topLevelItem(4).child(0)
+    navigator._handle_item_activation(student_child, 0)
+
+    assert calls == [student_path]
 
 
 def test_report_section_child_emits_report_navigation() -> None:

@@ -34,6 +34,8 @@ from cellcheck.ui.pages import (
     ReportPage,
     SettingsPage,
 )
+from cellcheck.ui.workbook_preview import WorkbookPreviewWindow
+from cellcheck.ui.workbook_preview_highlights import build_highlighted_cells_map
 from cellcheck.ui.widgets import ProjectNavigator, RibbonBar
 
 
@@ -63,6 +65,7 @@ class MainWindow(QMainWindow):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.state = AppState()
+        self._workbook_preview_windows: dict[str, WorkbookPreviewWindow] = {}
         self.setWindowTitle("CellCheck")
         icon_path = get_app_icon_path()
         if icon_path is not None:
@@ -86,8 +89,9 @@ class MainWindow(QMainWindow):
             lambda: self.stack.setCurrentWidget(self.report_page),
             self._save_current_profile,
             self._save_current_report,
+            self._open_workbook_preview,
         )
-        self.report_page = ReportPage(self.state)
+        self.report_page = ReportPage(self.state, self._open_workbook_preview)
         self.report_page.on_load_report_requested = self._load_report_document
         self.report_page.on_save_report_requested = self._save_current_report
         self.report_page.on_save_all_reports_requested = self._save_all_reports
@@ -129,8 +133,10 @@ class MainWindow(QMainWindow):
         self.navigator.guided_correction_requested.connect(self._show_guided_correction_page)
         self.navigator.student_files_requested.connect(self._show_student_files_page)
         self.navigator.student_report_requested.connect(self._show_report_for_student)
+        self.navigator.student_workbook_requested.connect(self._remember_current_student_workbook)
         self.navigator.correct_student_requested.connect(self._correct_single_student_from_sidebar)
         self.navigator.correct_all_students_requested.connect(self._correct_all_students_from_sidebar)
+        self.navigator.preview_workbook_requested.connect(self._open_workbook_preview)
         self.navigator.help_requested.connect(lambda: self._show_help_section(None))
         self.navigator.help_section_requested.connect(self._show_help_section)
         self.ribbon.profile_import_requested.connect(
@@ -167,12 +173,14 @@ class MainWindow(QMainWindow):
 
     def _show_report_for_student(self, student_file: str) -> None:
         """Navigate to the report page selecting the report for the given student."""
+        self._remember_current_student_workbook(student_file)
         if self.state.select_report_by_student_file(student_file):
             self._refresh_state_views()
             self.stack.setCurrentWidget(self.report_page)
 
     def _correct_single_student_from_sidebar(self, student_file: str) -> None:
         """Run correction only for the selected student workbook from the sidebar."""
+        self._remember_current_student_workbook(student_file)
         self.stack.setCurrentWidget(self.correction_page)
         self.correction_page.correct_student_workbook(student_file)
 
@@ -180,6 +188,10 @@ class MainWindow(QMainWindow):
         """Run correction for all pending student workbooks from the sidebar."""
         self.stack.setCurrentWidget(self.correction_page)
         self.correction_page.correct_pending_students()
+
+    def _remember_current_student_workbook(self, student_file: str) -> None:
+        """Keep track of the student workbook most recently targeted by the user."""
+        self.state.set_current_student_workbook(student_file)
 
     def retranslate_ui(self) -> None:
         """Refresh the main window and all translatable child widgets."""
@@ -192,6 +204,8 @@ class MainWindow(QMainWindow):
         self.report_page.retranslate_ui()
         self.help_page.retranslate_ui()
         self.settings_page.retranslate_ui()
+        for preview_window in list(self._workbook_preview_windows.values()):
+            preview_window.retranslate_ui()
 
     def _refresh_state_views(self) -> None:
         """Refresh all state-aware widgets after a core action."""
@@ -252,9 +266,45 @@ class MainWindow(QMainWindow):
                 return
 
         self.state.reset_workspace()
+        self._close_all_workbook_previews()
         self.report_page.reset_view_state()
         self._refresh_state_views()
         self.stack.setCurrentWidget(self.dashboard_page)
+
+    def _open_workbook_preview(self, workbook_path: str) -> None:
+        """Open or raise a non-modal workbook preview window for the given file."""
+        if not workbook_path:
+            WorkbookPreviewWindow.open_or_warn(workbook_path, self)
+            return
+
+        storage_key = self.state.normalize_session_path(workbook_path)
+        existing_window = self._workbook_preview_windows.get(storage_key)
+        if existing_window is not None:
+            existing_window.raise_()
+            existing_window.activateWindow()
+            return
+
+        preview_window = WorkbookPreviewWindow.open_or_warn(
+            workbook_path,
+            highlighted_cells_by_sheet=build_highlighted_cells_map(self.state.current_profile),
+            parent=self,
+        )
+        if preview_window is None:
+            return
+
+        self._workbook_preview_windows[storage_key] = preview_window
+        preview_window.destroyed.connect(
+            lambda _obj=None, key=storage_key: self._workbook_preview_windows.pop(key, None)
+        )
+        preview_window.show()
+        preview_window.raise_()
+        preview_window.activateWindow()
+
+    def _close_all_workbook_previews(self) -> None:
+        """Close every open workbook preview managed by the current main window."""
+        for preview_window in list(self._workbook_preview_windows.values()):
+            preview_window.close()
+        self._workbook_preview_windows.clear()
 
     def _open_profile_document(self) -> None:
         """Open only a correction profile into the GUI state."""

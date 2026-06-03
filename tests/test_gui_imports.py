@@ -5,7 +5,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 from PySide6.QtWidgets import QApplication, QListWidget
 
 from cellcheck.models import ResultStatus
-from cellcheck.ui import AppState, MainWindow
+from cellcheck.ui import AppState, MainWindow, WorkbookPreviewWindow
 from cellcheck.ui.color_picker import choose_color_for_line_edit
 from cellcheck.ui.dialogs import EvaluationTableDialog, LanguageDialog, ProfileRuleDialog
 from cellcheck.ui.evaluation_table import build_evaluation_table_text
@@ -42,6 +42,7 @@ def test_ui_package_imports() -> None:
     assert build_evaluation_table_text is not None
     assert install_qt_italian_translations is not None
     assert LanguageDialog is not None
+    assert WorkbookPreviewWindow is not None
     assert available_languages is not None
     assert get_help_sections is not None
     assert tr is not None
@@ -64,8 +65,10 @@ def test_ribbon_bar_exposes_language_action() -> None:
     assert hasattr(ProjectNavigator, "guided_correction_requested")
     assert hasattr(ProjectNavigator, "student_files_requested")
     assert hasattr(ProjectNavigator, "student_report_requested")
+    assert hasattr(ProjectNavigator, "student_workbook_requested")
     assert hasattr(ProjectNavigator, "correct_student_requested")
     assert hasattr(ProjectNavigator, "correct_all_students_requested")
+    assert hasattr(ProjectNavigator, "preview_workbook_requested")
     assert hasattr(ProjectNavigator, "help_requested")
     assert hasattr(ProjectNavigator, "help_section_requested")
 
@@ -165,6 +168,7 @@ def test_report_page_renders_localized_labels_in_english_and_chinese() -> None:
         assert page.title_label.text() == "Report"
         assert "CorrectionReport" in page.subtitle_label.text()
         assert page.report_selector_label.text() == "Select report"
+        assert page.preview_student_button.text() == "Student preview"
         assert page.filter_bar.status_label.text() == "Status"
         assert page.filter_bar.search_label.text() == "Search"
         assert page.details_panel.title_label.text() == "Result details"
@@ -175,6 +179,7 @@ def test_report_page_renders_localized_labels_in_english_and_chinese() -> None:
         assert page.title_label.text() == "报告"
         assert "查看当前 CorrectionReport" in page.subtitle_label.text()
         assert page.report_selector_label.text() == "选择报告"
+        assert page.preview_student_button.text() == "学生文件预览"
         assert page.filter_bar.status_label.text() == "状态"
         assert page.filter_bar.search_label.text() == "搜索"
         assert page.details_panel.title_label.text() == "结果详情"
@@ -187,6 +192,7 @@ def test_report_page_renders_localized_labels_in_english_and_chinese() -> None:
         assert page.title_label.text() == "Report"
         assert "Esplora il CorrectionReport corrente" in page.subtitle_label.text()
         assert page.report_selector_label.text() == "Seleziona report"
+        assert page.preview_student_button.text() == "Anteprima elaborato"
         assert page.filter_bar.status_label.text() == "Stato"
         assert page.details_panel.title_label.text() == "Dettagli risultato"
     finally:
@@ -245,11 +251,13 @@ def test_correction_page_retranslates_steps_and_status_blocks() -> None:
         page = CorrectionPage(state, lambda: None)
         assert page.title_label.text() == "Correzione guidata"
         assert page.student_step_title.text() == "Step 4: Elaborato studente"
+        assert any(button.text() == "Anteprima elaborato" for button, _key in page._preview_buttons)
 
         set_current_language("en", persist=False)
         page.retranslate_ui()
         assert page.title_label.text() == "Guided correction"
         assert page.student_step_title.text() == "Step 4: Student workbook"
+        assert any(button.text() == "Student preview" for button, _key in page._preview_buttons)
         assert "Profile:" in page.workflow_status_label.text()
         assert "Status:" in page.workbook_status_label.text()
         assert "Nuovo profilo" not in page.summary_text.toPlainText()
@@ -258,9 +266,30 @@ def test_correction_page_retranslates_steps_and_status_blocks() -> None:
         page.retranslate_ui()
         assert page.title_label.text() == "引导式批改"
         assert page.student_step_title.text() == "步骤 4：学生文件"
+        assert any(button.text() == "学生文件预览" for button, _key in page._preview_buttons)
         assert "配置：" in page.workflow_status_label.text()
     finally:
         set_current_language(previous_language, persist=False)
+
+
+def test_correction_page_student_preview_button_is_disabled_without_student_files() -> None:
+    app = QApplication.instance() or QApplication([])
+    _ = app
+    page = CorrectionPage(AppState(), lambda: None)
+
+    assert len(page._preview_buttons) >= 3
+    assert page._preview_buttons[2][0].isEnabled() is False
+
+
+def test_correction_page_student_preview_button_is_enabled_with_student_file() -> None:
+    app = QApplication.instance() or QApplication([])
+    _ = app
+    state = AppState()
+    state.set_student_workbook_paths(["C:/classi/Rossi/Studente_01.xlsx"])
+    page = CorrectionPage(state, lambda: None)
+
+    assert len(page._preview_buttons) >= 3
+    assert page._preview_buttons[2][0].isEnabled() is True
 
 
 def test_profile_rule_dialog_uses_current_language_for_visible_labels() -> None:

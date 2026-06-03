@@ -25,14 +25,18 @@ class ProjectNavigator(QTreeWidget):
     STUDENT_PATH_ROLE = Qt.UserRole + 1
     REPORT_KEY_ROLE = Qt.UserRole + 2
     HELP_SECTION_ROLE = Qt.UserRole + 3
+    PREVIEW_PATH_ROLE = Qt.UserRole + 4
+    PREVIEW_KIND_ROLE = Qt.UserRole + 5
 
     guided_correction_requested = Signal()
     student_files_requested = Signal()
     help_requested = Signal()
     help_section_requested = Signal(str)
     student_report_requested = Signal(str)
+    student_workbook_requested = Signal(str)
     correct_student_requested = Signal(str)
     correct_all_students_requested = Signal()
+    preview_workbook_requested = Signal(str)
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -96,10 +100,12 @@ class ProjectNavigator(QTreeWidget):
             item = QTreeWidgetItem([title])
             if destination is not None:
                 item.setData(0, Qt.UserRole, destination)
+            self._assign_preview_path(item, title, state)
             if detail is not None:
                 child = QTreeWidgetItem([detail])
                 if destination is not None:
                     child.setData(0, Qt.UserRole, destination)
+                self._assign_preview_path(child, title, state)
                 item.addChild(child)
             if destination == self.STUDENT_FILES_DESTINATION:
                 self._populate_student_items(item, state)
@@ -120,6 +126,7 @@ class ProjectNavigator(QTreeWidget):
         student_path = item.data(0, self.STUDENT_PATH_ROLE)
         report_key = item.data(0, self.REPORT_KEY_ROLE)
         help_section_id = item.data(0, self.HELP_SECTION_ROLE)
+        preview_path = item.data(0, self.PREVIEW_PATH_ROLE)
 
         if report_key:
             self.student_report_requested.emit(str(report_key))
@@ -127,7 +134,11 @@ class ProjectNavigator(QTreeWidget):
         if help_section_id:
             self.help_section_requested.emit(str(help_section_id))
             return
+        if preview_path and not student_path and destination is None:
+            self.preview_workbook_requested.emit(str(preview_path))
+            return
         if student_path:
+            self.student_workbook_requested.emit(str(student_path))
             if self._last_state.report_for_student(str(student_path)) is not None:
                 self.student_report_requested.emit(str(student_path))
             else:
@@ -179,6 +190,8 @@ class ProjectNavigator(QTreeWidget):
         """Return the minimal context-menu actions available for one navigator item."""
         destination = item.data(0, Qt.UserRole)
         student_path = item.data(0, self.STUDENT_PATH_ROLE)
+        preview_path = item.data(0, self.PREVIEW_PATH_ROLE)
+        preview_kind = item.data(0, self.PREVIEW_KIND_ROLE)
 
         if destination == self.STUDENT_FILES_DESTINATION and not student_path:
             return [
@@ -193,6 +206,11 @@ class ProjectNavigator(QTreeWidget):
             if self._last_state.student_requires_correction(student_path):
                 return [
                     (
+                        "navigator.preview_workbook",
+                        True,
+                        lambda checked=False, path=student_path: self.preview_workbook_requested.emit(path),
+                    ),
+                    (
                         "navigator.correct",
                         True,
                         lambda checked=False, path=student_path: self.correct_student_requested.emit(path),
@@ -200,9 +218,30 @@ class ProjectNavigator(QTreeWidget):
                 ]
             return [
                 (
+                    "navigator.preview_workbook",
+                    True,
+                    lambda checked=False, path=student_path: self.preview_workbook_requested.emit(path),
+                ),
+                (
                     "navigator.view_report",
                     True,
                     lambda checked=False, path=student_path: self.student_report_requested.emit(path),
+                )
+            ]
+        if preview_path:
+            return [
+                (
+                    "navigator.preview_workbook",
+                    True,
+                    lambda checked=False, path=str(preview_path): self.preview_workbook_requested.emit(path),
+                )
+            ]
+        if preview_kind:
+            return [
+                (
+                    "navigator.preview_workbook",
+                    False,
+                    lambda checked=False: None,
                 )
             ]
         return []
@@ -219,6 +258,7 @@ class ProjectNavigator(QTreeWidget):
             child = QTreeWidgetItem([self._student_display_text(state, student_path)])
             child.setData(0, Qt.UserRole, self.STUDENT_FILES_DESTINATION)
             child.setData(0, self.STUDENT_PATH_ROLE, student_path)
+            child.setData(0, self.PREVIEW_PATH_ROLE, student_path)
             child.setToolTip(0, student_path)
             root_item.addChild(child)
 
@@ -271,3 +311,15 @@ class ProjectNavigator(QTreeWidget):
         if profile_name:
             return tr("navigator.profile_reference", name=profile_name)
         return tr("navigator.not_selected")
+
+    @classmethod
+    def _assign_preview_path(cls, item: QTreeWidgetItem, title: str, state: AppState) -> None:
+        """Attach preview metadata to the workbook items when a real path is available."""
+        if title == tr("navigator.empty_workbook"):
+            item.setData(0, cls.PREVIEW_KIND_ROLE, "empty")
+            if state.empty_workbook_path:
+                item.setData(0, cls.PREVIEW_PATH_ROLE, state.empty_workbook_path)
+        elif title == tr("navigator.solution_workbook"):
+            item.setData(0, cls.PREVIEW_KIND_ROLE, "solution")
+            if state.solution_workbook_path:
+                item.setData(0, cls.PREVIEW_PATH_ROLE, state.solution_workbook_path)
