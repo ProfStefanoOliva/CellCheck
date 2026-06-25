@@ -35,6 +35,10 @@ from cellcheck.ui.dialogs import (
 )
 from cellcheck.ui.i18n import tr
 from cellcheck.ui.number_format import format_decimal_for_ui
+from cellcheck.ui.workbook_preview_rule_creation import (
+    PreviewRuleDraft,
+    find_rules_for_preview_reference,
+)
 
 
 class ProfilePage(QWidget):
@@ -256,13 +260,7 @@ class ProfilePage(QWidget):
             if answer != QMessageBox.Yes:
                 return
 
-        profile = CorrectionProfile(
-            exercise_name=tr("profile.default_name"),
-            max_grade=self.state.max_grade if self.state.max_grade > 0 else 100.0,
-            source_empty_workbook=self.state.empty_workbook_path,
-            source_solution_workbook=self.state.solution_workbook_path,
-            worksheets=[],
-        )
+        profile = self._build_empty_working_profile()
         self.state.current_profile = profile
         self.state.current_profile_path = None
         self.state.profile_dirty = True
@@ -353,10 +351,47 @@ class ProfilePage(QWidget):
             return
 
         dialog = ProfileRuleDialog(self, title=tr("profile.add_rule"))
-        if dialog.exec() != ProfileRuleDialog.Accepted:
-            return
+        self._add_rule_from_dialog(profile, dialog)
 
-        rule_data = dialog.get_rule_data()
+    def add_rule_from_preview_draft(self, draft: PreviewRuleDraft) -> bool:
+        """Create a profile rule from workbook-preview defaults."""
+        profile = self.state.current_profile
+        if profile is None:
+            if not self._can_initialize_profile_from_reference_workbooks():
+                QMessageBox.information(
+                    self,
+                    tr("workbook_preview.reference_models_required_title"),
+                    tr("workbook_preview.reference_models_required_message"),
+                )
+                return False
+            profile = self._build_empty_working_profile()
+
+        dialog = ProfileRuleDialog(
+            self,
+            title=tr("workbook_preview.create_rule"),
+            draft=draft,
+        )
+        if dialog.exec() != ProfileRuleDialog.Accepted:
+            return False
+
+        if self.state.current_profile is None:
+            self._activate_working_profile(profile)
+
+        self._append_rule_from_dialog_data(profile, dialog.get_rule_data())
+        self._mark_profile_modified()
+        return True
+
+    def _add_rule_from_dialog(self, profile: CorrectionProfile, dialog: ProfileRuleDialog) -> bool:
+        """Append a rule after the shared rule dialog has been confirmed."""
+        if dialog.exec() != ProfileRuleDialog.Accepted:
+            return False
+
+        self._append_rule_from_dialog_data(profile, dialog.get_rule_data())
+        self._mark_profile_modified()
+        return True
+
+    def _append_rule_from_dialog_data(self, profile: CorrectionProfile, rule_data) -> None:
+        """Create and append a model rule from validated dialog data."""
         new_rule = CorrectionRule(
             id=self._next_rule_id(profile),
             sheet_name=rule_data.sheet_name,
@@ -372,7 +407,32 @@ class ProfilePage(QWidget):
             required_activity=rule_data.required_activity,
         )
         self._upsert_rule(profile, new_rule)
-        self._mark_profile_modified()
+
+    def _build_empty_working_profile(self) -> CorrectionProfile:
+        """Build a new unsaved profile using the current workbook context."""
+        source_empty_workbook = self.state.empty_workbook_path
+        source_solution_workbook = self.state.solution_workbook_path
+        return CorrectionProfile(
+            exercise_name=self.state.exercise_name or tr("profile.default_name"),
+            max_grade=self.state.max_grade if self.state.max_grade > 0 else 100.0,
+            source_empty_workbook=source_empty_workbook,
+            source_solution_workbook=source_solution_workbook,
+            blank_workbook_name=Path(source_empty_workbook).name if source_empty_workbook else None,
+            solved_workbook_name=Path(source_solution_workbook).name if source_solution_workbook else None,
+            worksheets=[],
+        )
+
+    def _activate_working_profile(self, profile: CorrectionProfile) -> None:
+        """Make a newly built working profile visible in shared UI state."""
+        self.state.current_profile = profile
+        self.state.current_profile_path = None
+        self.state.profile_status = "new"
+        self.state.exercise_name = profile.exercise_name
+        self.state.max_grade = profile.max_grade
+
+    def _can_initialize_profile_from_reference_workbooks(self) -> bool:
+        """Return True when the selected models can seed the first profile."""
+        return bool(self.state.empty_workbook_path and self.state.solution_workbook_path)
 
     def _edit_rule(self) -> None:
         """Edit the currently selected rule."""
@@ -447,9 +507,58 @@ class ProfilePage(QWidget):
             return
 
         worksheet_index, rule_index = selected
-        profile.worksheets[worksheet_index].rules.pop(rule_index)
-        self._remove_empty_worksheet(profile, worksheet_index)
-        self._mark_profile_modified()
+        self._remove_rule_at_location(
+            profile,
+            worksheet_index=worksheet_index,
+            rule_index=rule_index,
+        )
+
+    def preview_rule_matches(self, sheet_name: str, reference: str):
+        """Return profile rules associated with a preview selection."""
+        return find_rules_for_preview_reference(self.state.current_profile, sheet_name, reference)
+
+    def remove_rule_from_preview_reference(self, sheet_name: str, reference: str) -> bool:
+        """Remove one rule associated with a workbook-preview selection after confirmation."""
+        profile = self.state.current_profile
+        matches = find_rules_for_preview_reference(profile, sheet_name, reference)
+        if profile is None or not matches:
+            QMessageBox.information(
+                self,
+                tr("workbook_preview.no_associated_rule_title"),
+                tr("workbook_preview.no_associated_rule_message"),
+            )
+            return False
+
+        if len(matches) > 1:
+            QMessageBox.information(
+                self,
+                tr("workbook_preview.multiple_rules_title"),
+                tr("workbook_preview.multiple_rules_message"),
+            )
+            return False
+
+        match = matches[0]
+        answer = QMessageBox.question(
+            self,
+            tr("workbook_preview.remove_rule"),
+            tr("workbook_preview.remove_rule_confirm", target=f"{match.sheet_name}!{match.target_ref}"),
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
+        if answer != QMessageBox.Yes:
+            return False
+
+        self._remove_rule_at_location(
+            profile,
+            worksheet_index=match.worksheet_index,
+            rule_index=match.rule_index,
+        )
+        QMessageBox.information(
+            self,
+            tr("workbook_preview.rule_removed_title"),
+            tr("workbook_preview.rule_removed_message"),
+        )
+        return True
 
     def _open_evaluation_table_dialog(self) -> None:
         """Open the editable student-facing evaluation table preview."""
@@ -522,6 +631,18 @@ class ProfilePage(QWidget):
         """Drop worksheet containers left without rules."""
         if worksheet_index < len(profile.worksheets) and not profile.worksheets[worksheet_index].rules:
             profile.worksheets.pop(worksheet_index)
+
+    def _remove_rule_at_location(
+        self,
+        profile: CorrectionProfile,
+        *,
+        worksheet_index: int,
+        rule_index: int,
+    ) -> None:
+        """Remove one rule from a profile and refresh shared state."""
+        profile.worksheets[worksheet_index].rules.pop(rule_index)
+        self._remove_empty_worksheet(profile, worksheet_index)
+        self._mark_profile_modified()
 
     def _selected_rule_location(self) -> tuple[int, int] | None:
         """Return the worksheet/rule indices for the selected table row."""

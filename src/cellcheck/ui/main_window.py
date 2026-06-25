@@ -36,6 +36,7 @@ from cellcheck.ui.pages import (
 )
 from cellcheck.ui.workbook_preview import WorkbookPreviewWindow
 from cellcheck.ui.workbook_preview_highlights import build_highlighted_cells_map
+from cellcheck.ui.workbook_preview_rule_creation import PreviewRuleDraft
 from cellcheck.ui.widgets import ProjectNavigator, RibbonBar
 
 
@@ -215,6 +216,7 @@ class MainWindow(QMainWindow):
         self.correction_page.refresh_from_state()
         self.report_page.refresh_from_state()
         self.help_page.show_section(self.state.selected_help_section_id or first_help_section_id())
+        self._refresh_workbook_preview_profile_state()
 
     def _hide_redundant_help_button(self) -> None:
         """Hide the old top Help command now that Help lives in the sidebar."""
@@ -279,7 +281,7 @@ class MainWindow(QMainWindow):
     ) -> None:
         """Open or raise a non-modal workbook preview window for the given file."""
         if not workbook_path:
-            WorkbookPreviewWindow.open_or_warn(workbook_path, self)
+            WorkbookPreviewWindow.open_or_warn(workbook_path, parent=self)
             return
 
         storage_key = self.state.normalize_session_path(workbook_path)
@@ -294,6 +296,11 @@ class MainWindow(QMainWindow):
         preview_window = WorkbookPreviewWindow.open_or_warn(
             workbook_path,
             highlighted_cells_by_sheet=build_highlighted_cells_map(self.state.current_profile),
+            on_rule_create_requested=self._create_rule_from_preview,
+            on_rule_lookup_requested=self._preview_rule_matches,
+            on_rule_remove_requested=self._remove_rule_from_preview,
+            can_create_rule=self._can_create_rule_from_preview_context(),
+            rule_creation_source=self._workbook_preview_source_role(workbook_path),
             parent=self,
         )
         if preview_window is None:
@@ -308,6 +315,57 @@ class MainWindow(QMainWindow):
             preview_window.navigate_to_reference(sheet_name, reference)
         preview_window.raise_()
         preview_window.activateWindow()
+
+    def _create_rule_from_preview(self, draft: PreviewRuleDraft) -> bool:
+        """Create a correction rule through the profile page using preview defaults."""
+        created = self.profile_import_page.add_rule_from_preview_draft(draft)
+        if created:
+            self._refresh_workbook_preview_profile_state()
+        return created
+
+    def _preview_rule_matches(self, sheet_name: str, reference: str):
+        """Return profile rules associated with one preview selection."""
+        return self.profile_import_page.preview_rule_matches(sheet_name, reference)
+
+    def _remove_rule_from_preview(self, sheet_name: str, reference: str) -> bool:
+        """Remove a correction rule selected from the workbook preview."""
+        removed = self.profile_import_page.remove_rule_from_preview_reference(sheet_name, reference)
+        if removed:
+            self._refresh_workbook_preview_profile_state()
+        return removed
+
+    def _refresh_workbook_preview_profile_state(self) -> None:
+        """Update open previews after profile availability or rule highlights change."""
+        highlighted_cells = build_highlighted_cells_map(self.state.current_profile)
+        can_create_rule = self._can_create_rule_from_preview_context()
+        for preview_window in list(self._workbook_preview_windows.values()):
+            preview_window.set_rule_creation_available(can_create_rule)
+            preview_window.refresh_profile_highlights(highlighted_cells)
+
+    def _can_create_rule_from_preview_context(self) -> bool:
+        """Return True when preview rule creation can update or initialize a profile."""
+        if self.state.current_profile is not None:
+            return True
+        return bool(self.state.empty_workbook_path and self.state.solution_workbook_path)
+
+    def _workbook_preview_source_role(self, workbook_path: str) -> str:
+        """Return the safest source label for rule creation messaging."""
+        normalized_path = self.state.normalize_session_path(workbook_path)
+        if self.state.solution_workbook_path:
+            if normalized_path == self.state.normalize_session_path(self.state.solution_workbook_path):
+                return "solution"
+        if self.state.empty_workbook_path:
+            if normalized_path == self.state.normalize_session_path(self.state.empty_workbook_path):
+                return "empty"
+        student_paths = set(self.state.normalize_session_path(path) for path in self.state.student_workbook_paths)
+        current_student_path = self.state.current_student_workbook_path()
+        if current_student_path:
+            student_paths.add(self.state.normalize_session_path(current_student_path))
+        if self.state.current_report is not None:
+            student_paths.add(self.state.normalize_session_path(self.state.current_report.student_file))
+        if normalized_path in student_paths:
+            return "student"
+        return "other"
 
     def _close_all_workbook_previews(self) -> None:
         """Close every open workbook preview managed by the current main window."""
