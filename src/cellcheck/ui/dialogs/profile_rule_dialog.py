@@ -26,6 +26,7 @@ from PySide6.QtWidgets import (
 from cellcheck.models import CorrectionRule, RuleType, ToleranceConfig, ToleranceMode
 from cellcheck.ui.i18n import tr
 from cellcheck.ui.number_format import format_decimal_for_ui, parse_decimal_input
+from cellcheck.ui.workbook_preview_rule_creation import PreviewRuleDraft
 
 CELL_REF_RE = re.compile(r"^[A-Za-z]{1,3}[1-9][0-9]{0,6}$")
 RANGE_REF_RE = re.compile(r"^[A-Za-z]{1,3}[1-9][0-9]{0,6}:[A-Za-z]{1,3}[1-9][0-9]{0,6}$")
@@ -65,6 +66,7 @@ class ProfileRuleDialog(QDialog):
         *,
         title: str | None = None,
         rule: CorrectionRule | None = None,
+        draft: PreviewRuleDraft | None = None,
     ) -> None:
         super().__init__(parent)
         self.setWindowTitle(title or tr("profile.edit_rule"))
@@ -116,6 +118,8 @@ class ProfileRuleDialog(QDialog):
 
         if rule is not None:
             self._populate_from_rule(rule)
+        elif draft is not None:
+            self._populate_from_draft(draft)
         else:
             self.weight_edit.setText("1")
             self._set_default_tolerance()
@@ -274,6 +278,29 @@ class ProfileRuleDialog(QDialog):
                 self.tolerance_relative_edit.setText(format_decimal_for_ui(rule.tolerance.relative))
         else:
             self._set_default_tolerance()
+
+    def _populate_from_draft(self, draft: PreviewRuleDraft) -> None:
+        """Fill the form with safe workbook-preview defaults."""
+        self.sheet_name_edit.setText(draft.sheet_name)
+        self.cell_edit.setText(draft.cell or "")
+        self.range_edit.setText(draft.range_ref or "")
+        if draft.suggested_rule_type is not None:
+            rule_kind, formula_mode = self._rule_type_to_kind_and_formula_mode(draft.suggested_rule_type)
+            kind_index = self.rule_kind_combo.findData(rule_kind)
+            if kind_index >= 0:
+                self.rule_kind_combo.setCurrentIndex(kind_index)
+            mode_index = self.formula_mode_combo.findData(formula_mode)
+            if mode_index >= 0:
+                self.formula_mode_combo.setCurrentIndex(mode_index)
+        self.expected_formula_edit.setText(draft.expected_formula or "")
+        self.expected_value_edit.setText(
+            "" if draft.expected_value is None else str(draft.expected_value)
+        )
+        self.required_activity_edit.setPlainText(draft.required_activity)
+        self.weight_edit.setText("1")
+        self.enabled_check.setChecked(True)
+        self.teacher_note_edit.clear()
+        self._set_default_tolerance()
 
     def _set_default_tolerance(self) -> None:
         """Reset tolerance fields to a neutral state."""
@@ -457,22 +484,27 @@ class ProfileRuleDialog(QDialog):
     @staticmethod
     def _rule_kind_and_formula_mode(rule: CorrectionRule) -> tuple[str, RuleType]:
         """Map one model rule to the editor kind plus optional formula mode."""
-        if rule.rule_type == RuleType.FORMULA_EXACT:
-            return RULE_KIND_FORMULA, RuleType.FORMULA_EXACT
-        if rule.rule_type == RuleType.FORMULA_NORMALIZED:
-            return RULE_KIND_FORMULA, RuleType.FORMULA_NORMALIZED
-        if rule.rule_type == RuleType.NUMERIC_VALUE:
-            return RULE_KIND_NUMERIC, RuleType.FORMULA_EXACT
-        if rule.rule_type == RuleType.TEXT_VALUE:
-            return RULE_KIND_TEXT_EXACT, RuleType.FORMULA_EXACT
-        if rule.rule_type == RuleType.TEXT_NORMALIZED:
-            return RULE_KIND_TEXT_NORMALIZED, RuleType.FORMULA_EXACT
-        if rule.rule_type == RuleType.NON_EMPTY:
-            return RULE_KIND_NON_EMPTY, RuleType.FORMULA_EXACT
-        if rule.rule_type == RuleType.EMPTY:
-            return RULE_KIND_EMPTY, RuleType.FORMULA_EXACT
         if rule.rule_type == RuleType.MANUAL_REVIEW and rule.expected_formula:
             return RULE_KIND_FORMULA, RuleType.MANUAL_REVIEW
+        return ProfileRuleDialog._rule_type_to_kind_and_formula_mode(rule.rule_type)
+
+    @staticmethod
+    def _rule_type_to_kind_and_formula_mode(rule_type: RuleType) -> tuple[str, RuleType]:
+        """Map one rule type to the editor kind plus optional formula mode."""
+        if rule_type == RuleType.FORMULA_EXACT:
+            return RULE_KIND_FORMULA, RuleType.FORMULA_EXACT
+        if rule_type == RuleType.FORMULA_NORMALIZED:
+            return RULE_KIND_FORMULA, RuleType.FORMULA_NORMALIZED
+        if rule_type == RuleType.NUMERIC_VALUE:
+            return RULE_KIND_NUMERIC, RuleType.FORMULA_EXACT
+        if rule_type == RuleType.TEXT_VALUE:
+            return RULE_KIND_TEXT_EXACT, RuleType.FORMULA_EXACT
+        if rule_type == RuleType.TEXT_NORMALIZED:
+            return RULE_KIND_TEXT_NORMALIZED, RuleType.FORMULA_EXACT
+        if rule_type == RuleType.NON_EMPTY:
+            return RULE_KIND_NON_EMPTY, RuleType.FORMULA_EXACT
+        if rule_type == RuleType.EMPTY:
+            return RULE_KIND_EMPTY, RuleType.FORMULA_EXACT
         return RULE_KIND_MANUAL_REVIEW, RuleType.FORMULA_EXACT
 
     @staticmethod
