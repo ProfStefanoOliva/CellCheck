@@ -25,7 +25,7 @@ In fasi successive CellCheck dovra:
 
 ## Stato attuale
 
-Stato corrente: `Multilingual GUI foundation v0.30.0`.
+Stato corrente: `CellCheck v0.40.1 - pacchetto esempi completo, esportazioni testuali modificabili e feedback studente`.
 
 La Fase 26 documenta l'esito positivo della validazione su macchina pulita del bundle locale precedente e prepara il progetto alla prima pubblicazione pubblica controllata. La pubblicazione resta comunque manuale e separata: il progetto non promette supporto operativo, garanzie o disponibilita continuativa del binario.
 
