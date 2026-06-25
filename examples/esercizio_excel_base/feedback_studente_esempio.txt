@@ -1,0 +1,64 @@
+FEEDBACK STUDENTE - ESEMPIO
+========================================================================
+Scenario: studente_errori.xlsx valutato con profilo_correzione.ccal
+File: studente_errori.xlsx
+Attivita: Esercizio Excel base - totali e controlli
+Punteggio: 37,5 / 100
+Percentuale: 37,5%
+
+RIEPILOGO
+------------------------------------------------------------------------
+Questo feedback sintetico indica quali punti richiedono attenzione.
+Il docente puo modificarlo prima del salvataggio.
+
+DETTAGLIO ATTIVITA
+------------------------------------------------------------------------
+1. F5
+   Attivita richiesta: Calcolare il totale dei due dati indicati nella riga.
+   Esito: corretto
+   Punti: 1 / 1
+
+2. F6
+   Attivita richiesta: Calcolare il prodotto dei due dati indicati nella riga.
+   Esito: non corretto
+   Motivo: La formula inserita non risulta coerente con la richiesta.
+   Punti: 0 / 1
+
+3. F7
+   Attivita richiesta: Inserire il numero richiesto dalla consegna.
+   Esito: corretto
+   Punti: 1 / 1
+
+4. F8
+   Attivita richiesta: Inserire il valore numerico coerente con il controllo previsto.
+   Esito: non corretto
+   Motivo: Il risultato non risulta coerente con la richiesta.
+   Punti: 0 / 1
+
+5. F9
+   Attivita richiesta: Compilare la cella con il testo richiesto.
+   Esito: corretto
+   Punti: 1 / 1
+
+6. F10
+   Attivita richiesta: Compilare la cella con una conferma testuale coerente.
+   Esito: non corretto
+   Motivo: Il testo inserito non risulta coerente con la richiesta.
+   Punti: 0 / 1
+
+7. F11
+   Attivita richiesta: Inserire il testo richiesto prestando attenzione a forma e contenuto.
+   Esito: non corretto
+   Motivo: Il testo inserito non risulta coerente con la richiesta.
+   Punti: 0 / 1
+
+8. F12
+   Attivita richiesta: Compilare la cella lasciandola non vuota.
+   Esito: non corretto
+   Motivo: La risposta non risulta corretta rispetto alla consegna.
+   Punti: 0 / 1
+
+NOTE
+------------------------------------------------------------------------
+Questo testo e pensato per lo studente e usa formulazioni sintetiche.
+Non include dettagli riservati del profilo di correzione.

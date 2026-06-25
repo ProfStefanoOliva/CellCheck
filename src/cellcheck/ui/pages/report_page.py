@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from PySide6.QtWidgets import (
     QComboBox,
-    QFileDialog,
     QHBoxLayout,
     QLabel,
     QMessageBox,
@@ -21,10 +20,10 @@ from cellcheck.models import (
 )
 from cellcheck.reporting import (
     build_student_feedback_report,
-    export_text_correction_report,
+    build_text_correction_report,
 )
 from cellcheck.ui.app_state import AppState
-from cellcheck.ui.dialogs import StudentFeedbackDialog
+from cellcheck.ui.dialogs import EditableTextExportDialog, StudentFeedbackDialog
 from cellcheck.ui.i18n import tr
 from cellcheck.ui.report_preview_navigation import build_report_preview_target
 from cellcheck.ui.widgets import (
@@ -158,7 +157,8 @@ class ReportPage(QWidget):
         self.report_selector_label.setText(tr("report.select"))
         self.load_report_button.setText(tr("report.load"))
         self.save_report_button.setText(tr("report.save"))
-        self.export_report_button.setText(tr("report.export"))
+        self.export_report_button.setText(tr("report.prepare_txt"))
+        self.export_report_button.setToolTip(tr("report.export_tooltip"))
         self.export_student_feedback_button.setText(tr("student_feedback.prepare"))
         self.export_student_feedback_button.setToolTip(tr("student_feedback.export_tooltip"))
         self.preview_student_button.setText(tr("workbook_preview.student_action"))
@@ -448,7 +448,11 @@ class ReportPage(QWidget):
         )
 
     def _export_report_txt(self) -> None:
-        """Export the current report to a didactic plain text file."""
+        """Backward-compatible alias for preparing the teacher plain text report."""
+        self._prepare_report_txt()
+
+    def _prepare_report_txt(self) -> None:
+        """Open an editable technical report dialog for the current report."""
         report = self.state.current_report
         if report is None:
             QMessageBox.information(
@@ -457,36 +461,28 @@ class ReportPage(QWidget):
                 tr("report.no_current_export_message"),
             )
             return
-        suggested_name = f"{tr('main_window.default_report_name')}.txt"
-        report_name = self.state.current_report_display_name()
-        if report_name:
-            suggested_name = f"{report_name}.txt"
 
-        path, _ = QFileDialog.getSaveFileName(
-            self,
-            tr("report.export_dialog_title"),
-            suggested_name,
-            tr("report.export_filter"),
+        model_file = None
+        if self.state.current_profile is not None:
+            model_file = self.state.current_profile.source_solution_workbook
+        report_text = build_text_correction_report(report, model_file=model_file)
+        dialog = EditableTextExportDialog(
+            title=tr("report.technical_title"),
+            description=tr("report.editor_description"),
+            initial_text=report_text,
+            suggested_filename=self._suggest_current_report_txt_filename(),
+            save_button_text=tr("report.save_txt"),
+            save_dialog_title=tr("report.export_dialog_title"),
+            file_filter=tr("report.export_filter"),
+            saved_title=tr("report.saved_title"),
+            saved_message=tr("report.export_success"),
+            error_title=tr("report.export_error_title"),
+            error_message_template=tr("report.export_error_message"),
+            empty_title=tr("report.empty_title"),
+            empty_confirm_message=tr("report.empty_confirm"),
+            parent=self,
         )
-        if not path:
-            return
-        if not path.lower().endswith(".txt"):
-            path = f"{path}.txt"
-
-        try:
-            model_file = None
-            if self.state.current_profile is not None:
-                model_file = self.state.current_profile.source_solution_workbook
-            export_text_correction_report(report, path, model_file=model_file)
-        except Exception as exc:
-            QMessageBox.critical(self, tr("report.export"), str(exc))
-            return
-
-        QMessageBox.information(
-            self,
-            tr("report.export"),
-            tr("report.export_success"),
-        )
+        dialog.exec()
 
     def _prepare_student_feedback(self) -> None:
         """Open an editable student feedback dialog for the current report."""
@@ -522,6 +518,13 @@ class ReportPage(QWidget):
                 if activity:
                     values[rule.id] = activity
         return values
+
+    def _suggest_current_report_txt_filename(self) -> str:
+        """Return the plain text filename suggested for the selected report."""
+        report_name = self.state.current_report_display_name()
+        if report_name:
+            return f"{report_name}.txt"
+        return f"{tr('main_window.default_report_name')}.txt"
 
     def _refresh_report_selector(self) -> None:
         """Reload the in-session report selector without losing the current selection."""

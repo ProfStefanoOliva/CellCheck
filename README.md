@@ -41,6 +41,8 @@ La GUI continua a usare il tema scuro centralizzato e ora puo caricare in modo p
 
 Restano disponibili anche i workbook sintetici generati localmente per i test manuali. I file prodotti vengono scritti in `manual_tests/generated/`, che non deve essere committata. La documentazione operativa e disponibile in `manual_tests/README.md`. Il set principale ora distingue chiaramente il percorso automatico puro dal percorso dedicato alla revisione manuale.
 
+Un pacchetto dimostrativo pronto per docenti e disponibile in `examples/esercizio_excel_base/`: contiene workbook sintetici, profilo `.ccal`, tabella valutazione, report docente e feedback studente di esempio.
+
 Nella pagina `Report`, ogni riga del report puo ora essere rettificata manualmente dal docente anche se nasce da una regola valutata automaticamente. Le regole `manual_review` continuano comunque a richiedere obbligatoriamente il passaggio umano, mentre le rettifiche manuali su righe automatiche aggiornano punteggio, commento docente, riepilogo, salvataggio `.ccreport` ed export `.txt`.
 
 Nella generazione automatica del profilo da workbook, il colore target delle celle viene normalizzato in forma stabile e il software cerca solo le celle con quel background. Sono gestiti in modo robusto i casi RGB/ARGB e, quando openpyxl e il workbook lo consentono senza ambiguita, anche colori indexed o theme. I colori tema non risolvibili in modo affidabile vengono ignorati prudenzialmente invece di produrre falsi positivi.

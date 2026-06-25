@@ -16,7 +16,7 @@ from cellcheck.models import (
     WorksheetProfile,
 )
 from cellcheck.ui import AppState
-from cellcheck.ui.dialogs import StudentFeedbackDialog
+from cellcheck.ui.dialogs import EditableTextExportDialog, StudentFeedbackDialog
 from cellcheck.ui.pages import ReportPage
 from cellcheck.ui.report_preview_navigation import build_report_preview_target
 from cellcheck.ui.widgets import (
@@ -34,6 +34,7 @@ def _app() -> QApplication:
 
 def test_report_viewer_modules_import() -> None:
     assert ReportPage is not None
+    assert EditableTextExportDialog is not None
     assert StudentFeedbackDialog is not None
     assert ReportSummaryWidget is not None
     assert ReportFilterBar is not None
@@ -102,6 +103,7 @@ def test_report_page_exposes_student_preview_button() -> None:
 
     assert hasattr(page, "preview_student_button")
     assert hasattr(page, "preview_result_button")
+    assert hasattr(page, "export_report_button")
     assert hasattr(page, "export_student_feedback_button")
 
 
@@ -153,12 +155,7 @@ def test_report_page_student_feedback_button_opens_editor_without_direct_save(mo
             calls.append("exec")
             return 0
 
-    save_dialog_calls = []
     monkeypatch.setattr("cellcheck.ui.pages.report_page.StudentFeedbackDialog", CapturingFeedbackDialog)
-    monkeypatch.setattr(
-        "cellcheck.ui.pages.report_page.QFileDialog.getSaveFileName",
-        lambda *args, **kwargs: save_dialog_calls.append(args),
-    )
     page = ReportPage(state, lambda path: None)
 
     page._prepare_student_feedback()
@@ -166,7 +163,55 @@ def test_report_page_student_feedback_button_opens_editor_without_direct_save(mo
     assert calls[0][0] is report
     assert "Studente_01.xlsx" in calls[0][1]
     assert calls[1] == "exec"
-    assert save_dialog_calls == []
+
+
+def test_report_page_report_txt_button_opens_editor_without_direct_save(monkeypatch) -> None:
+    _app()
+    report = _report("C:/classi/Rossi/Studente_01.xlsx")
+    state = AppState()
+    state.add_or_replace_report(report, select=True)
+    calls = []
+
+    class CapturingTextDialog:
+        def __init__(self, **kwargs) -> None:
+            calls.append(kwargs)
+
+        def exec(self) -> int:
+            calls.append("exec")
+            return 0
+
+    monkeypatch.setattr("cellcheck.ui.pages.report_page.EditableTextExportDialog", CapturingTextDialog)
+    page = ReportPage(state, lambda path: None)
+
+    page._prepare_report_txt()
+
+    assert calls[0]["title"]
+    assert calls[0]["suggested_filename"] == "Studente_01.txt"
+    assert "Studente_01.xlsx" in calls[0]["initial_text"]
+    assert calls[1] == "exec"
+
+
+def test_report_page_report_txt_export_alias_opens_editor(monkeypatch) -> None:
+    _app()
+    report = _report("C:/classi/Rossi/Studente_01.xlsx")
+    state = AppState()
+    state.add_or_replace_report(report, select=True)
+    calls = []
+
+    class CapturingTextDialog:
+        def __init__(self, **kwargs) -> None:
+            calls.append(kwargs)
+
+        def exec(self) -> int:
+            return 0
+
+    monkeypatch.setattr("cellcheck.ui.pages.report_page.EditableTextExportDialog", CapturingTextDialog)
+    page = ReportPage(state, lambda path: None)
+
+    page._export_report_txt()
+
+    assert calls
+    assert "Studente_01.xlsx" in calls[0]["initial_text"]
 
 
 def test_report_page_student_feedback_editor_uses_selected_report(monkeypatch) -> None:
@@ -196,6 +241,34 @@ def test_report_page_student_feedback_editor_uses_selected_report(monkeypatch) -
     assert "Studente_02.xlsx" in calls[0][1]
     assert "Studente_01.xlsx" not in calls[0][1]
     assert "C:/classi/Rossi" not in calls[0][1]
+
+
+def test_report_page_report_txt_editor_uses_selected_report(monkeypatch) -> None:
+    _app()
+    report_one = _report("C:/classi/Rossi/Studente_01.xlsx")
+    report_two = _report("C:/classi/Rossi/Studente_02.xlsx")
+    state = AppState()
+    state.add_or_replace_report(report_one, select=True)
+    state.add_or_replace_report(report_two, select=False)
+    page = ReportPage(state, lambda path: None)
+    page.refresh_from_state()
+    calls = []
+
+    class CapturingTextDialog:
+        def __init__(self, **kwargs) -> None:
+            calls.append(kwargs)
+
+        def exec(self) -> int:
+            return 0
+
+    monkeypatch.setattr("cellcheck.ui.pages.report_page.EditableTextExportDialog", CapturingTextDialog)
+
+    page.report_selector_combo.setCurrentIndex(1)
+    page._prepare_report_txt()
+
+    assert calls[0]["suggested_filename"] == "Studente_02.txt"
+    assert "Studente_02.xlsx" in calls[0]["initial_text"]
+    assert "Studente_01.xlsx" not in calls[0]["initial_text"]
 
 
 def test_report_page_student_feedback_includes_required_activity_from_profile(monkeypatch) -> None:
@@ -244,7 +317,7 @@ def test_report_page_student_feedback_export_skips_file_dialog_without_report(mo
     page = ReportPage(AppState())
     dialog_calls = []
     monkeypatch.setattr(
-        "cellcheck.ui.pages.report_page.QFileDialog.getSaveFileName",
+        "cellcheck.ui.pages.report_page.StudentFeedbackDialog",
         lambda *args, **kwargs: dialog_calls.append(args),
     )
     monkeypatch.setattr(
@@ -257,6 +330,113 @@ def test_report_page_student_feedback_export_skips_file_dialog_without_report(mo
     assert dialog_calls == []
 
 
+def test_report_page_report_txt_skips_editor_without_report(monkeypatch) -> None:
+    _app()
+    page = ReportPage(AppState())
+    dialog_calls = []
+    monkeypatch.setattr(
+        "cellcheck.ui.pages.report_page.EditableTextExportDialog",
+        lambda *args, **kwargs: dialog_calls.append(kwargs),
+    )
+    monkeypatch.setattr(
+        "cellcheck.ui.pages.report_page.QMessageBox.information",
+        lambda *args, **kwargs: None,
+    )
+
+    page._prepare_report_txt()
+
+    assert dialog_calls == []
+
+
+def test_editable_text_export_dialog_saves_modified_editor_text(tmp_path, monkeypatch) -> None:
+    _app()
+    dialog = EditableTextExportDialog(
+        title="Titolo",
+        description="Descrizione",
+        initial_text="Testo iniziale",
+        suggested_filename="report.txt",
+        save_button_text="Salva",
+        save_dialog_title="Salva file",
+        file_filter="Text (*.txt)",
+        saved_title="Salvato",
+        saved_message="OK",
+        error_title="Errore",
+        error_message_template="Errore: {error}",
+        empty_title="Vuoto",
+        empty_confirm_message="Vuoi salvare?",
+    )
+    output_path = tmp_path / "report"
+    dialog.text_edit.setPlainText("Testo modificato dal docente.")
+    monkeypatch.setattr(
+        "cellcheck.ui.dialogs.editable_text_export_dialog.QFileDialog.getSaveFileName",
+        lambda *args, **kwargs: (str(output_path), "txt"),
+    )
+    monkeypatch.setattr(
+        "cellcheck.ui.dialogs.editable_text_export_dialog.QMessageBox.information",
+        lambda *args, **kwargs: None,
+    )
+
+    dialog.save_text()
+
+    assert output_path.with_suffix(".txt").read_text(encoding="utf-8") == "Testo modificato dal docente."
+
+
+def test_editable_text_export_dialog_can_be_closed_without_creating_file(tmp_path) -> None:
+    _app()
+    dialog = EditableTextExportDialog(
+        title="Titolo",
+        description="Descrizione",
+        initial_text="Testo iniziale",
+        suggested_filename="report.txt",
+        save_button_text="Salva",
+        save_dialog_title="Salva file",
+        file_filter="Text (*.txt)",
+        saved_title="Salvato",
+        saved_message="OK",
+        error_title="Errore",
+        error_message_template="Errore: {error}",
+        empty_title="Vuoto",
+        empty_confirm_message="Vuoi salvare?",
+    )
+    output_path = tmp_path / "report.txt"
+
+    dialog.reject()
+
+    assert not output_path.exists()
+
+
+def test_editable_text_export_dialog_empty_text_requires_confirmation(monkeypatch) -> None:
+    _app()
+    dialog = EditableTextExportDialog(
+        title="Titolo",
+        description="Descrizione",
+        initial_text="",
+        suggested_filename="report.txt",
+        save_button_text="Salva",
+        save_dialog_title="Salva file",
+        file_filter="Text (*.txt)",
+        saved_title="Salvato",
+        saved_message="OK",
+        error_title="Errore",
+        error_message_template="Errore: {error}",
+        empty_title="Vuoto",
+        empty_confirm_message="Vuoi salvare?",
+    )
+    save_dialog_calls = []
+    monkeypatch.setattr(
+        "cellcheck.ui.dialogs.editable_text_export_dialog.QMessageBox.question",
+        lambda *args, **kwargs: QMessageBox.No,
+    )
+    monkeypatch.setattr(
+        "cellcheck.ui.dialogs.editable_text_export_dialog.QFileDialog.getSaveFileName",
+        lambda *args, **kwargs: save_dialog_calls.append(args),
+    )
+
+    dialog.save_text()
+
+    assert save_dialog_calls == []
+
+
 def test_student_feedback_dialog_saves_modified_editor_text(tmp_path, monkeypatch) -> None:
     _app()
     report = _report("C:/classi/Rossi/Studente_01.xlsx")
@@ -264,11 +444,11 @@ def test_student_feedback_dialog_saves_modified_editor_text(tmp_path, monkeypatc
     output_path = tmp_path / "feedback"
     dialog.feedback_edit.setPlainText("Testo modificato dal docente.")
     monkeypatch.setattr(
-        "cellcheck.ui.dialogs.student_feedback_dialog.QFileDialog.getSaveFileName",
+        "cellcheck.ui.dialogs.editable_text_export_dialog.QFileDialog.getSaveFileName",
         lambda *args, **kwargs: (str(output_path), "txt"),
     )
     monkeypatch.setattr(
-        "cellcheck.ui.dialogs.student_feedback_dialog.QMessageBox.information",
+        "cellcheck.ui.dialogs.editable_text_export_dialog.QMessageBox.information",
         lambda *args, **kwargs: None,
     )
 
@@ -294,11 +474,11 @@ def test_student_feedback_dialog_empty_text_requires_confirmation(monkeypatch) -
     dialog = StudentFeedbackDialog(report, "")
     save_dialog_calls = []
     monkeypatch.setattr(
-        "cellcheck.ui.dialogs.student_feedback_dialog.QMessageBox.question",
+        "cellcheck.ui.dialogs.editable_text_export_dialog.QMessageBox.question",
         lambda *args, **kwargs: QMessageBox.No,
     )
     monkeypatch.setattr(
-        "cellcheck.ui.dialogs.student_feedback_dialog.QFileDialog.getSaveFileName",
+        "cellcheck.ui.dialogs.editable_text_export_dialog.QFileDialog.getSaveFileName",
         lambda *args, **kwargs: save_dialog_calls.append(args),
     )
 

@@ -7,7 +7,13 @@ from PySide6.QtWidgets import QApplication, QListWidget
 from cellcheck.models import ResultStatus
 from cellcheck.ui import AppState, MainWindow, WorkbookPreviewWindow
 from cellcheck.ui.color_picker import choose_color_for_line_edit
-from cellcheck.ui.dialogs import EvaluationTableDialog, LanguageDialog, ProfileRuleDialog, StudentFeedbackDialog
+from cellcheck.ui.dialogs import (
+    EditableTextExportDialog,
+    EvaluationTableDialog,
+    LanguageDialog,
+    ProfileRuleDialog,
+    StudentFeedbackDialog,
+)
 from cellcheck.ui.evaluation_table import build_evaluation_table_text
 from cellcheck.ui.help_sections import get_help_sections
 from cellcheck.ui.i18n import available_languages, set_current_language, tr
@@ -37,6 +43,7 @@ def test_ui_package_imports() -> None:
     assert ProjectNavigator is not None
     assert ReportFilterBar is not None
     assert choose_color_for_line_edit is not None
+    assert EditableTextExportDialog is not None
     assert EvaluationTableDialog is not None
     assert ProfileRuleDialog is not None
     assert StudentFeedbackDialog is not None
@@ -169,6 +176,7 @@ def test_report_page_renders_localized_labels_in_english_and_chinese() -> None:
         assert page.title_label.text() == "Report"
         assert "CorrectionReport" in page.subtitle_label.text()
         assert page.report_selector_label.text() == "Select report"
+        assert page.export_report_button.text() == "Prepare TXT report"
         assert page.export_student_feedback_button.text() == "Prepare student feedback"
         assert page.preview_student_button.text() == "Student preview"
         assert page.preview_result_button.text() == "Open cell in preview"
@@ -182,6 +190,7 @@ def test_report_page_renders_localized_labels_in_english_and_chinese() -> None:
         assert page.title_label.text() == "报告"
         assert "查看当前 CorrectionReport" in page.subtitle_label.text()
         assert page.report_selector_label.text() == "选择报告"
+        assert page.export_report_button.text() == "准备 TXT 报告"
         assert page.export_student_feedback_button.text() == "准备学生反馈"
         assert page.preview_student_button.text() == "学生文件预览"
         assert page.preview_result_button.text() == "在预览中打开单元格"
@@ -197,6 +206,7 @@ def test_report_page_renders_localized_labels_in_english_and_chinese() -> None:
         assert page.title_label.text() == "Report"
         assert "Esplora il CorrectionReport corrente" in page.subtitle_label.text()
         assert page.report_selector_label.text() == "Seleziona report"
+        assert page.export_report_button.text() == "Prepara report TXT"
         assert page.export_student_feedback_button.text() == "Prepara feedback studente"
         assert page.preview_student_button.text() == "Anteprima elaborato"
         assert page.preview_result_button.text() == "Apri cella in anteprima"

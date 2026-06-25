@@ -1,0 +1,34 @@
+TABELLA VALUTAZIONE - ESEMPIO DIDATTICO
+========================================================================
+
+Esercizio: Esercizio Excel base - totali e controlli
+Workbook modello vuoto: modello_vuoto.xlsx
+Workbook modello risolto: modello_risolto.xlsx
+Profilo CellCheck: profilo_correzione.ccal
+Punteggio massimo: 100
+
+Attivita richieste allo studente
+------------------------------------------------------------------------
+1. Calcolare un totale a partire da due dati numerici.
+2. Calcolare un prodotto a partire da due dati numerici.
+3. Inserire un valore numerico richiesto dalla consegna.
+4. Inserire un secondo valore numerico coerente con il controllo previsto.
+5. Compilare una cella testuale richiesta.
+6. Compilare una cella con una conferma testuale coerente.
+7. Inserire un testo richiesto prestando attenzione a forma e contenuto.
+8. Compilare una cella lasciandola non vuota.
+
+Uso consigliato
+------------------------------------------------------------------------
+- Aprire CellCheck.
+- Caricare modello_vuoto.xlsx come modello iniziale.
+- Caricare modello_risolto.xlsx come modello risolto.
+- Caricare profilo_correzione.ccal oppure rigenerare un profilo dal modello.
+- Provare prima studente_corretto.xlsx.
+- Provare poi studente_errori.xlsx per osservare errori misti.
+
+Nota
+------------------------------------------------------------------------
+Questa tabella non contiene formule, valori di riferimento o risposte
+operative. Serve solo a descrivere i criteri in modo comprensibile per il
+docente e per la preparazione dell'esercizio.
