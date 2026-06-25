@@ -256,6 +256,63 @@ def test_report_localization_keys_exist_for_all_supported_languages() -> None:
             assert key in TRANSLATIONS[language_code]
 
 
+def test_student_feedback_keys_exist_for_all_supported_languages() -> None:
+    keys = [
+        "student_feedback.export",
+        "student_feedback.prepare",
+        "student_feedback.save",
+        "student_feedback.export_tooltip",
+        "student_feedback.editor_description",
+        "student_feedback.title",
+        "student_feedback.student_file",
+        "student_feedback.activity",
+        "student_feedback.score",
+        "student_feedback.percentage",
+        "student_feedback.summary_heading",
+        "student_feedback.summary_text",
+        "student_feedback.detail_heading",
+        "student_feedback.required_activity",
+        "student_feedback.outcome",
+        "student_feedback.review_note",
+        "student_feedback.reason",
+        "student_feedback.points",
+        "student_feedback.teacher_note",
+        "student_feedback.notes_heading",
+        "student_feedback.generated_note",
+        "student_feedback.solutions_excluded_note",
+        "student_feedback.no_activities",
+        "student_feedback.status.correct",
+        "student_feedback.status.incorrect",
+        "student_feedback.status.review",
+        "student_feedback.reason.incorrect",
+        "student_feedback.reason.cell_review",
+        "student_feedback.reason.result_unrecognized",
+        "student_feedback.reason.auto_review",
+        "student_feedback.reason.partial_score",
+        "student_feedback.reason.procedure",
+        "student_feedback.reason.teacher_reviewed",
+        "student_feedback.reason.formula_mismatch",
+        "student_feedback.reason.value_mismatch",
+        "student_feedback.reason.text_mismatch",
+        "student_feedback.reason.manual_review",
+        "student_feedback.reason.generic_review",
+        "student_feedback.filename_suffix",
+        "student_feedback.no_report_title",
+        "student_feedback.no_report_message",
+        "student_feedback.export_dialog_title",
+        "student_feedback.export_filter",
+        "student_feedback.saved_title",
+        "student_feedback.export_success",
+        "student_feedback.export_error_title",
+        "student_feedback.export_error_message",
+        "student_feedback.empty_title",
+        "student_feedback.empty_confirm",
+    ]
+    for language_code, _label in available_languages():
+        for key in keys:
+            assert key in TRANSLATIONS[language_code]
+
+
 def test_profile_and_correction_localization_keys_exist_for_all_supported_languages() -> None:
     keys = [
         "profile.new",

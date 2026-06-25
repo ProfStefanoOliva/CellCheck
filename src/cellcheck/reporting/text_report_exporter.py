@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from pathlib import Path
+import re
 
-from cellcheck.models import CorrectionReport, ResultStatus
+from cellcheck.models import CellCorrectionResult, CorrectionReport, ResultStatus, RuleType
 from cellcheck.ui.i18n import current_language, tr
 from cellcheck.ui.number_format import format_decimal_for_text
 
@@ -106,6 +108,92 @@ def export_text_correction_report(
     return normalized_path
 
 
+def build_student_feedback_report(
+    report: CorrectionReport,
+    *,
+    activity_by_rule_id: Mapping[str, str] | None = None,
+) -> str:
+    """Build a student-facing feedback report without solutions or expected values."""
+    activity_by_rule_id = activity_by_rule_id or {}
+    lines: list[str] = [
+        tr("student_feedback.title"),
+        "=" * 72,
+        f"{tr('student_feedback.student_file')}: {_student_file_basename(report.student_file)}",
+    ]
+    if report.profile_name:
+        lines.append(f"{tr('student_feedback.activity')}: {_display_text(report.profile_name)}")
+    lines.extend(
+        [
+            (
+                f"{tr('student_feedback.score')}: "
+                f"{_format_score(report.summary.final_grade)} / {_format_score(report.max_grade)}"
+            ),
+            f"{tr('student_feedback.percentage')}: {_format_percentage(report)}",
+            "",
+            tr("student_feedback.summary_heading"),
+            "",
+            tr("student_feedback.summary_text"),
+            "",
+            tr("student_feedback.detail_heading"),
+            "",
+        ]
+    )
+
+    if not report.results:
+        lines.append(tr("student_feedback.no_activities"))
+    for index, result in enumerate(report.results, start=1):
+        target = result.range_ref or result.cell or f"{tr('student_feedback.activity')} {index}"
+        lines.append(f"{index}. {target}")
+        activity = activity_by_rule_id.get(result.rule_id, "").strip()
+        if activity:
+            lines.append(f"   {tr('student_feedback.required_activity')}: {activity}")
+        lines.append(f"   {tr('student_feedback.outcome')}: {_student_status_text(result.status)}")
+        reason = _student_feedback_reason(result)
+        if reason:
+            lines.append(f"   {tr('student_feedback.reason')}: {reason}")
+        lines.append(
+            f"   {tr('student_feedback.points')}: "
+            f"{_format_score(result.score_awarded)} / {_format_score(result.weight)}"
+        )
+        if result.teacher_comment.strip():
+            lines.append(f"   {tr('student_feedback.teacher_note')}: {result.teacher_comment.strip()}")
+        if index < len(report.results):
+            lines.append("")
+
+    lines.extend(
+        [
+            "",
+            tr("student_feedback.notes_heading"),
+            "",
+            tr("student_feedback.generated_note"),
+            tr("student_feedback.solutions_excluded_note"),
+        ]
+    )
+    return "\n".join(lines) + "\n"
+
+
+def export_student_feedback_report(
+    report: CorrectionReport,
+    path: str | Path,
+    *,
+    activity_by_rule_id: Mapping[str, str] | None = None,
+) -> Path:
+    """Write a student-facing feedback report in UTF-8 encoding."""
+    normalized_path = Path(path)
+    normalized_path.write_text(
+        build_student_feedback_report(report, activity_by_rule_id=activity_by_rule_id),
+        encoding="utf-8",
+    )
+    return normalized_path
+
+
+def suggest_student_feedback_filename(report: CorrectionReport) -> str:
+    """Return a filesystem-safe suggested feedback file name for one report."""
+    stem = Path(_student_file_basename(report.student_file)).stem.strip() or "report"
+    safe_stem = _safe_filename_stem(stem)
+    return f"{safe_stem}_{tr('student_feedback.filename_suffix')}.txt"
+
+
 def _verified_cells(report: CorrectionReport) -> list[str]:
     seen: set[str] = set()
     cells: list[str] = []
@@ -116,6 +204,65 @@ def _verified_cells(report: CorrectionReport) -> list[str]:
         seen.add(value)
         cells.append(value)
     return cells
+
+
+def _student_file_basename(path: str) -> str:
+    """Return only the student file basename, handling Windows paths on every OS."""
+    return str(path).replace("\\", "/").rsplit("/", 1)[-1] or tr("text_report.unavailable")
+
+
+def _safe_filename_stem(value: str) -> str:
+    """Return a conservative file-name stem suitable for save-dialog suggestions."""
+    sanitized = re.sub(r'[<>:"/\\|?*\x00-\x1f]+', "_", value).strip(" ._")
+    return sanitized or "report"
+
+
+def _format_percentage(report: CorrectionReport) -> str:
+    if report.max_grade <= 0:
+        return tr("text_report.unavailable")
+    percentage = (report.summary.final_grade / report.max_grade) * 100
+    return (
+        format_decimal_for_text(
+            percentage,
+            language_code=current_language(),
+            max_decimals=2,
+        )
+        + "%"
+    )
+
+
+def _student_status_text(status: ResultStatus) -> str:
+    return {
+        ResultStatus.PASSED: tr("student_feedback.status.correct"),
+        ResultStatus.FAILED: tr("student_feedback.status.incorrect"),
+        ResultStatus.WARNING: tr("student_feedback.status.review"),
+        ResultStatus.MANUAL_REVIEW: tr("student_feedback.status.review"),
+        ResultStatus.SKIPPED: tr("student_feedback.status.review"),
+        ResultStatus.ERROR: tr("student_feedback.status.review"),
+    }.get(status, tr("student_feedback.status.review"))
+
+
+def _student_feedback_reason(result: CellCorrectionResult) -> str:
+    """Return a concise, safe reason for non-perfect feedback rows."""
+    if result.status == ResultStatus.PASSED and result.score_awarded >= result.weight:
+        return ""
+    if result.status == ResultStatus.MANUAL_REVIEW or result.requires_manual_review:
+        return tr("student_feedback.reason.manual_review")
+    if result.was_teacher_reviewed:
+        return tr("student_feedback.reason.teacher_reviewed")
+    if 0 < result.score_awarded < result.weight:
+        return tr("student_feedback.reason.partial_score")
+    if result.status == ResultStatus.FAILED:
+        if result.rule_type in {RuleType.FORMULA_EXACT, RuleType.FORMULA_NORMALIZED}:
+            return tr("student_feedback.reason.formula_mismatch")
+        if result.rule_type == RuleType.NUMERIC_VALUE:
+            return tr("student_feedback.reason.value_mismatch")
+        if result.rule_type in {RuleType.TEXT_VALUE, RuleType.TEXT_NORMALIZED}:
+            return tr("student_feedback.reason.text_mismatch")
+        return tr("student_feedback.reason.incorrect")
+    if result.status in {ResultStatus.WARNING, ResultStatus.ERROR, ResultStatus.SKIPPED}:
+        return tr("student_feedback.reason.auto_review")
+    return tr("student_feedback.reason.generic_review")
 
 
 def _rule_types_summary(report: CorrectionReport) -> str:

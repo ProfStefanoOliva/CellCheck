@@ -2,11 +2,21 @@ import os
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QMessageBox
 
-from cellcheck.models import CellCorrectionResult, ResultStatus, RuleType
-from cellcheck.models import CorrectionReport, ScoreSummary, WorkbookFormat
+from cellcheck.models import (
+    CellCorrectionResult,
+    CorrectionProfile,
+    CorrectionReport,
+    CorrectionRule,
+    ResultStatus,
+    RuleType,
+    ScoreSummary,
+    WorkbookFormat,
+    WorksheetProfile,
+)
 from cellcheck.ui import AppState
+from cellcheck.ui.dialogs import StudentFeedbackDialog
 from cellcheck.ui.pages import ReportPage
 from cellcheck.ui.report_preview_navigation import build_report_preview_target
 from cellcheck.ui.widgets import (
@@ -24,6 +34,7 @@ def _app() -> QApplication:
 
 def test_report_viewer_modules_import() -> None:
     assert ReportPage is not None
+    assert StudentFeedbackDialog is not None
     assert ReportSummaryWidget is not None
     assert ReportFilterBar is not None
     assert ReportDetailsPanel is not None
@@ -91,6 +102,7 @@ def test_report_page_exposes_student_preview_button() -> None:
 
     assert hasattr(page, "preview_student_button")
     assert hasattr(page, "preview_result_button")
+    assert hasattr(page, "export_student_feedback_button")
 
 
 def test_report_page_preview_uses_selected_report_student_file() -> None:
@@ -124,6 +136,175 @@ def test_report_page_preview_target_changes_with_selected_report() -> None:
     page.preview_student_button.click()
 
     assert calls == ["C:/classi/Rossi/Studente_02.xlsx"]
+
+
+def test_report_page_student_feedback_button_opens_editor_without_direct_save(monkeypatch) -> None:
+    _app()
+    report = _report("C:/classi/Rossi/Studente_01.xlsx")
+    state = AppState()
+    state.add_or_replace_report(report, select=True)
+    calls = []
+
+    class CapturingFeedbackDialog:
+        def __init__(self, report, feedback_text, parent=None) -> None:
+            calls.append((report, feedback_text, parent))
+
+        def exec(self) -> int:
+            calls.append("exec")
+            return 0
+
+    save_dialog_calls = []
+    monkeypatch.setattr("cellcheck.ui.pages.report_page.StudentFeedbackDialog", CapturingFeedbackDialog)
+    monkeypatch.setattr(
+        "cellcheck.ui.pages.report_page.QFileDialog.getSaveFileName",
+        lambda *args, **kwargs: save_dialog_calls.append(args),
+    )
+    page = ReportPage(state, lambda path: None)
+
+    page._prepare_student_feedback()
+
+    assert calls[0][0] is report
+    assert "Studente_01.xlsx" in calls[0][1]
+    assert calls[1] == "exec"
+    assert save_dialog_calls == []
+
+
+def test_report_page_student_feedback_editor_uses_selected_report(monkeypatch) -> None:
+    _app()
+    report_one = _report("C:/classi/Rossi/Studente_01.xlsx")
+    report_two = _report("C:/classi/Rossi/Studente_02.xlsx")
+    state = AppState()
+    state.add_or_replace_report(report_one, select=True)
+    state.add_or_replace_report(report_two, select=False)
+    page = ReportPage(state, lambda path: None)
+    page.refresh_from_state()
+    calls = []
+
+    class CapturingFeedbackDialog:
+        def __init__(self, report, feedback_text, parent=None) -> None:
+            calls.append((report, feedback_text))
+
+        def exec(self) -> int:
+            return 0
+
+    monkeypatch.setattr("cellcheck.ui.pages.report_page.StudentFeedbackDialog", CapturingFeedbackDialog)
+
+    page.report_selector_combo.setCurrentIndex(1)
+    page._prepare_student_feedback()
+
+    assert calls[0][0] is report_two
+    assert "Studente_02.xlsx" in calls[0][1]
+    assert "Studente_01.xlsx" not in calls[0][1]
+    assert "C:/classi/Rossi" not in calls[0][1]
+
+
+def test_report_page_student_feedback_includes_required_activity_from_profile(monkeypatch) -> None:
+    _app()
+    report = _report("C:/classi/Rossi/Studente_01.xlsx")
+    state = AppState()
+    state.add_or_replace_report(report, select=True)
+    state.current_profile = CorrectionProfile(
+        exercise_name="Profilo",
+        max_grade=30.0,
+        worksheets=[
+            WorksheetProfile(
+                sheet_name="Foglio1",
+                rules=[
+                    CorrectionRule(
+                        id="r1",
+                        sheet_name="Foglio1",
+                        cell="A1",
+                        rule_type=RuleType.TEXT_VALUE,
+                        weight=1.0,
+                        required_activity="Completare la cella secondo la consegna.",
+                    )
+                ],
+            )
+        ],
+    )
+    calls = []
+
+    class CapturingFeedbackDialog:
+        def __init__(self, report, feedback_text, parent=None) -> None:
+            calls.append(feedback_text)
+
+        def exec(self) -> int:
+            return 0
+
+    monkeypatch.setattr("cellcheck.ui.pages.report_page.StudentFeedbackDialog", CapturingFeedbackDialog)
+    page = ReportPage(state, lambda path: None)
+
+    page._prepare_student_feedback()
+
+    assert "Completare la cella secondo la consegna." in calls[0]
+
+
+def test_report_page_student_feedback_export_skips_file_dialog_without_report(monkeypatch) -> None:
+    _app()
+    page = ReportPage(AppState())
+    dialog_calls = []
+    monkeypatch.setattr(
+        "cellcheck.ui.pages.report_page.QFileDialog.getSaveFileName",
+        lambda *args, **kwargs: dialog_calls.append(args),
+    )
+    monkeypatch.setattr(
+        "cellcheck.ui.pages.report_page.QMessageBox.information",
+        lambda *args, **kwargs: None,
+    )
+
+    page._export_student_feedback_txt()
+
+    assert dialog_calls == []
+
+
+def test_student_feedback_dialog_saves_modified_editor_text(tmp_path, monkeypatch) -> None:
+    _app()
+    report = _report("C:/classi/Rossi/Studente_01.xlsx")
+    dialog = StudentFeedbackDialog(report, "Testo iniziale")
+    output_path = tmp_path / "feedback"
+    dialog.feedback_edit.setPlainText("Testo modificato dal docente.")
+    monkeypatch.setattr(
+        "cellcheck.ui.dialogs.student_feedback_dialog.QFileDialog.getSaveFileName",
+        lambda *args, **kwargs: (str(output_path), "txt"),
+    )
+    monkeypatch.setattr(
+        "cellcheck.ui.dialogs.student_feedback_dialog.QMessageBox.information",
+        lambda *args, **kwargs: None,
+    )
+
+    dialog._save_feedback()
+
+    assert output_path.with_suffix(".txt").read_text(encoding="utf-8") == "Testo modificato dal docente."
+
+
+def test_student_feedback_dialog_can_be_closed_without_creating_file(tmp_path) -> None:
+    _app()
+    report = _report("C:/classi/Rossi/Studente_01.xlsx")
+    dialog = StudentFeedbackDialog(report, "Testo iniziale")
+    output_path = tmp_path / "feedback.txt"
+
+    dialog.reject()
+
+    assert not output_path.exists()
+
+
+def test_student_feedback_dialog_empty_text_requires_confirmation(monkeypatch) -> None:
+    _app()
+    report = _report("C:/classi/Rossi/Studente_01.xlsx")
+    dialog = StudentFeedbackDialog(report, "")
+    save_dialog_calls = []
+    monkeypatch.setattr(
+        "cellcheck.ui.dialogs.student_feedback_dialog.QMessageBox.question",
+        lambda *args, **kwargs: QMessageBox.No,
+    )
+    monkeypatch.setattr(
+        "cellcheck.ui.dialogs.student_feedback_dialog.QFileDialog.getSaveFileName",
+        lambda *args, **kwargs: save_dialog_calls.append(args),
+    )
+
+    dialog._save_feedback()
+
+    assert save_dialog_calls == []
 
 
 def test_report_page_disables_preview_without_student_file() -> None:

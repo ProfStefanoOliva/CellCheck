@@ -19,8 +19,12 @@ from cellcheck.models import (
     ResultStatus,
     RuleType,
 )
-from cellcheck.reporting import export_text_correction_report
+from cellcheck.reporting import (
+    build_student_feedback_report,
+    export_text_correction_report,
+)
 from cellcheck.ui.app_state import AppState
+from cellcheck.ui.dialogs import StudentFeedbackDialog
 from cellcheck.ui.i18n import tr
 from cellcheck.ui.report_preview_navigation import build_report_preview_target
 from cellcheck.ui.widgets import (
@@ -98,6 +102,11 @@ class ReportPage(QWidget):
         self.export_report_button.clicked.connect(self._export_report_txt)
         command_row.addWidget(self.export_report_button)
 
+        self.export_student_feedback_button = QPushButton()
+        self.export_student_feedback_button.setMinimumHeight(38)
+        self.export_student_feedback_button.clicked.connect(self._prepare_student_feedback)
+        command_row.addWidget(self.export_student_feedback_button)
+
         self.preview_student_button = QPushButton()
         self.preview_student_button.setMinimumHeight(38)
         self.preview_student_button.clicked.connect(self._preview_current_report_workbook)
@@ -150,6 +159,8 @@ class ReportPage(QWidget):
         self.load_report_button.setText(tr("report.load"))
         self.save_report_button.setText(tr("report.save"))
         self.export_report_button.setText(tr("report.export"))
+        self.export_student_feedback_button.setText(tr("student_feedback.prepare"))
+        self.export_student_feedback_button.setToolTip(tr("student_feedback.export_tooltip"))
         self.preview_student_button.setText(tr("workbook_preview.student_action"))
         self.preview_result_button.setText(tr("workbook_preview.open_cell_in_preview"))
         self.save_all_reports_button.setText(tr("report.save_all"))
@@ -183,6 +194,7 @@ class ReportPage(QWidget):
             self.persistence_status_label.setText(tr("report.persistence.in_memory"))
         self.preview_student_button.setEnabled(bool(self._current_report_workbook_path()))
         self.preview_result_button.setEnabled(self._current_result_preview_target() is not None)
+        self.export_student_feedback_button.setEnabled(report is not None)
         self._apply_filters()
 
     def reset_view_state(self) -> None:
@@ -195,6 +207,7 @@ class ReportPage(QWidget):
         self.report_selector_combo.blockSignals(False)
         self.preview_student_button.setEnabled(False)
         self.preview_result_button.setEnabled(False)
+        self.export_student_feedback_button.setEnabled(False)
         self.filter_bar.clear_filters(emit_signal=False)
         self.table.load_results([], [])
         self.details_panel.refresh(None)
@@ -474,6 +487,41 @@ class ReportPage(QWidget):
             tr("report.export"),
             tr("report.export_success"),
         )
+
+    def _prepare_student_feedback(self) -> None:
+        """Open an editable student feedback dialog for the current report."""
+        report = self.state.current_report
+        if report is None:
+            QMessageBox.information(
+                self,
+                tr("student_feedback.no_report_title"),
+                tr("student_feedback.no_report_message"),
+            )
+            return
+
+        feedback_text = build_student_feedback_report(
+            report,
+            activity_by_rule_id=self._current_required_activity_by_rule_id(),
+        )
+        dialog = StudentFeedbackDialog(report, feedback_text, self)
+        dialog.exec()
+
+    def _export_student_feedback_txt(self) -> None:
+        """Backward-compatible alias for preparing student feedback."""
+        self._prepare_student_feedback()
+
+    def _current_required_activity_by_rule_id(self) -> dict[str, str]:
+        """Return required-activity text from the current profile without changing reports."""
+        profile = self.state.current_profile
+        if profile is None:
+            return {}
+        values: dict[str, str] = {}
+        for worksheet in profile.worksheets:
+            for rule in worksheet.rules:
+                activity = rule.required_activity.strip()
+                if activity:
+                    values[rule.id] = activity
+        return values
 
     def _refresh_report_selector(self) -> None:
         """Reload the in-session report selector without losing the current selection."""
